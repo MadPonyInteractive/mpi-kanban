@@ -193,9 +193,6 @@ defeats the purpose of the system.
 6. **Do not modify the plan except to mark `[x]` after Option 1 is chosen.**
 7. **No git commits.** Committing is `mpi-end-session`'s responsibility.
 8. **No git push.**
-9. **No `mcp__nimbalyst-*` calls.**
-10. **No `<!-- trackers ... -->` block lookups** — plans MUST NOT carry that
-    block in this plugin.
 
 ## Related commands
 

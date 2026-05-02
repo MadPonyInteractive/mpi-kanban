@@ -31,8 +31,6 @@ the next begins.
 5. **No forward dependencies.** A to-do's verify step must be satisfiable
    using only what exists after *that* to-do completes — never after a later
    one. If A can only be verified once B (later) is done, merge A into B.
-6. **No `<!-- trackers ... -->` block** in the plan file — the Nimbalyst
-   tracker layer was removed in the kanban migration.
 
 ## To-do decomposition principle
 
@@ -100,7 +98,7 @@ without writing code from a later step, it doesn't belong in its own to-do.
    - "Does this to-do have an explicit `**Verify:**` line?" If no → add one.
 
 6. **Write the plan file** to `docs/plans/YYYY-MM-DD-<slug>.md` with `[ ]`
-   to-dos. **Do NOT include a `<!-- trackers ... -->` block.**
+   to-dos.
 
 7. **Update the kanban board.** Read `lib/kanban-ops.md` once. Then:
 
@@ -136,8 +134,6 @@ without writing code from a later step, it doesn't belong in its own to-do.
 
 ## Hard rules
 
-- No `mcp__nimbalyst-*` calls anywhere.
-- No `<!-- trackers ... -->` block in plan files.
 - No kanban steps yet — those are derived at the PLANNING → IMPLEMENTING
   transition by `/mpi-execute-next`.
 - One to-do, one file, one commit (the principle — `mpi-execute-next`

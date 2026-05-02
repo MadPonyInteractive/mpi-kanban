@@ -39,8 +39,6 @@ testing (Phase 10) so they don't conflict with the plugin's bundled versions.
 
 ## Hard constraints
 
-- No `mcp__nimbalyst-*` calls anywhere in the plugin (per SPEC §6).
-- No `<!-- trackers ... -->` blocks in plan files (per SPEC §9).
 - Do NOT add columns or metadata fields beyond SPEC §4.4 — the VS Code
   extension breaks on unknown fields.
 - Skills are pure markdown; `lib/*.md` are reference docs, not executable code

@@ -239,10 +239,8 @@ When `mpi-brief-rule` is invoked and config does not exist:
 
 ## 6. Skills
 
-All six skills follow the existing MPI skill conventions, with three universal changes:
+All six skills follow the existing MPI skill conventions, with one universal rule:
 
-- **No `mcp__nimbalyst-*` MCP calls.** All Nimbalyst session/tracker logic is removed.
-- **No `<!-- trackers ... -->` block** in plan files.
 - **All references to `kanban.md` in chat** must be a clickable markdown link: `[kanban.md](.claude/mpi-kanban/kanban.md)`.
 
 ### 6.1 `mpi-brainstorm`
@@ -261,7 +259,6 @@ All six skills follow the existing MPI skill conventions, with three universal c
 ### 6.2 `mpi-write-plan`
 
 - Trigger words: same as today.
-- Strip ALL Nimbalyst tracker logic (current steps 8, 9, tracker metadata block).
 - If a BACKLOG entry exists for this work (passed in by `mpi-brainstorm` or matched by user-provided title):
   1. Move BACKLOG → PLANNING.
   2. Replace tags with `[PLAN]`.
@@ -273,7 +270,6 @@ All six skills follow the existing MPI skill conventions, with three universal c
 ### 6.3 `mpi-execute-next`
 
 - Trigger words: same as today.
-- Strip ALL Nimbalyst session/tracker calls.
 - First call against a plan:
   1. Locate the kanban entry (match by `Plan file:` reference in body).
   2. Move PLANNING → IMPLEMENTING.
@@ -325,7 +321,6 @@ Process:
 ### 6.5 `mpi-handoff`
 
 - Same flow as today.
-- Strip Nimbalyst session calls.
 - Add a `kanban_entry` field to the handoff JSON containing the title of the active IMPLEMENTING entry (entry whose `Plan file:` matches the active plan).
 
 ### 6.6 `mpi-brief-rule`
@@ -400,14 +395,11 @@ When adding a new skill, update `lib/*.md` first if a new shared procedure is ne
 
 The existing `~/.claude/skills/mpi-*` skills (in CubricStudio user scope) are the source material for this plugin. Migration steps:
 
-1. Strip every `mcp__nimbalyst-*` call from each SKILL.md.
-2. Strip the `<!-- trackers NIM-XX -->` block logic from `mpi-write-plan`.
-3. Strip session-meta calls (`mcp__nimbalyst-session-naming__update_session_meta`) from all skills.
-4. Fix `mpi-end-session.md.md` (double extension, old `<objective>` format) — rewrite as proper skill per Section 6.4.
-5. Generalize `mpi-brief-rule` per Section 6.6 — replace hardcoded CubricStudio rule list with config-driven lookup.
-6. Add the kanban-move logic to each skill (Section 6).
-7. Add `lib/*.md` reference docs and replace inlined procedures in skills with references to those docs.
-8. Drop `mpi-quick-plan` from the plugin scope (stays as a separate user skill if the user wants it).
+1. Fix `mpi-end-session.md.md` (double extension, old `<objective>` format) — rewrite as proper skill per Section 6.4.
+2. Generalize `mpi-brief-rule` per Section 6.6 — replace hardcoded CubricStudio rule list with config-driven lookup.
+3. Add the kanban-move logic to each skill (Section 6).
+4. Add `lib/*.md` reference docs and replace inlined procedures in skills with references to those docs.
+5. Drop `mpi-quick-plan` from the plugin scope (stays as a separate user skill if the user wants it).
 
 After install, the user's old `~/.claude/skills/mpi-*` folder should be removed (or the skills will conflict with the plugin's bundled versions).
 
@@ -464,5 +456,4 @@ The plugin is "done" when:
 - Phased plans produce phase-titled steps; flat plans produce summarized to-do steps.
 - `mpi-brief-rule` works in CubricStudio with a config-driven rule list (parity with current hardcoded behavior).
 - `mpi-handoff` records the active IMPLEMENTING entry in its JSON output.
-- Zero `mcp__nimbalyst-*` calls remain anywhere in the plugin.
 - README explains install + usage and links to the VS Code extension.

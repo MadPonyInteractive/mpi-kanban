@@ -204,8 +204,6 @@ When the user verifies the first to-do, `mpi-execute-next`:
 
 ## Notes
 
-- Plan files MUST NOT contain `<!-- trackers ... -->` blocks. The Nimbalyst
-  tracker logic was removed in the kanban migration.
 - Skills are responsible for keeping the kanban steps mirror in sync with the
   plan. The plan is the source of truth — never read the kanban to decide
   what's done; always re-read the plan.

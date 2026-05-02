@@ -102,7 +102,6 @@ After the BACKLOG entry is captured:
 
 ## Hard rules
 
-- No `mcp__nimbalyst-*` calls.
 - No design or code work before the user approves the design.
 - The BACKLOG entry is created by THIS skill — not by the user, not by the
   next skill in the chain.

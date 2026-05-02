@@ -116,7 +116,6 @@ The next action is: <next_action.description>
 
 ## Hard rules
 
-- No `mcp__nimbalyst-*` calls anywhere.
 - No git commands — work is mid-flight, git state is not part of the handoff.
 - `resume_prompt` MUST be self-contained. The fresh session has zero memory.
 - `kanban_entry` is required in the JSON — `null` if no IMPLEMENTING entry

@@ -9,8 +9,6 @@
 > **Stop conditions** — if any of these come up, halt and ask the user:
 > - SPEC and the Plugin Structure / Plugin Settings reference skills disagree on layout.
 > - SPEC.md has an internal contradiction.
-> - A migrated skill has Nimbalyst behavior that does not have a clean replacement in
->   the kanban / lib model.
 >
 > Otherwise: do not modify SPEC.md without asking; commit when done (one commit, or two
 > if the work splits naturally — your call).
@@ -39,10 +37,8 @@
 ### Skill migrations
 
 > Source skills live at `C:\Users\Fabio\.claude\skills\mpi-*` — copy from there.
-> Universal stripping (every skill): remove all `mcp__nimbalyst-*` calls; remove
-> `<!-- trackers ... -->` block logic; remove session-meta calls. Each migrated
-> skill gets a thin `commands/mpi-<skill>.md` slash-command wrapper that invokes
-> the skill explicitly.
+> Each migrated skill gets a thin `commands/mpi-<skill>.md` slash-command
+> wrapper that invokes the skill explicitly.
 
 #### `mpi-end-session` (rewrite — this one is structurally broken)
 
@@ -50,7 +46,6 @@
 - [ ] Create `skills/mpi-end-session/SKILL.md` (single extension) with proper frontmatter (`name`, `description` only) per SPEC §6.4.
 - [ ] Translate the existing `<objective>` / `<context>` / `<process>` blocks into prose-style instructions.
 - [ ] Replace `git diff HEAD` (full diff) with `git diff --stat HEAD` (file list only).
-- [ ] Strip Nimbalyst session-meta call and `mcp__nimbalyst-mcp__get_session_edited_files`.
 - [ ] Add kanban close-out per SPEC §6.4 step 6-7: locate active IMPLEMENTING entry by matching `Plan file:` against the most recently touched plan; use `lib/kanban-ops.md` `allStepsDone`; if true → move IMPLEMENTING → COMPLETED; if false → leave + append "session ended mid-implementation" to commit body.
 - [ ] Final report includes a clickable kanban link.
 - [ ] Keep the "ask before changing architectural rule files" cardinal-rule check intact.
@@ -68,7 +63,7 @@
 
 #### `mpi-handoff`
 
-- [ ] Copy source SKILL.md, strip all `mcp__nimbalyst-*` calls and references.
+- [ ] Copy source SKILL.md.
 - [ ] Add step to read `kanban.md` and locate active IMPLEMENTING entry (entry whose `Plan file:` matches the active plan).
 - [ ] Add `kanban_entry: "<title>"` field to the JSON schema; `null` if no IMPLEMENTING entry matches.
 - [ ] Update the resume prompt block to mention the kanban entry by title.
@@ -76,7 +71,7 @@
 
 #### `mpi-brainstorm`
 
-- [ ] Copy source SKILL.md, strip the `mcp__nimbalyst-session-naming__update_session_meta` call.
+- [ ] Copy source SKILL.md.
 - [ ] After "design approved" gate and BEFORE the "Want a plan?" prompt, add BACKLOG entry creation per SPEC §6.1: auto-create `kanban.md` if missing per §4.7; use `lib/kanban-ops.md` `createEntry`; ask the user once for `priority` (default `medium`); infer tags from idea content (`[bug] | [feature] | [Idea] | [refactor]`).
 - [ ] In the "yes, write a plan" branch, invoke `mpi-write-plan` and pass the BACKLOG entry title forward via prompt context (skills don't pass arguments natively).
 - [ ] Create `commands/mpi-brainstorm.md`.
@@ -84,20 +79,17 @@
 #### `mpi-write-plan`
 
 - [ ] Copy source SKILL.md.
-- [ ] Remove `mcp__nimbalyst-session-naming__update_session_meta` call (current step 2).
-- [ ] Remove steps 8 and 9 (Nimbalyst tracker creation + tracker metadata block).
-- [ ] Update step 7 (write plan file): no `<!-- trackers -->` block.
 - [ ] After plan file is written, add a kanban update step:
   - If a BACKLOG entry matches (passed in by brainstorm or by user-provided title) → move BACKLOG → PLANNING, replace tags with `[PLAN]`, set body fence to `Plan file: <plan-path>`.
   - If no entry matches → create new PLANNING entry directly with `[PLAN]` tag.
   - Use `lib/kanban-ops.md` procedures.
 - [ ] Drop `/mpi-quick-plan` from "Related commands" (out of plugin scope).
-- [ ] Keep the "self-audit" step (current step 6); drop the Nimbalyst guidance from it.
+- [ ] Keep the "self-audit" step (current step 6).
 - [ ] Create `commands/mpi-write-plan.md`.
 
 #### `mpi-execute-next`
 
-- [ ] Copy source SKILL.md, strip all Nimbalyst calls (session-meta + tracker-status updates throughout) and the tracker-id metadata-block lookup logic in "Session setup".
+- [ ] Copy source SKILL.md.
 - [ ] On first invocation against a plan: locate kanban entry via `lib/kanban-ops.md` `findEntry` matching the plan's `Plan file:`; move PLANNING → IMPLEMENTING; read plan file via `lib/plan-ops.md`; determine phased vs flat per SPEC §6.3.1; build steps array (3-6 word summaries OR phase titles) and add via `addSteps`.
 - [ ] On Option 1 ("verified") per to-do: after marking plan to-do `[x]`, look up matching kanban step — phased plan flips when all to-dos in the current phase are `[x]`; flat plan flips the kanban step at the matching index.
 - [ ] Keep both gates (brief gate before code, post-impl gate after code) intact — do not weaken these.
@@ -120,8 +112,6 @@
   - [ ] Run `/mpi-execute-next` once → entry moves to IMPLEMENTING and gains steps.
   - [ ] Mark all to-dos done → kanban steps flip correctly.
   - [ ] `/mpi-end-session` → entry moves to COMPLETED + clean commit.
-  - [ ] No `mcp__nimbalyst-*` errors anywhere.
-  - [ ] No `<!-- trackers -->` blocks in the plan file.
   - [ ] Kanban file was auto-created on first call.
 - [ ] `/mpi-brief-rule <name>` against a config with one rule that has a `## Sub-Agent Briefing` section → returns the briefing verbatim.
 - [ ] `/mpi-handoff` mid-flight → JSON contains `kanban_entry`.

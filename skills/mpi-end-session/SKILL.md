@@ -97,7 +97,6 @@ explicitly).
 
 ## Hard rules
 
-- No `mcp__nimbalyst-*` calls anywhere in this skill.
 - Never use `git add -A` / `git add .`.
 - Never modify a rule file in `.claude/rules/` without explicit user approval.
 - Never auto-overwrite or delete a memory entry — `AskUserQuestion` first.
