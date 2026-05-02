@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "mpi-local",
+  "description": "Local marketplace for the Mpi-Kanban plugin during development.",
+  "owner": {
+    "name": "Fabio Goncalves",
+    "url": "https://github.com/MadPonyInteractive"
+  },
+  "plugins": [
+    {
+      "name": "mpi-kanban",
+      "description": "MPI workflow skills (brainstorm, write-plan, execute-next, end-session, handoff, brief-rule) bundled as a plugin that drives a per-project Kanban board.",
+      "source": "./",
+      "category": "workflow",
+      "keywords": ["mpi", "kanban", "workflow", "planning"]
+    }
+  ]
+}

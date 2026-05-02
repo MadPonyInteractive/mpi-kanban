@@ -27,14 +27,68 @@ The board file is rendered as an interactive Kanban by:
 Install it before first use. Without it, the skills still work — you just
 read `.claude/mpi-kanban/kanban.md` as plain Markdown.
 
-## Install (local development)
+## Install
 
-1. Clone the plugin somewhere on disk (e.g. `C:\AI\Mpi\Plugins\Mpi-Kanban`).
-2. Add the plugin to your Claude Code config (current install command varies
-   by Claude Code version — see the official docs for `/plugin install <path>`
-   or the equivalent).
-3. Reload plugins (`/reload-plugins` or restart Claude Code).
-4. Verify all six skills appear in the skill list.
+The plugin ships with its own marketplace manifest
+(`.claude-plugin/marketplace.json`). End users install via the marketplace;
+plugin authors iterate on a local clone with `--plugin-dir`.
+
+### End users (recommended)
+
+Once the repository is published on GitHub:
+
+```text
+/plugin marketplace add MadPonyInteractive/Mpi-Kanban
+/plugin install mpi-kanban@mpi-local
+/reload-plugins
+```
+
+Claude Code copies the plugin into `~/.claude/plugins/cache/` so it persists
+across sessions and works offline. The local clone (if any) is no longer
+needed after install.
+
+**Updating:**
+
+```text
+/plugin marketplace update mpi-local
+/plugin install mpi-kanban@mpi-local
+```
+
+**Uninstalling:**
+
+```text
+/plugin uninstall mpi-kanban@mpi-local
+/plugin marketplace remove mpi-local
+```
+
+### Plugin authors (live-editing a local clone)
+
+`/plugin install` copies the plugin into the cache — edits to your clone
+will NOT show up in the installed copy. Use the `--plugin-dir` flag instead;
+it loads the plugin directly from disk and picks up edits on
+`/reload-plugins`.
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/MadPonyInteractive/Mpi-Kanban.git
+   ```
+
+2. Launch Claude Code pointed at the clone:
+
+   ```bash
+   claude --plugin-dir /absolute/path/to/Mpi-Kanban
+   ```
+
+   On Windows, use the absolute path of your clone (for example
+   `D:\repos\Mpi-Kanban`).
+
+3. After editing any skill, command, or hook, run `/reload-plugins` to
+   refresh — no reinstall needed.
+
+If a marketplace-installed copy of `mpi-kanban` is already present, the
+`--plugin-dir` version takes precedence for that session, so you can test
+changes without uninstalling the released version first.
 
 ## Per-project setup
 
