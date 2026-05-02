@@ -17,29 +17,31 @@
 
 Goal: `Mpi-Kanban/` has a valid plugin shell that Claude Code can load (even with empty skills).
 
-- [ ] Create `plugin.json` with name `Mpi-Kanban`, version `0.1.0`, description matching SPEC Section 1, author info, and any required marketplace fields per current Claude Code plugin docs.
-- [ ] Create `LICENSE` (MIT or whatever the user prefers — ask if unclear).
-- [ ] Create `README.md` per SPEC Section 11 (user-facing): install steps, workflow overview, VS Code extension link, per-project setup. Keep it under ~150 lines.
-- [ ] Create empty folder structure per SPEC Section 3: `skills/`, `lib/`, `templates/`.
+- [ ] Create `.claude-plugin/plugin.json` (NOT at plugin root — manifest must live under `.claude-plugin/` per the Plugin Structure reference). Fields: name `mpi-kanban` (kebab-case), version `0.1.0`, description from SPEC §1, author block (Fabio Goncalves / fabioargoncalves1981@gmail.com), license MIT, keywords `["mpi", "kanban", "workflow", "planning"]`.
+- [ ] Create `LICENSE` (MIT, copyright Fabio Goncalves, current year).
+- [ ] Create `README.md` per SPEC §11 (user-facing): install steps, workflow overview, VS Code extension link, per-project setup. Keep it under ~150 lines.
+- [ ] Create empty folder structure per SPEC §3: `commands/`, `skills/`, `lib/`, `templates/`.
 - [ ] Verify the plugin can be installed locally (per Claude Code plugin docs — confirm exact command at build time).
 - [ ] Verify Claude Code recognizes the plugin (lists in plugin list, even with no skills yet).
 
-**Verify:** Run the local-install command, then `/plugin list` (or current equivalent). `Mpi-Kanban` appears with description.
+**Verify:** Run the local-install command, then `/plugin list` (or current equivalent). `mpi-kanban` appears with description.
 
 ---
 
 ## Phase 2: Templates
 
-Goal: `templates/kanban.md` and `templates/config.json` exist and are correct.
+Goal: `templates/kanban.md` and `templates/mpi-kanban.local.md` exist and are correct.
 
 - [ ] Write `templates/kanban.md`:
   - 4 H2 columns in order (BACKLOG, PLANNING, IMPLEMENTING, COMPLETED).
   - Empty between columns.
   - HTML comment at top with one-line note about the VS Code extension and the marketplace link `https://marketplace.visualstudio.com/items?itemName=holooooo.markdown-kanban`.
-- [ ] Write `templates/config.json` per SPEC Section 5.2 — empty `rules` array, sensible defaults for `rules_dir`, placeholder for `critical_snapshot_file` and `critical_snapshot_anchor`.
-- [ ] Add one short comment line in `templates/config.json` (or a sibling `templates/config.example.json`) explaining each field. JSON does not allow comments, so use a parallel `.example.json` with a comment block above each key, or a `templates/config.README.md`.
+- [ ] Write `templates/mpi-kanban.local.md` per SPEC §5.2:
+  - YAML frontmatter with: `rules_dir`, empty `rules: []`, placeholders for `critical_snapshot_file` and `critical_snapshot_anchor`.
+  - Markdown body: a brief comment block explaining each frontmatter field (since YAML allows `#` comments inside the frontmatter, prefer per-field comments there).
+  - One-line note in body: ".local.md is gitignored by convention — add `.claude/*.local.md` to your `.gitignore`."
 
-**Verify:** Open both templates manually. The kanban template renders cleanly in the VS Code extension as 4 empty columns. The config template parses as valid JSON.
+**Verify:** Open both templates manually. The kanban template renders cleanly in the VS Code extension as 4 empty columns. The config template's frontmatter parses (try `sed -n '/^---$/,/^---$/{/^---$/d;p;}' templates/mpi-kanban.local.md` and verify clean YAML).
 
 ---
 
@@ -59,31 +61,68 @@ Goal: All three `lib/*.md` reference docs exist and document the procedures list
   - Decision tree for "is this plan phased?".
   - Worked example for both phased and flat plans.
 - [ ] Write `lib/config-ops.md`:
-  - Config schema (mirror SPEC Section 5.2 — do not duplicate the spec, link to it).
-  - Procedures from SPEC 7.3.
-  - Bootstrap snippet text the skill emits when config is missing.
+  - Config file location: `.claude/mpi-kanban.local.md` (frontmatter + body).
+  - Frontmatter parsing pattern (sed/awk extraction of YAML between `---` markers; reading scalar fields and the `rules` list).
+  - Config schema (mirror SPEC §5.2 — do not duplicate the spec, link to it).
+  - Procedures from SPEC §7.3.
+  - Bootstrap snippet text the skill emits when config is missing (link to `templates/mpi-kanban.local.md`, gitignore reminder).
 
 **Verify:** Each file is self-contained — a fresh skill author can implement a kanban mutation by reading only `lib/kanban-ops.md` (no need to also read SPEC.md).
 
 ---
 
-## Phase 4: Migrate `mpi-brief-rule`
+> **Skill-migration phase pattern.** Phases 4–9 each migrate one skill. For every
+> skill migrated, the build agent MUST also create a thin slash-command wrapper at
+> `commands/mpi-<skill>.md` (per SPEC §3) that explicitly invokes the skill. Add
+> this as the final task in each phase below; verification of the phase includes
+> typing `/mpi-<skill>` and confirming the skill fires.
 
-Goal: `mpi-brief-rule` is generalized and works against `.claude/mpi-kanban/config.json` instead of a hardcoded rule list.
+## Phase 4: Build `mpi-end-session` (rewrite from broken file)
 
-- [ ] Copy current `~/.claude/skills/mpi-brief-rule/SKILL.md` into `skills/mpi-brief-rule/SKILL.md`.
-- [ ] Strip the hardcoded "Supported Rules" list (CubricStudio-specific).
-- [ ] Replace with a flow that reads `.claude/mpi-kanban/config.json` via `lib/config-ops.md`.
-- [ ] If config missing → emit setup notice per SPEC Section 5.3, then stop.
-- [ ] If named rule not in config → list available rule names and stop.
-- [ ] If rule has no `## Sub-Agent Briefing` section → fall back to the critical snapshot per SPEC Section 6.6.
-- [ ] Update the skill description in frontmatter to match the new behavior (still triggers on `/mpi-brief-rule <name>`).
+> Reordered to phase 4 so the build agent has a working close-out tool when
+> committing progress through later phases. The current `~/.claude/skills/mpi-end-session/SKILL.md.md`
+> is structurally broken (double extension, old `<objective>` format) and is the
+> only skill that needs a true rewrite rather than a migration.
 
-**Verify:** In a project with no config → invoking the skill prints the bootstrap snippet and stops. With a valid config and a rule that has a briefing → returns the briefing verbatim. With a rule missing the briefing section → returns the critical snapshot.
+Goal: Proper skill format, kanban-aware close-out, no Nimbalyst.
+
+- [ ] Read the current `~/.claude/skills/mpi-end-session/SKILL.md.md` (note the double extension — the source file).
+- [ ] Create `skills/mpi-end-session/SKILL.md` (single extension) with proper skill frontmatter per SPEC §6.4 — `name`, `description` only.
+- [ ] Translate the existing `<objective>`, `<context>`, `<process>` blocks into prose-style skill instructions.
+- [ ] Replace `git diff HEAD` (full diff) with `git diff --stat HEAD` (file list only).
+- [ ] Strip the Nimbalyst session-meta call (current step 6).
+- [ ] Strip the `mcp__nimbalyst-mcp__get_session_edited_files` call (current context block).
+- [ ] Add the kanban update step per SPEC §6.4 step 6-7:
+  - Locate active IMPLEMENTING entry by matching `Plan file:` against the most recently touched plan.
+  - Use `lib/kanban-ops.md` `allStepsDone`.
+  - If true → move IMPLEMENTING → COMPLETED.
+  - If false → leave; append "session ended mid-implementation" to commit body.
+- [ ] Add clickable kanban link to final report.
+- [ ] Keep the "ask before changing architectural rule files" cardinal-rule check intact.
+- [ ] Create `commands/mpi-end-session.md` slash-command wrapper.
+
+**Verify:** Two scenarios: (a) all kanban steps `[x]` → entry moves to COMPLETED + clean commit; (b) mid-flight session, some steps still `[ ]` → entry stays in IMPLEMENTING + commit message has the deferred note. `/mpi-end-session` typed in chat fires the skill.
 
 ---
 
-## Phase 5: Migrate `mpi-handoff`
+## Phase 5: Migrate `mpi-brief-rule`
+
+Goal: `mpi-brief-rule` is generalized and works against `.claude/mpi-kanban.local.md` instead of a hardcoded rule list.
+
+- [ ] Copy current `~/.claude/skills/mpi-brief-rule/SKILL.md` into `skills/mpi-brief-rule/SKILL.md`.
+- [ ] Strip the hardcoded "Supported Rules" list (CubricStudio-specific).
+- [ ] Replace with a flow that reads `.claude/mpi-kanban.local.md` (frontmatter) via `lib/config-ops.md`.
+- [ ] If config missing → emit setup notice per SPEC §5.3, then stop.
+- [ ] If named rule not in config → list available rule names and stop.
+- [ ] If rule has no `## Sub-Agent Briefing` section → fall back to the critical snapshot per SPEC §6.6.
+- [ ] Update the skill description in frontmatter to match the new behavior (still triggers on `/mpi-brief-rule <name>`).
+- [ ] Create `commands/mpi-brief-rule.md` slash-command wrapper.
+
+**Verify:** In a project with no config → invoking the skill prints the bootstrap snippet and stops. With a valid config and a rule that has a briefing → returns the briefing verbatim. With a rule missing the briefing section → returns the critical snapshot. `/mpi-brief-rule components` works.
+
+---
+
+## Phase 6: Migrate `mpi-handoff`
 
 Goal: `mpi-handoff` writes a JSON handoff with the active kanban entry, no Nimbalyst calls.
 
@@ -92,30 +131,32 @@ Goal: `mpi-handoff` writes a JSON handoff with the active kanban entry, no Nimba
 - [ ] Add a step to read `kanban.md` and locate the active IMPLEMENTING entry (entry whose `Plan file:` matches the active plan).
 - [ ] Add a `kanban_entry: "<title>"` field to the JSON schema. If no IMPLEMENTING entry matches → set `kanban_entry: null`.
 - [ ] Update the resume prompt block to mention the kanban entry by title, so a fresh session can re-orient quickly.
+- [ ] Create `commands/mpi-handoff.md` slash-command wrapper.
 
-**Verify:** Run the skill mid-task in a project with one IMPLEMENTING entry. The output JSON contains the entry title in `kanban_entry`. The resume prompt mentions it.
+**Verify:** Run the skill mid-task in a project with one IMPLEMENTING entry. The output JSON contains the entry title in `kanban_entry`. The resume prompt mentions it. `/mpi-handoff` works.
 
 ---
 
-## Phase 6: Migrate `mpi-brainstorm`
+## Phase 7: Migrate `mpi-brainstorm`
 
 Goal: After design approval, the skill creates a BACKLOG entry on `kanban.md`.
 
 - [ ] Copy current `mpi-brainstorm/SKILL.md` into `skills/mpi-brainstorm/SKILL.md`.
 - [ ] Strip the `mcp__nimbalyst-session-naming__update_session_meta` call.
-- [ ] After "design approved" gate and BEFORE the "Want a plan?" prompt, add the BACKLOG entry creation flow per SPEC Section 6.1.
-  - Auto-create kanban.md if missing per SPEC Section 4.7.
+- [ ] After "design approved" gate and BEFORE the "Want a plan?" prompt, add the BACKLOG entry creation flow per SPEC §6.1.
+  - Auto-create kanban.md if missing per SPEC §4.7.
   - Use `lib/kanban-ops.md` `createEntry` procedure.
   - Ask the user once for `priority` (default `medium`).
   - Tags inferred from idea content; choose from `[bug] | [feature] | [Idea] | [refactor]`.
 - [ ] In the "Want a plan?" prompt branch:
   - If yes → invoke `mpi-write-plan` AND pass the BACKLOG entry title forward (via prompt context, since skills don't pass arguments natively — write the title into the chat for the next skill to pick up).
+- [ ] Create `commands/mpi-brainstorm.md` slash-command wrapper.
 
-**Verify:** Run brainstorm end-to-end. After approval, kanban.md gains a BACKLOG entry with correct shape. The "Want a plan?" prompt is shown after the entry is created, not before.
+**Verify:** Run brainstorm end-to-end. After approval, kanban.md gains a BACKLOG entry with correct shape. The "Want a plan?" prompt is shown after the entry is created, not before. `/mpi-brainstorm` works.
 
 ---
 
-## Phase 7: Migrate `mpi-write-plan`
+## Phase 8: Migrate `mpi-write-plan`
 
 Goal: Plan creation moves an existing BACKLOG entry to PLANNING (or creates a new PLANNING entry), no Nimbalyst trackers.
 
@@ -129,12 +170,13 @@ Goal: Plan creation moves an existing BACKLOG entry to PLANNING (or creates a ne
   - Use `lib/kanban-ops.md` procedures.
 - [ ] Update "Related commands" section to remove `/mpi-quick-plan` reference (out of plugin scope) — or keep it conditionally if the user keeps that skill separately.
 - [ ] Update the "self-audit" step (current step 6) — keep it, drop the Nimbalyst guidance.
+- [ ] Create `commands/mpi-write-plan.md` slash-command wrapper.
 
-**Verify:** Two scenarios: (a) brainstorm produced a BACKLOG entry, write-plan moves it to PLANNING with correct tag swap and body update; (b) write-plan invoked directly with no prior entry, creates a fresh PLANNING entry with `[PLAN]` tag.
+**Verify:** Two scenarios: (a) brainstorm produced a BACKLOG entry, write-plan moves it to PLANNING with correct tag swap and body update; (b) write-plan invoked directly with no prior entry, creates a fresh PLANNING entry with `[PLAN]` tag. `/mpi-write-plan` works.
 
 ---
 
-## Phase 8: Migrate `mpi-execute-next`
+## Phase 9: Migrate `mpi-execute-next`
 
 Goal: First execute moves PLANNING → IMPLEMENTING and adds steps; per-todo verification flips matching steps; no Nimbalyst calls.
 
@@ -144,7 +186,7 @@ Goal: First execute moves PLANNING → IMPLEMENTING and adds steps; per-todo ver
 - [ ] On first invocation against a plan:
   - Locate kanban entry via `lib/kanban-ops.md` `findEntry` matching the plan's `Plan file:` path.
   - Move PLANNING → IMPLEMENTING.
-  - Read plan file via `lib/plan-ops.md`. Determine phased vs flat (SPEC 6.3.1).
+  - Read plan file via `lib/plan-ops.md`. Determine phased vs flat (SPEC §6.3.1).
   - Build steps array (3-6 word summaries OR phase titles) and add via `addSteps`.
 - [ ] On Option 1 ("verified") per to-do:
   - After marking plan to-do `[x]`, look up the matching kanban step:
@@ -153,30 +195,9 @@ Goal: First execute moves PLANNING → IMPLEMENTING and adds steps; per-todo ver
 - [ ] Keep both gates (brief gate and post-impl gate) intact — do not weaken these.
 - [ ] Update "Related commands" section to drop `/mpi-component-audit` if not in plugin scope (stay project-side).
 - [ ] Replace `~/.claude/skills/mpi-execute-next/brief-template.md` reference with a brief template inside the plugin folder (`skills/mpi-execute-next/brief-template.md`).
+- [ ] Create `commands/mpi-execute-next.md` slash-command wrapper.
 
-**Verify:** Full plan run (3-5 to-dos). Phased plan: steps reflect phases, flip when phase fully `[x]`. Flat plan: each to-do flips its own step. Kanban entry moves to IMPLEMENTING on first execute call only.
-
----
-
-## Phase 9: Build `mpi-end-session` (rewrite from broken file)
-
-Goal: Proper skill format, kanban-aware close-out, no Nimbalyst.
-
-- [ ] Read the current `~/.claude/skills/mpi-end-session/SKILL.md.md` (note the double extension — the source file).
-- [ ] Create `skills/mpi-end-session/SKILL.md` (single extension) with proper skill frontmatter per SPEC Section 6.4 — `name`, `description` only.
-- [ ] Translate the existing `<objective>`, `<context>`, `<process>` blocks into prose-style skill instructions.
-- [ ] Replace `git diff HEAD` (full diff) with `git diff --stat HEAD` (file list only).
-- [ ] Strip the Nimbalyst session-meta call (current step 6).
-- [ ] Strip the `mcp__nimbalyst-mcp__get_session_edited_files` call (current context block).
-- [ ] Add the kanban update step per SPEC Section 6.4 step 6-7:
-  - Locate active IMPLEMENTING entry by matching `Plan file:` against the most recently touched plan.
-  - Use `lib/kanban-ops.md` `allStepsDone`.
-  - If true → move IMPLEMENTING → COMPLETED.
-  - If false → leave; append "session ended mid-implementation" to commit body.
-- [ ] Add clickable kanban link to final report.
-- [ ] Keep the "ask before changing architectural rule files" cardinal-rule check intact.
-
-**Verify:** Two scenarios: (a) all kanban steps `[x]` → entry moves to COMPLETED + clean commit; (b) mid-flight session, some steps still `[ ]` → entry stays in IMPLEMENTING + commit message has the deferred note.
+**Verify:** Full plan run (3-5 to-dos). Phased plan: steps reflect phases, flip when phase fully `[x]`. Flat plan: each to-do flips its own step. Kanban entry moves to IMPLEMENTING on first execute call only. `/mpi-execute-next` works.
 
 ---
 
@@ -185,8 +206,9 @@ Goal: Proper skill format, kanban-aware close-out, no Nimbalyst.
 Goal: One full workflow run end-to-end against a real project.
 
 - [ ] Install plugin locally.
-- [ ] In CubricStudio, remove the existing `~/.claude/skills/mpi-*` skills (back them up first) so they don't conflict with the plugin.
-- [ ] Create `.claude/mpi-kanban/config.json` for CubricStudio with its 12 rules per the existing list (components, dos_and_donts, events, state, comfy_injection, comfy_engine, workspaces, component-mounts, component-events, component-state, component-comfy, downloads).
+- [ ] In CubricStudio, remove the existing `~/.claude/skills/mpi-*` skills (user has already backed them up) so they don't conflict with the plugin.
+- [ ] Create `.claude/mpi-kanban.local.md` for CubricStudio with its 12 rules in the YAML frontmatter `rules:` list (components, dos_and_donts, events, state, comfy_injection, comfy_engine, workspaces, component-mounts, component-events, component-state, component-comfy, downloads). Also set `critical_snapshot_file` and `critical_snapshot_anchor`.
+- [ ] Verify `.claude/*.local.md` is gitignored in CubricStudio (or add it).
 - [ ] Run a small end-to-end: brainstorm a tiny idea → write a 2-todo plan → execute both → end session. Verify:
   - Entry moves through all 4 columns.
   - Steps are correct (phased or flat).
@@ -206,7 +228,7 @@ Goal: One full workflow run end-to-end against a real project.
 Goal: README is solid; user can install without asking the author for help.
 
 - [ ] Tighten README based on integration-test learnings.
-- [ ] Add a "Troubleshooting" section: kanban not auto-creating, VS Code extension not rendering, config.json bootstrap notice loops, etc.
+- [ ] Add a "Troubleshooting" section: kanban not auto-creating, VS Code extension not rendering, `mpi-kanban.local.md` bootstrap notice loops, etc.
 - [ ] Add a "What's next" section listing the deferred decisions from SPEC Section 12, so future contributors know what's open.
 - [ ] If marketplace publish is in scope: add `marketplace.json` (or current equivalent) and verify required metadata.
 - [ ] Tag a `v0.1.0` git tag.

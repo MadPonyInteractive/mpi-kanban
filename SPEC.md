@@ -34,13 +34,26 @@ The README, the initial `kanban.md` template, and any "kanban not found" notice 
 
 ## 3. Plugin file structure
 
+The plugin follows the canonical Claude Code plugin layout: manifest under
+`.claude-plugin/`, component dirs (`skills/`, `commands/`) at plugin root,
+custom `lib/` and `templates/` folders alongside.
+
 ```
-Mpi-Kanban/
-├── plugin.json              ← plugin metadata (name, version, description)
+Mpi-Kanban/                  ← folder name on disk (PascalCase by convention)
+├── .claude-plugin/
+│   └── plugin.json          ← plugin manifest (name field: "mpi-kanban", kebab-case)
 ├── README.md                ← user-facing install + usage docs
 ├── SPEC.md                  ← this file
 ├── PLAN.md                  ← build to-dos (phased)
-├── LICENSE
+├── CLAUDE.md                ← build-agent guidance
+├── LICENSE                  ← MIT
+├── commands/                ← slash-command wrappers (one per skill)
+│   ├── mpi-brainstorm.md
+│   ├── mpi-write-plan.md
+│   ├── mpi-execute-next.md
+│   ├── mpi-end-session.md
+│   ├── mpi-handoff.md
+│   └── mpi-brief-rule.md
 ├── skills/
 │   ├── mpi-brainstorm/SKILL.md
 │   ├── mpi-write-plan/SKILL.md
@@ -51,11 +64,31 @@ Mpi-Kanban/
 ├── lib/
 │   ├── kanban-ops.md        ← parser rules + mutation procedures for kanban.md
 │   ├── plan-ops.md          ← plan file parsing (phases vs flat to-dos)
-│   └── config-ops.md        ← read .claude/mpi-kanban/config.json
+│   └── config-ops.md        ← read .claude/mpi-kanban.local.md
 └── templates/
     ├── kanban.md            ← initial 4-column scaffold + extension notice
-    └── config.json          ← config schema sample
+    └── mpi-kanban.local.md  ← config template (frontmatter + body)
 ```
+
+### `plugin.json` shape
+
+```json
+{
+  "name": "mpi-kanban",
+  "version": "0.1.0",
+  "description": "MPI workflow skills (brainstorm, write-plan, execute-next, end-session, handoff, brief-rule) bundled as a plugin that drives a per-project Kanban board.",
+  "author": { "name": "Fabio Goncalves", "email": "fabioargoncalves1981@gmail.com" },
+  "license": "MIT",
+  "keywords": ["mpi", "kanban", "workflow", "planning"]
+}
+```
+
+### Slash commands
+
+Each `commands/mpi-<skill>.md` is a thin wrapper that explicitly invokes the
+matching skill. This gives users an unambiguous handle (`/mpi-end-session`)
+when multiple plugins offer overlapping functionality, while skills still
+auto-activate on natural-language phrases.
 
 ### `lib/` is a reference library, not executable code
 
@@ -65,6 +98,14 @@ A skill that needs to move an entry, for example, reads `lib/kanban-ops.md` on d
 
 No JS, Node, or Python runtime is required. The author may revise this decision (Section 7 calls it out as a known trade-off) if reliability proves insufficient — at which point a JS layer would be added behind the same `lib/` API surface.
 
+### Path references
+
+Any path the plugin needs to point at inside its own directory (script paths in
+hooks, MCP server commands, etc.) MUST use `${CLAUDE_PLUGIN_ROOT}` so the plugin
+remains portable across install methods. Plain skills referencing `lib/*.md`
+read them using the `Read` tool with a path relative to the plugin root, which
+Claude Code resolves automatically.
+
 ---
 
 ## 4. `kanban.md` contract
@@ -73,7 +114,10 @@ No JS, Node, or Python runtime is required. The author may revise this decision 
 
 `<project-root>/.claude/mpi-kanban/kanban.md`
 
-NOT at the project root. The `.claude/mpi-kanban/` folder also holds the per-project `config.json`.
+NOT at the project root. Per-project plugin config lives separately at
+`.claude/mpi-kanban.local.md` (see Section 5) — the kanban file is the working
+board, the config file is user settings; they're kept apart so the gitignore
+convention (`.claude/*.local.md`) covers config without ignoring the board.
 
 ### 4.2 Columns (fixed — do not add, rename, or remove)
 
@@ -146,23 +190,34 @@ Auto-creation does NOT trigger if the user invoked `mpi-brief-rule` (board-indep
 
 ### 5.1 Location
 
-`<project-root>/.claude/mpi-kanban/config.json`
+`<project-root>/.claude/mpi-kanban.local.md`
+
+This follows the standard Claude Code "plugin settings" idiom: a `.local.md`
+file in `.claude/` with YAML frontmatter for structured fields and a markdown
+body for free-form context. The `.local.md` suffix makes it gitignorable via
+the conventional `.claude/*.local.md` pattern.
 
 ### 5.2 Schema
 
-```json
-{
-  "rules_dir": ".claude/rules",
-  "rules": [
-    { "name": "components", "file": "components.md" },
-    { "name": "events", "file": "events.md" }
-  ],
-  "critical_snapshot_file": "CLAUDE.md",
-  "critical_snapshot_anchor": "critical-rules-snapshot"
-}
+```markdown
+---
+rules_dir: .claude/rules
+rules:
+  - name: components
+    file: components.md
+  - name: events
+    file: events.md
+critical_snapshot_file: CLAUDE.md
+critical_snapshot_anchor: critical-rules-snapshot
+---
+
+# Mpi-Kanban project notes
+
+(Optional free-form body. Currently unused by the plugin — reserved for
+future skills that may want a project-level prose note. Safe to leave empty.)
 ```
 
-| Field | Purpose |
+| Frontmatter field | Purpose |
 |---|---|
 | `rules_dir` | Folder where rule files live, relative to project root. |
 | `rules` | List of rules `mpi-brief-rule` can extract briefings from. `name` is the user-facing key (`/mpi-brief-rule components`); `file` resolves to `<rules_dir>/<file>`. |
@@ -175,9 +230,10 @@ When `mpi-brief-rule` is invoked and config does not exist:
 
 1. Do NOT auto-create — config is project-specific and the user must opt in to a rule list.
 2. Emit a setup notice with:
-   - Clickable link to where the config should go.
-   - Sample contents (copy from `templates/config.json`).
+   - Clickable link to where the config should go (`.claude/mpi-kanban.local.md`).
+   - Sample contents (copy from `templates/mpi-kanban.local.md`).
    - One-line note: "Add the rules you want sub-agents to receive briefings for."
+   - One-line note: ".local.md is gitignored by convention — add `.claude/*.local.md` to your `.gitignore` if not already present."
 
 ---
 
@@ -275,7 +331,7 @@ Process:
 ### 6.6 `mpi-brief-rule`
 
 - Same purpose: extract `## Sub-Agent Briefing` from a named rule file and return verbatim.
-- Generalize: read `.claude/mpi-kanban/config.json` for the rule list, instead of hardcoding CubricStudio's rules.
+- Generalize: read `.claude/mpi-kanban.local.md` (frontmatter) for the rule list, instead of hardcoding CubricStudio's rules.
 - If config missing → emit setup notice (Section 5.3), do not error out beyond that.
 - If named rule not in config → list available rule names from config.
 - If named rule has no `## Sub-Agent Briefing` section → return the critical snapshot (resolved from `critical_snapshot_file` + `critical_snapshot_anchor`) as a fallback.
@@ -308,7 +364,8 @@ Documents:
 
 Documents:
 
-- Config file location and schema (Section 5).
+- Config file location and schema (Section 5) — `.claude/mpi-kanban.local.md` with YAML frontmatter.
+- Frontmatter parsing pattern (extract everything between `---` markers; read individual fields).
 - `loadConfig`, `getRuleList`, `resolveRulePath`, `loadCriticalSnapshot`.
 - Bootstrap snippet for missing config (the markdown the skill emits).
 
@@ -325,7 +382,7 @@ If reliability proves insufficient after some real use, the same `lib/` API surf
 The plugin is designed to grow. Future skills MAY be added that:
 
 - Operate on the same `kanban.md` board, using shared `lib/kanban-ops.md`.
-- Read the same `.claude/mpi-kanban/config.json` for project context.
+- Read the same `.claude/mpi-kanban.local.md` for project context.
 - Hook lifecycle phases not yet covered (e.g. PR review skill that reads COMPLETED).
 - Introduce new tags or new step semantics.
 
@@ -379,7 +436,7 @@ Both audiences need the README to:
 
 - Explain the workflow (brainstorm → write-plan → execute-next → end-session).
 - Link to the VS Code extension marketplace page (Section 2).
-- Show the per-project setup steps (config.json, optional kanban.md auto-creation).
+- Show the per-project setup steps (`.claude/mpi-kanban.local.md` config, optional kanban.md auto-creation, gitignore guidance for `.claude/*.local.md`).
 - Show install instructions for both local-zip and marketplace install paths.
 
 The README is user-facing. SPEC.md and PLAN.md are dev-facing and may be excluded from the published bundle (or included in a `dev/` subfolder) — the build agent decides.
@@ -390,11 +447,10 @@ The README is user-facing. SPEC.md and PLAN.md are dev-facing and may be exclude
 
 Listed here so the build agent in a fresh session can challenge them:
 
-1. **Markdown-only lib (Section 7.4)** — reconsider if a JS layer is warranted from day one.
+1. **Markdown-only lib (Section 7.4)** — reconsider if a JS layer is warranted from day one. Decision for v0.1.0: stay markdown-only, revisit after real use.
 2. **`mpi-brainstorm` creates the BACKLOG entry, not the user** — if this proves intrusive, gate it behind a confirmation prompt.
 3. **Kanban location `.claude/mpi-kanban/` vs `.claude/`** — confirm the VS Code extension picks up files inside subfolders. (It should — extension watches workspace `.md`.) If not, fall back to `.claude/kanban.md`.
-4. **Skill naming** — six separate skills vs one facade `mpi-kanban` skill with subcommands. Spec picks six skills; revisit if Claude Code routing precision suffers.
-5. **`mpi-quick-plan`** — currently excluded. If users miss it, port it later as a thin wrapper.
+4. **`mpi-quick-plan`** — currently excluded. If users miss it, port it later as a thin wrapper.
 
 ---
 
