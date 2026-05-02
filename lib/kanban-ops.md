@@ -126,7 +126,7 @@ the file.
 1. Call `findKanban()`.
 2. If found → return the path.
 3. If missing:
-   a. `Read` `templates/kanban.md` from the plugin root.
+   a. `Read` `${CLAUDE_PLUGIN_ROOT}/templates/kanban.md`.
    b. `Write` the contents to `<project-root>/.claude/mpi-kanban/kanban.md`.
       The Write tool will create the `.claude/mpi-kanban/` directory.
    c. Emit a one-time setup notice in chat:

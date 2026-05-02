@@ -39,7 +39,7 @@ If a plan file exists in `docs/plans/`, read its current state:
 
 ### Step 3 — Look up the active kanban entry
 
-Read `lib/kanban-ops.md` once. Then:
+Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` once. Then:
 
 1. Call `findKanban()`. If the file does not exist, set `kanban_entry` to
    `null` and continue.

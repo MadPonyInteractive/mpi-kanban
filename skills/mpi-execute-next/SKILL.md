@@ -36,7 +36,7 @@ NOT re-execute.
 ## Session setup (once per session, before first to-do — first invocation
 against this plan)
 
-Read `lib/kanban-ops.md` and `lib/plan-ops.md` once. Then:
+Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` and `${CLAUDE_PLUGIN_ROOT}/lib/plan-ops.md` once. Then:
 
 1. **Locate the kanban entry** for this plan:
    - Call `findEntry(e => e.body matches "Plan file: <planPath>")`.
@@ -46,7 +46,7 @@ Read `lib/kanban-ops.md` and `lib/plan-ops.md` once. Then:
 
 2. **If the entry is in PLANNING → transition it to IMPLEMENTING:**
    - Call `moveEntry(title, "PLANNING", "IMPLEMENTING")`.
-   - Determine plan shape via `lib/plan-ops.md` ("is this plan phased?"):
+   - Determine plan shape via `${CLAUDE_PLUGIN_ROOT}/lib/plan-ops.md` ("is this plan phased?"):
      - **Phased** → steps = phase titles, stripped of `Phase N:` prefix and
        shortened to 3-6 words.
      - **Flat** → steps = each plan to-do, summarized to 3-6 words.
@@ -123,8 +123,8 @@ Do these steps in order — all of them, no skipping:
 
 1. Remove all `console.log` calls added during verification (edit the files).
 2. **Mark the plan to-do `[x]`.** Use `markTodoDone(planPath, todoText)` per
-   `lib/plan-ops.md`.
-3. **Flip the matching kanban step.** Read `lib/kanban-ops.md` for `markStep`.
+   `${CLAUDE_PLUGIN_ROOT}/lib/plan-ops.md`.
+3. **Flip the matching kanban step.** Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` for `markStep`.
    - **Phased plan:** identify the phase containing this to-do. Call
      `phaseAllDone(phase)`. If true → `markStep(title, "<phase summary>", true)`.
      If false → leave the kanban step as is (other to-dos in the phase remain).

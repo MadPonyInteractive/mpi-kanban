@@ -243,6 +243,25 @@ All six skills follow the existing MPI skill conventions, with one universal rul
 
 - **All references to `kanban.md` in chat** must be a clickable markdown link: `[kanban.md](.claude/mpi-kanban/kanban.md)`.
 
+### 6.0 `mpi-init`
+
+- Trigger words: "set up the kanban", "set up kanban based on this file",
+  "initialize kanban", "import backlog", "convert this to kanban", or any
+  hand-off of a freeform to-do / backlog / ideas markdown file with a request
+  to populate the board.
+- Two modes:
+  1. **Empty board** — no source file given: call `ensureKanban()` to create
+     the board from `templates/kanban.md` and emit the marketplace notice.
+     Stop.
+  2. **Import** — source file given: parse it per the skill's "Parsing rules"
+     (sections → tags, `[x]` → COMPLETED, `[ ]` / unmarked → BACKLOG, infer
+     priority from keywords, default `medium`). Show the user the planned
+     entry list, wait for approval, then write via `createEntry`.
+- Hard gate: never write entries to `kanban.md` before the user approves the
+  parsed list. The empty-board mode only writes the template, which is safe.
+- This is the on-ramp skill — it exists so a user can bootstrap a project
+  without forcing the agent to derive entry shape from `lib/kanban-ops.md`.
+
 ### 6.1 `mpi-brainstorm`
 
 - Trigger words: same as today.

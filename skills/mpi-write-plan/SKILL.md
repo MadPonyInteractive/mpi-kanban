@@ -100,7 +100,7 @@ without writing code from a later step, it doesn't belong in its own to-do.
 6. **Write the plan file** to `docs/plans/YYYY-MM-DD-<slug>.md` with `[ ]`
    to-dos.
 
-7. **Update the kanban board.** Read `lib/kanban-ops.md` once. Then:
+7. **Update the kanban board.** Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` once. Then:
 
    - Determine if a BACKLOG entry exists for this work:
      - If `mpi-brainstorm` passed a title in prompt context → match by that

@@ -56,7 +56,7 @@ context lean.
 
 ## After design approved (BEFORE asking "Want a plan?")
 
-Read `lib/kanban-ops.md` once. Then:
+Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` once. Then:
 
 1. Call `ensureKanban()`. If the file did not exist, the recipe in kanban-ops
    creates it from the template and emits the one-time setup notice (kanban

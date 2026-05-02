@@ -8,6 +8,7 @@ the live state of work.
 ## Workflow
 
 ```
+/mpi-init [file]       →  bootstrap board, optional import from a to-do file
 /mpi-brainstorm        →  BACKLOG entry captured
 /mpi-write-plan        →  entry → PLANNING, plan file written
 /mpi-execute-next × N  →  entry → IMPLEMENTING, steps tracked
@@ -156,6 +157,7 @@ invocation when multiple plugins offer overlapping functionality:
 
 | Command | Skill |
 |---|---|
+| `/mpi-init` | Bootstrap the board and optionally import entries from a freeform to-do / backlog / ideas file. |
 | `/mpi-brainstorm` | Explore an idea, capture as BACKLOG. |
 | `/mpi-write-plan` | Decompose into a plan file, move entry to PLANNING. |
 | `/mpi-execute-next` | Run one to-do (gated), move entry to IMPLEMENTING on first call. |

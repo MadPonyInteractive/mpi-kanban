@@ -21,11 +21,11 @@ project-specific — the plugin ships no hardcoded rules.
 
 ## Process
 
-Read `lib/config-ops.md` once for the parsing recipes. Then:
+Read `${CLAUDE_PLUGIN_ROOT}/lib/config-ops.md` once for the parsing recipes. Then:
 
 1. **Load config.** Call `loadConfig()`.
    - If `null` (file missing) → emit the bootstrap notice from
-     `lib/config-ops.md` ("No mpi-kanban config found..."), and stop. Do NOT
+     `${CLAUDE_PLUGIN_ROOT}/lib/config-ops.md` ("No mpi-kanban config found..."), and stop. Do NOT
      auto-create the config.
 
 2. **Resolve the rule.** Call `resolveRulePath(config, rule_name)`.

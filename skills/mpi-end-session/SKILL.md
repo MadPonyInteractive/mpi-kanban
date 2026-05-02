@@ -61,7 +61,7 @@ Per `~/.claude/CLAUDE.md`:
 
 ### 5. Close out the kanban entry
 
-Read `lib/kanban-ops.md` once. Then:
+Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` once. Then:
 
 1. `findKanban()`. If the file does not exist, skip kanban close-out — there is
    nothing to update. Tell the user: "No kanban file found — skipping board
