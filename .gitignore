@@ -1,0 +1,17 @@
+# Local Claude Code state and per-project plugin settings
+.claude/
+.claude/*.local.md
+.claude/*.local.json
+
+# Project-local skill installs (transient build helpers)
+.agents/
+skills-lock.json
+
+# OS noise
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
