@@ -10,7 +10,7 @@ DST = Path(r"C:\AI\Mpi\Plugins\Mpi-Kanban")
 SELF = Path(__file__).resolve()
 
 
-def on_rm_error(func, path, exc_info):
+def on_rm_error(func, path, exc):
     os.chmod(path, stat.S_IWRITE)
     func(path)
 
@@ -24,7 +24,7 @@ def main() -> int:
         target = DST / item.name
         if item.is_dir():
             if target.exists():
-                shutil.rmtree(target, onerror=on_rm_error)
+                shutil.rmtree(target, onexc=on_rm_error)
             shutil.copytree(item, target)
         else:
             if target.exists():

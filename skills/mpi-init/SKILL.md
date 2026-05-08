@@ -1,6 +1,6 @@
 ---
 name: mpi-init
-description: Bootstrap or import into the kanban board from a freeform to-do file. Use when the user says "set up the kanban", "set up kanban based on this file", "initialize kanban", "import backlog", "convert this to kanban", "build the kanban from <file>", or hands over a markdown file of to-dos / bugs / ideas and asks to populate the board. Also use on first invocation in a fresh project where no `.claude/mpi-kanban/kanban.md` exists yet.
+description: Import a freeform to-do / backlog / ideas markdown file into the kanban board, OR scaffold an empty kanban board on explicit request. Use ONLY when the user explicitly asks to "set up the kanban", "initialize kanban", "import backlog", "convert this file to kanban", "build the kanban from <file>", or hands over a markdown file of to-dos and asks to populate the board. Do NOT use for capturing a single new idea (that's mpi-brainstorm), writing a plan (mpi-write-plan), or any normal kanban mutation — those skills create the board on demand via `ensureKanban()`. Do NOT use as a default first-read; only trigger on explicit import/scaffold language.
 ---
 
 # mpi-init Skill
@@ -13,8 +13,12 @@ to-do file ("backlog.md", "todo.md", "ideas.md", a section of a README) and
 get a working kanban without the agent guessing the plugin internals.
 
 <HARD-GATE>
-Do NOT write to `kanban.md` until the user has confirmed the parsed entry list.
-Show the planned entries first, ask for approval, THEN write.
+Only ask for confirmation when importing into an EXISTING `.claude/mpi-kanban/kanban.md`
+(risk of overwriting user data) — show the parsed entry list, get approval, then write.
+
+Fresh-board creation (no `kanban.md` yet) and empty-template bootstrap: write
+directly, no confirmation. Same for the source-file relocation step (moving the
+freeform to-do file into `.claude/mpi-kanban/`) — just do it.
 </HARD-GATE>
 
 ## Inputs
@@ -33,15 +37,18 @@ Show the planned entries first, ask for approval, THEN write.
 2. **Read** `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` once for the entry shape and procedures.
 3. **Parse the source** per "Parsing rules" below into a list of entry
    candidates: `{title, tags, priority, body, done}`.
-4. **Show the user the planned entries** — table or bullet list, grouped by
-   target column (BACKLOG vs COMPLETED). Show inferred tag and priority.
-5. **Ask for approval.** "Write these N entries to the kanban?" Wait.
-6. **On approval:** call `ensureKanban()` (creates the file from template if
-   missing, emits the one-time setup notice with the marketplace link).
-7. **Write entries** — `createEntry("BACKLOG", e)` or `createEntry("COMPLETED", e)`
+4. **Check if `kanban.md` already exists.**
+   - **Does NOT exist (fresh board):** call `ensureKanban()` to create from
+     template, then go to step 6. No preview, no approval.
+   - **Exists (existing board):** show parsed entries (table or bullet list,
+     grouped by target column, with inferred tag/priority) and ask: "Write
+     these N entries to the existing kanban?" Wait for approval. On approval,
+     continue to step 6.
+5. (folded into step 4)
+6. **Write entries** — `createEntry("BACKLOG", e)` or `createEntry("COMPLETED", e)`
    per `done` flag. Preserve source order within each column (top of column =
    first entry from the source).
-8. **Confirm** with a clickable kanban link: `[kanban.md](.claude/mpi-kanban/kanban.md)`
+7. **Confirm** with a clickable kanban link: `[kanban.md](.claude/mpi-kanban/kanban.md)`
    and a one-line summary (`Imported 5 BACKLOG, 2 COMPLETED.`).
 
 ## Parsing rules
@@ -134,8 +141,9 @@ for this project"):
 
 ## Hard rules
 
-- Never write to `kanban.md` before the user approves the parsed entry list
-  (except for the empty-board case, which writes only the template).
+- When importing into an EXISTING `kanban.md`, get user approval on the parsed
+  entry list before writing. Fresh-board creation, empty-template bootstrap,
+  and source-file relocation: write directly without asking.
 - Never invent metadata fields beyond the schema in `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md`.
 - Never delete an existing entry. If the kanban already has entries with
   matching titles, surface the conflict and ask whether to skip, suffix, or
