@@ -3,7 +3,7 @@
 rules_dir: .claude/rules
 
 # Rules that mpi-brief-rule can extract briefings from.
-# Each entry: name (used in /mpi-brief-rule <name>) + file (resolves to <rules_dir>/<file>).
+# Each entry: name (used in /mpi-kanban:mpi-brief-rule <name>) + file (resolves to <rules_dir>/<file>).
 rules: []
 # Example:
 # rules:

@@ -20,7 +20,7 @@ build-time helpers, not part of the shipped plugin.
 - **Plugin Structure** — canonical Claude Code plugin layout. Key rules:
   - `plugin.json` lives at `.claude-plugin/plugin.json` (NOT plugin root).
   - `name` field is kebab-case (`mpi-kanban`).
-  - `skills/`, `commands/`, `hooks/` sit at plugin root.
+  - `skills/`, `hooks/` sit at plugin root. (No `commands/` — skills auto-trigger from description; direct invoke via `/mpi-kanban:mpi-X`.)
   - Use `${CLAUDE_PLUGIN_ROOT}` for any intra-plugin path reference.
 - **Plugin Settings** — `.claude/<plugin>.local.md` pattern (frontmatter + body)
   for per-project plugin state. Relevant if the build agent decides to use it

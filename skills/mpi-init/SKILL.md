@@ -32,23 +32,33 @@ freeform to-do file into `.claude/mpi-kanban/`) — just do it.
 
 ## Checklist
 
+Lib pointers (read each only when its recipe is needed in the steps below):
+
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/_schema.md` — entry shape (read before
+  building entries if you need a schema reminder)
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` — `ensureKanban`
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/mutate.md` — `createEntry`
+
+Steps:
+
 1. **Read source file.** Use `Read`. If it does not exist, ask the user for
    the right path. Do not guess.
-2. **Read** `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` once for the entry shape and procedures.
-3. **Parse the source** per "Parsing rules" below into a list of entry
+2. **Parse the source** per "Parsing rules" below into a list of entry
    candidates: `{title, tags, priority, body, done}`.
-4. **Check if `kanban.md` already exists.**
+3. **Check if `kanban.md` already exists.** Read `lib/kanban-ops/find.md` for
+   `ensureKanban`.
    - **Does NOT exist (fresh board):** call `ensureKanban()` to create from
-     template, then go to step 6. No preview, no approval.
+     template, then go to step 5. No preview, no approval.
    - **Exists (existing board):** show parsed entries (table or bullet list,
      grouped by target column, with inferred tag/priority) and ask: "Write
      these N entries to the existing kanban?" Wait for approval. On approval,
-     continue to step 6.
-5. (folded into step 4)
-6. **Write entries** — `createEntry("BACKLOG", e)` or `createEntry("COMPLETED", e)`
-   per `done` flag. Preserve source order within each column (top of column =
-   first entry from the source).
-7. **Confirm** with a clickable kanban link: `[kanban.md](.claude/mpi-kanban/kanban.md)`
+     continue to step 5.
+4. (folded into step 3)
+5. **Write entries** — read `lib/kanban-ops/mutate.md` for `createEntry`. Call
+   `createEntry("BACKLOG", e)` or `createEntry("COMPLETED", e)` per `done`
+   flag. Preserve source order within each column (top of column = first
+   entry from the source).
+6. **Confirm** with a clickable kanban link: `[kanban.md](.claude/mpi-kanban/kanban.md)`
    and a one-line summary (`Imported 5 BACKLOG, 2 COMPLETED.`).
 
 ## Parsing rules
@@ -144,7 +154,7 @@ for this project"):
 - When importing into an EXISTING `kanban.md`, get user approval on the parsed
   entry list before writing. Fresh-board creation, empty-template bootstrap,
   and source-file relocation: write directly without asking.
-- Never invent metadata fields beyond the schema in `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md`.
+- Never invent metadata fields beyond the schema in `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/_schema.md`.
 - Never delete an existing entry. If the kanban already has entries with
   matching titles, surface the conflict and ask whether to skip, suffix, or
   abort.

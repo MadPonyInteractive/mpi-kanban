@@ -1,6 +1,6 @@
 ---
 name: mpi-handoff
-description: Generate a structured JSON handoff document so a fresh session can resume work immediately. Use when user says "handoff", "new session", "context is big", or "/mpi-handoff", or when a plan phase just completed and a new one starts.
+description: Generate a structured JSON handoff document so a fresh session can resume work immediately. Use when user says "handoff", "new session", "context is big", or "/mpi-kanban:mpi-handoff", or when a plan phase just completed and a new one starts.
 ---
 
 # mpi-handoff Skill
@@ -11,7 +11,7 @@ that a fresh session can load to resume work — no re-explanation needed.
 ## When to invoke
 
 - User says "handoff", "new session", "start fresh", "context is big", or runs
-  `/mpi-handoff`.
+  `/mpi-kanban:mpi-handoff`.
 - Context usage is high and work is mid-flight.
 - A plan phase just completed and a new phase starts next.
 
@@ -39,7 +39,8 @@ If a plan file exists in `docs/plans/`, read its current state:
 
 ### Step 3 — Look up the active kanban entry
 
-Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` once. Then:
+Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` for `findKanban` +
+`findEntry`. Then:
 
 1. Call `findKanban()`. If the file does not exist, set `kanban_entry` to
    `null` and continue.
@@ -76,7 +77,7 @@ Use this exact JSON structure:
   "kanban_entry": "<title of active IMPLEMENTING entry, or null>",
   "next_action": {
     "description": "<exact instruction for fresh session — be precise>",
-    "command": "<optional: skill or command to run first, e.g. /mpi-execute-next>"
+    "command": "<optional: skill or command to run first, e.g. /mpi-kanban:mpi-execute-next>"
   },
   "context": {
     "key_decisions": [

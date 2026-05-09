@@ -56,11 +56,19 @@ context lean.
 
 ## After design approved (BEFORE asking "Want a plan?")
 
-Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` once. Then:
+Lib pointers (read each only when its recipe is actually needed):
 
-1. Call `ensureKanban()`. If the file did not exist, the recipe in kanban-ops
-   creates it from the template and emits the one-time setup notice (kanban
-   link + extension marketplace link). Continue regardless.
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` — `ensureKanban`, `findEntry`
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/mutate.md` — `createEntry`
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/_schema.md` — entry shape (only if you
+  need a schema reminder before building the entry)
+
+Steps:
+
+1. Read `lib/kanban-ops/find.md` for `ensureKanban`. Call `ensureKanban()`. If
+   the file did not exist, the recipe creates it from the template and emits
+   the one-time setup notice (kanban link + extension marketplace link).
+   Continue regardless.
 
 2. Ask the user ONCE for the priority of this idea:
    ```
@@ -81,7 +89,8 @@ Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` once. Then:
    - **body:** 2-3 line summary of the idea.
    - **No `steps`. No `Plan file:` ref.**
 
-4. Call `createEntry("BACKLOG", entry)`. If `findEntry(e => e.title === <title>)`
+4. Read `lib/kanban-ops/mutate.md` for `createEntry`. Call
+   `createEntry("BACKLOG", entry)`. If `findEntry(e => e.title === <title>)`
    already returns a hit, ask the user for a distinguishing suffix and retry.
 
 5. Confirm to the user: `Captured on board: "<title>" → BACKLOG. [kanban.md](.claude/mpi-kanban/kanban.md)`.
@@ -96,7 +105,7 @@ After the BACKLOG entry is captured:
    prose, e.g. "Write a plan for the BACKLOG entry titled \"<title>\""). The
    plan skill will move the entry to PLANNING.
 3. If **no** → session ends. Entry stays in BACKLOG until someone runs
-   `/mpi-write-plan` against it later.
+   `/mpi-kanban:mpi-write-plan` against it later.
 
 **No auto-invocation past this point.** The user is always in control.
 

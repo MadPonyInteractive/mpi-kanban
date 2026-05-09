@@ -8,11 +8,11 @@ the live state of work.
 ## Workflow
 
 ```
-/mpi-init [file]       →  bootstrap board, optional import from a to-do file
-/mpi-brainstorm        →  BACKLOG entry captured
-/mpi-write-plan        →  entry → PLANNING, plan file written
-/mpi-execute-next × N  →  entry → IMPLEMENTING, steps tracked
-/mpi-end-session       →  commit + entry → COMPLETED
+/mpi-kanban:mpi-init [file]       →  bootstrap board, optional import from a to-do file
+/mpi-kanban:mpi-brainstorm        →  BACKLOG entry captured
+/mpi-kanban:mpi-write-plan        →  entry → PLANNING, plan file written
+/mpi-kanban:mpi-execute-next × N  →  entry → IMPLEMENTING, steps tracked
+/mpi-kanban:mpi-end-session       →  commit + entry → COMPLETED
 ```
 
 Each skill moves the matching kanban entry one column forward. The board is
@@ -157,13 +157,13 @@ invocation when multiple plugins offer overlapping functionality:
 
 | Command | Skill |
 |---|---|
-| `/mpi-init` | Bootstrap the board and optionally import entries from a freeform to-do / backlog / ideas file. |
-| `/mpi-brainstorm` | Explore an idea, capture as BACKLOG. |
-| `/mpi-write-plan` | Decompose into a plan file, move entry to PLANNING. |
-| `/mpi-execute-next` | Run one to-do (gated), move entry to IMPLEMENTING on first call. |
-| `/mpi-end-session` | Commit + sync rules/docs + move entry to COMPLETED if all steps done. |
-| `/mpi-handoff` | Generate a JSON handoff document for a fresh session. |
-| `/mpi-brief-rule <name>` | Return the Sub-Agent Briefing for a configured rule. |
+| `/mpi-kanban:mpi-init` | Bootstrap the board and optionally import entries from a freeform to-do / backlog / ideas file. |
+| `/mpi-kanban:mpi-brainstorm` | Explore an idea, capture as BACKLOG. |
+| `/mpi-kanban:mpi-write-plan` | Decompose into a plan file, move entry to PLANNING. |
+| `/mpi-kanban:mpi-execute-next` | Run one to-do (gated), move entry to IMPLEMENTING on first call. |
+| `/mpi-kanban:mpi-end-session` | Commit + sync rules/docs + move entry to COMPLETED if all steps done. |
+| `/mpi-kanban:mpi-handoff` | Generate a JSON handoff document for a fresh session. |
+| `/mpi-kanban:mpi-brief-rule <name>` | Return the Sub-Agent Briefing for a configured rule. |
 
 Skills also auto-activate on natural-language phrases — see each skill's
 `description` frontmatter for trigger words.
@@ -173,7 +173,7 @@ Skills also auto-activate on natural-language phrases — see each skill's
 **Kanban not auto-creating.** All workflow skills (`brainstorm`, `write-plan`,
 `execute-next`, `end-session`) call `ensureKanban()` at the right moment.
 `mpi-brief-rule` does NOT — it is board-independent. If you only ran
-`/mpi-brief-rule`, no board is created — that's expected. Run any workflow
+`/mpi-kanban:mpi-brief-rule`, no board is created — that's expected. Run any workflow
 skill once and the board will appear at `.claude/mpi-kanban/kanban.md`.
 
 **Extension not rendering the board.** Confirm the extension version is
@@ -184,7 +184,7 @@ unknown column names. The plugin will refuse to write metadata fields outside
 the locked schema; if you hand-edited the file and added unknown fields,
 remove them.
 
-**`/mpi-brief-rule` says "No mpi-kanban config found".** Create
+**`/mpi-kanban:mpi-brief-rule` says "No mpi-kanban config found".** Create
 `.claude/mpi-kanban.local.md` from the template and add at least one rule.
 The plugin does not auto-create this file by design.
 

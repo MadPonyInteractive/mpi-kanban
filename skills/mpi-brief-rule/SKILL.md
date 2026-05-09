@@ -1,6 +1,6 @@
 ---
 name: mpi-brief-rule
-description: Extract and return the "## Sub-Agent Briefing" section from a project rule file, looked up via per-project config (.claude/mpi-kanban.local.md). Use when dispatching sub-agents or when the user runs "/mpi-brief-rule <name>".
+description: Extract and return the "## Sub-Agent Briefing" section from a project rule file, looked up via per-project config (.claude/mpi-kanban.local.md). Use when dispatching sub-agents or when the user runs "/mpi-kanban:mpi-brief-rule <name>".
 ---
 
 # mpi-brief-rule Skill
@@ -12,7 +12,7 @@ receive rule briefings without manual copy-paste.
 ## Invocation
 
 ```
-/mpi-brief-rule <rule_name>
+/mpi-kanban:mpi-brief-rule <rule_name>
 ```
 
 `<rule_name>` is one of the names listed in
@@ -21,11 +21,14 @@ project-specific — the plugin ships no hardcoded rules.
 
 ## Process
 
-Read `${CLAUDE_PLUGIN_ROOT}/lib/config-ops.md` once for the parsing recipes. Then:
+All recipes (`loadConfig`, `resolveRulePath`, `getRuleList`,
+`loadCriticalSnapshot`, bootstrap notice) live in
+`${CLAUDE_PLUGIN_ROOT}/lib/config-ops.md`. Read it once when you actually
+need the first recipe — not before.
 
 1. **Load config.** Call `loadConfig()`.
    - If `null` (file missing) → emit the bootstrap notice from
-     `${CLAUDE_PLUGIN_ROOT}/lib/config-ops.md` ("No mpi-kanban config found..."), and stop. Do NOT
+     `lib/config-ops.md` ("No mpi-kanban config found..."), and stop. Do NOT
      auto-create the config.
 
 2. **Resolve the rule.** Call `resolveRulePath(config, rule_name)`.
@@ -65,5 +68,5 @@ Read `${CLAUDE_PLUGIN_ROOT}/lib/config-ops.md` once for the parsing recipes. The
 ## Notes
 
 - This skill is invoked BY a main agent when dispatching sub-agents — and is
-  user-invocable for testing via the `/mpi-brief-rule` command.
+  user-invocable for testing via the `/mpi-kanban:mpi-brief-rule` command.
 - Briefing sections may contain markdown formatting; pass it through unchanged.

@@ -1,6 +1,6 @@
 ---
 name: mpi-end-session
-description: Close session — sync rules/docs, commit touched files, move kanban entry to COMPLETED if all steps done. Use when user says "end session", "wrap up", "commit and close", "/mpi-end-session".
+description: Close session — sync rules/docs, commit touched files, move kanban entry to COMPLETED if all steps done. Use when user says "end session", "wrap up", "commit and close", "/mpi-kanban:mpi-end-session".
 ---
 
 # mpi-end-session Skill
@@ -61,24 +61,31 @@ Per `~/.claude/CLAUDE.md`:
 
 ### 5. Close out the kanban entry
 
-Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` once. Then:
+Lib pointers (read each only when its recipe is needed):
 
-1. `findKanban()`. If the file does not exist, skip kanban close-out — there is
-   nothing to update. Tell the user: "No kanban file found — skipping board
-   close-out."
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` — `findKanban`, `findEntry`
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/steps.md` — `allStepsDone`
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/mutate.md` — `moveEntry`
+
+Steps:
+
+1. Read `lib/kanban-ops/find.md` for `findKanban`. Call `findKanban()`. If
+   the file does not exist, skip kanban close-out — there is nothing to
+   update. Tell the user: "No kanban file found — skipping board close-out."
 2. Identify the active plan: the plan file most recently touched in this
    session (from `git diff --stat HEAD` or conversation context).
-3. `findEntry(e => e.body matches "Plan file: <activePlan>")` — locate the
-   IMPLEMENTING entry tied to that plan.
+3. Call `findEntry(e => e.body matches "Plan file: <activePlan>")` — locate
+   the IMPLEMENTING entry tied to that plan.
 4. If no matching entry → tell the user, do nothing further.
-5. If found → call `allStepsDone(entry.title)`:
-   - **True** → `moveEntry(entry.title, "IMPLEMENTING", "COMPLETED")`. Report
-     the move in chat with a clickable [kanban.md](.claude/mpi-kanban/kanban.md)
-     link.
+5. If found → read `lib/kanban-ops/steps.md` for `allStepsDone`. Call
+   `allStepsDone(entry.title)`:
+   - **True** → read `lib/kanban-ops/mutate.md` for `moveEntry`. Call
+     `moveEntry(entry.title, "IMPLEMENTING", "COMPLETED")`. Report the move
+     in chat with a clickable [kanban.md](.claude/mpi-kanban/kanban.md) link.
    - **False** → leave the entry in IMPLEMENTING. Append a single line to the
-     commit message body: `Note: session ended mid-implementation; kanban entry
-     "<title>" still has open steps.` (Edit the commit if already made, or
-     include in the original commit message.)
+     commit message body: `Note: session ended mid-implementation; kanban
+     entry "<title>" still has open steps.` (Edit the commit if already made,
+     or include in the original commit message.)
 
 ### 6. Final report
 

@@ -35,8 +35,8 @@ The README, the initial `kanban.md` template, and any "kanban not found" notice 
 ## 3. Plugin file structure
 
 The plugin follows the canonical Claude Code plugin layout: manifest under
-`.claude-plugin/`, component dirs (`skills/`, `commands/`) at plugin root,
-custom `lib/` and `templates/` folders alongside.
+`.claude-plugin/`, component dir `skills/` at plugin root, custom `lib/` and
+`templates/` folders alongside.
 
 ```
 Mpi-Kanban/                  ← folder name on disk (PascalCase by convention)
@@ -47,13 +47,6 @@ Mpi-Kanban/                  ← folder name on disk (PascalCase by convention)
 ├── PLAN.md                  ← build to-dos (phased)
 ├── CLAUDE.md                ← build-agent guidance
 ├── LICENSE                  ← MIT
-├── commands/                ← slash-command wrappers (one per skill)
-│   ├── mpi-brainstorm.md
-│   ├── mpi-write-plan.md
-│   ├── mpi-execute-next.md
-│   ├── mpi-end-session.md
-│   ├── mpi-handoff.md
-│   └── mpi-brief-rule.md
 ├── skills/
 │   ├── mpi-brainstorm/SKILL.md
 │   ├── mpi-write-plan/SKILL.md
@@ -62,9 +55,18 @@ Mpi-Kanban/                  ← folder name on disk (PascalCase by convention)
 │   ├── mpi-handoff/SKILL.md
 │   └── mpi-brief-rule/SKILL.md
 ├── lib/
-│   ├── kanban-ops.md        ← parser rules + mutation procedures for kanban.md
-│   ├── plan-ops.md          ← plan file parsing (phases vs flat to-dos)
-│   └── config-ops.md        ← read .claude/mpi-kanban.local.md
+│   ├── kanban-ops/          ← board operations split by concern
+│   │   ├── _schema.md       ← columns, entry shape, locked metadata, regexes
+│   │   ├── find.md          ← findKanban, ensureKanban, listEntries, findEntry
+│   │   ├── mutate.md        ← createEntry, moveEntry, updateEntry
+│   │   ├── steps.md         ← addSteps, markStep, allStepsDone
+│   │   └── errors.md        ← error cases table
+│   ├── plan-ops/            ← plan file operations split by concern
+│   │   ├── _shape.md        ← flat vs phased detection
+│   │   ├── read.md          ← readTodos, readPhases
+│   │   ├── mutate.md        ← markTodoDone, phaseAllDone
+│   │   └── derive.md        ← derive kanban steps from plan
+│   └── config-ops.md        ← read .claude/mpi-kanban.local.md (single consumer)
 └── templates/
     ├── kanban.md            ← initial 4-column scaffold + extension notice
     └── mpi-kanban.local.md  ← config template (frontmatter + body)
@@ -83,20 +85,36 @@ Mpi-Kanban/                  ← folder name on disk (PascalCase by convention)
 }
 ```
 
-### Slash commands
+### Skill invocation
 
-Each `commands/mpi-<skill>.md` is a thin wrapper that explicitly invokes the
-matching skill. This gives users an unambiguous handle (`/mpi-end-session`)
-when multiple plugins offer overlapping functionality, while skills still
-auto-activate on natural-language phrases.
+No `commands/` wrappers. Skills auto-trigger via frontmatter `description`
+keywords (natural language). Direct invocation uses plugin-namespaced slug:
+`/mpi-kanban:mpi-end-session`. Removed flat-markdown command files because
+each one only said "Invoke the X skill" — Claude Code already does that
+automatically when slash command name matches a skill name, so the wrappers
+caused redundant file loads per invocation. Per Claude Code plugin docs:
+"if a skill and a command share the same name, the skill takes precedence."
 
 ### `lib/` is a reference library, not executable code
 
-Skills are pure markdown prose. The `lib/*.md` files document the procedures (parse rules, regex patterns, edit sequences) that skills follow when mutating board or plan files.
+Skills are pure markdown prose. The `lib/**/*.md` files document the
+procedures (parse rules, regex patterns, edit sequences) that skills follow
+when mutating board or plan files.
 
-A skill that needs to move an entry, for example, reads `lib/kanban-ops.md` on demand using the `Read` tool, then performs the edit using the `Edit`/`Write` tools.
+Skills use **deferred pointers**: instead of reading every lib file upfront,
+each skill lists the relevant lib paths and reads them inline at the
+procedure-call site. This keeps per-invocation context lean — a skill that
+only needs `findEntry` reads `lib/kanban-ops/find.md`, not the full
+mutation/steps/errors recipes.
 
-No JS, Node, or Python runtime is required. The author may revise this decision (Section 7 calls it out as a known trade-off) if reliability proves insufficient — at which point a JS layer would be added behind the same `lib/` API surface.
+A skill that needs to move an entry, for example, reads
+`lib/kanban-ops/mutate.md` on demand using the `Read` tool, then performs
+the edit using the `Edit`/`Write` tools.
+
+No JS, Node, or Python runtime is required. The author may revise this
+decision (Section 7 calls it out as a known trade-off) if reliability proves
+insufficient — at which point a JS layer would be added behind the same
+`lib/` API surface.
 
 ### Path references
 
@@ -220,7 +238,7 @@ future skills that may want a project-level prose note. Safe to leave empty.)
 | Frontmatter field | Purpose |
 |---|---|
 | `rules_dir` | Folder where rule files live, relative to project root. |
-| `rules` | List of rules `mpi-brief-rule` can extract briefings from. `name` is the user-facing key (`/mpi-brief-rule components`); `file` resolves to `<rules_dir>/<file>`. |
+| `rules` | List of rules `mpi-brief-rule` can extract briefings from. `name` is the user-facing key (`/mpi-kanban:mpi-brief-rule components`); `file` resolves to `<rules_dir>/<file>`. |
 | `critical_snapshot_file` | File holding the universal "Critical Rules Snapshot" that ALL sub-agents must receive. |
 | `critical_snapshot_anchor` | Heading id within that file. |
 
@@ -260,7 +278,8 @@ All six skills follow the existing MPI skill conventions, with one universal rul
 - Hard gate: never write entries to `kanban.md` before the user approves the
   parsed list. The empty-board mode only writes the template, which is safe.
 - This is the on-ramp skill — it exists so a user can bootstrap a project
-  without forcing the agent to derive entry shape from `lib/kanban-ops.md`.
+  without forcing the agent to derive entry shape from
+  `lib/kanban-ops/_schema.md`.
 
 ### 6.1 `mpi-brainstorm`
 
@@ -320,7 +339,7 @@ Replace with a proper skill:
 ```yaml
 ---
 name: mpi-end-session
-description: Close session — sync rules/docs, commit touched files, move kanban entry to COMPLETED if all steps done. Use when user says "end session", "wrap up", "commit and close", "/mpi-end-session".
+description: Close session — sync rules/docs, commit touched files, move kanban entry to COMPLETED if all steps done. Use when user says "end session", "wrap up", "commit and close", "/mpi-kanban:mpi-end-session".
 ---
 ```
 
@@ -332,7 +351,7 @@ Process:
 4. Memory pass per `~/.claude/CLAUDE.md` (write learnings, update MEMORY.md index).
 5. Stage files BY NAME (never `-A`) and commit with a descriptive message.
 6. Read kanban. Locate the active IMPLEMENTING entry by matching its `Plan file:` against the most recently touched plan file.
-7. Check `allStepsDone()` (defined in `lib/kanban-ops.md`):
+7. Check `allStepsDone()` (defined in `lib/kanban-ops/steps.md`):
    - True → move IMPLEMENTING → COMPLETED.
    - False → leave entry in IMPLEMENTING; append "session ended mid-implementation" to the commit message body.
 8. Output a clickable kanban link so the user can verify visually.
@@ -354,32 +373,44 @@ Process:
 
 ## 7. Lib reference docs
 
-`lib/kanban-ops.md`, `lib/plan-ops.md`, and `lib/config-ops.md` are markdown reference documents. Skills load them on demand with `Read` and follow the procedures inside.
+`lib/kanban-ops/`, `lib/plan-ops/`, and `lib/config-ops.md` are markdown
+reference documents. Skills load them on demand with `Read` (deferred
+pointers — read the specific file at the procedure-call site, not upfront)
+and follow the procedures inside.
 
-### 7.1 `lib/kanban-ops.md`
+### 7.1 `lib/kanban-ops/`
 
-Documents:
+Split by concern so a skill reads only what it needs:
 
-- Regex / parser rules for columns, entries, metadata fields, body fences.
-- Procedures for: `findKanban`, `ensureKanban`, `listEntries`, `findEntry`, `moveEntry`, `createEntry`, `updateEntry`, `addSteps`, `markStep`, `allStepsDone`, `kanbanLink`.
-- Edit sequence for each mutation (which Edit calls in what order, how to handle whitespace and trailing newlines).
-- Error cases: duplicate title, malformed entry, missing column.
+- `_schema.md` — file location, columns, entry shape, locked metadata
+  fields, parser regexes.
+- `find.md` — `findKanban`, `ensureKanban`, `kanbanLink`, `listEntries`,
+  `findEntry`.
+- `mutate.md` — `createEntry`, `moveEntry`, `updateEntry` (with worked
+  example).
+- `steps.md` — `addSteps`, `markStep`, `allStepsDone`.
+- `errors.md` — error cases (duplicate title, malformed entry, missing
+  column, unknown metadata field, missing `Plan file:` ref).
 
-### 7.2 `lib/plan-ops.md`
+### 7.2 `lib/plan-ops/`
 
-Documents:
+Split by concern:
 
-- Plan file format (phases vs flat to-dos).
-- Phase detection regex.
-- `readTodos`, `readPhases`, `markTodoDone`, `phaseAllDone`.
-- Decision tree for "is this plan phased?" (Section 6.3.1).
+- `_shape.md` — flat vs phased plan structure, phase detection regex,
+  decision tree.
+- `read.md` — `readTodos`, `readPhases`.
+- `mutate.md` — `markTodoDone`, `phaseAllDone`.
+- `derive.md` — derive kanban steps from plan (with worked examples for
+  both shapes).
 
 ### 7.3 `lib/config-ops.md`
 
-Documents:
+Single file (only one consumer skill, `mpi-brief-rule`). Documents:
 
-- Config file location and schema (Section 5) — `.claude/mpi-kanban.local.md` with YAML frontmatter.
-- Frontmatter parsing pattern (extract everything between `---` markers; read individual fields).
+- Config file location and schema (Section 5) — `.claude/mpi-kanban.local.md`
+  with YAML frontmatter.
+- Frontmatter parsing pattern (extract everything between `---` markers;
+  read individual fields).
 - `loadConfig`, `getRuleList`, `resolveRulePath`, `loadCriticalSnapshot`.
 - Bootstrap snippet for missing config (the markdown the skill emits).
 
@@ -395,7 +426,7 @@ If reliability proves insufficient after some real use, the same `lib/` API surf
 
 The plugin is designed to grow. Future skills MAY be added that:
 
-- Operate on the same `kanban.md` board, using shared `lib/kanban-ops.md`.
+- Operate on the same `kanban.md` board, using shared `lib/kanban-ops/*.md`.
 - Read the same `.claude/mpi-kanban.local.md` for project context.
 - Hook lifecycle phases not yet covered (e.g. PR review skill that reads COMPLETED).
 - Introduce new tags or new step semantics.

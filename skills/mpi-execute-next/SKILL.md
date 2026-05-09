@@ -36,23 +36,36 @@ NOT re-execute.
 ## Session setup (once per session, before first to-do — first invocation
 against this plan)
 
-Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` and `${CLAUDE_PLUGIN_ROOT}/lib/plan-ops.md` once. Then:
+Lib pointers (read each only when its recipe is actually needed in the steps
+below — not upfront):
 
-1. **Locate the kanban entry** for this plan:
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` — `findEntry`
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/mutate.md` — `moveEntry`
+- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/steps.md` — `addSteps`
+- `${CLAUDE_PLUGIN_ROOT}/lib/plan-ops/_shape.md` — phased vs flat detection
+- `${CLAUDE_PLUGIN_ROOT}/lib/plan-ops/derive.md` — kanban-step derivation rules
+
+Steps:
+
+1. **Locate the kanban entry** for this plan (read `lib/kanban-ops/find.md`
+   for `findEntry`):
    - Call `findEntry(e => e.body matches "Plan file: <planPath>")`.
    - If `null` → tell the user no kanban entry references this plan; ask
-     whether to create a fresh PLANNING entry first (`/mpi-write-plan`).
+     whether to create a fresh PLANNING entry first (`/mpi-kanban:mpi-write-plan`).
      Stop.
 
 2. **If the entry is in PLANNING → transition it to IMPLEMENTING:**
-   - Call `moveEntry(title, "PLANNING", "IMPLEMENTING")`.
-   - Determine plan shape via `${CLAUDE_PLUGIN_ROOT}/lib/plan-ops.md` ("is this plan phased?"):
+   - Read `lib/kanban-ops/mutate.md` for `moveEntry`. Call
+     `moveEntry(title, "PLANNING", "IMPLEMENTING")`.
+   - Read `lib/plan-ops/_shape.md` to detect phased vs flat. Read
+     `lib/plan-ops/derive.md` for the step-derivation recipe:
      - **Phased** → steps = phase titles, stripped of `Phase N:` prefix and
        shortened to 3-6 words.
      - **Flat** → steps = each plan to-do, summarized to 3-6 words.
    - Build the `steps` array. Mark each step `[x]` if its source is already
      done in the plan (a fully-done phase, or a `[x]` to-do).
-   - Call `addSteps(title, steps)`.
+   - Read `lib/kanban-ops/steps.md` for `addSteps`. Call
+     `addSteps(title, steps)`.
    - Confirm in chat: `Kanban: "<title>" → IMPLEMENTING. [kanban.md](.claude/mpi-kanban/kanban.md)`.
 
 3. **If the entry is already in IMPLEMENTING → no transition needed.** Continue.
@@ -122,10 +135,12 @@ waiting for the user to reply with Option 1 or Option 2.
 Do these steps in order — all of them, no skipping:
 
 1. Remove all `console.log` calls added during verification (edit the files).
-2. **Mark the plan to-do `[x]`.** Use `markTodoDone(planPath, todoText)` per
-   `${CLAUDE_PLUGIN_ROOT}/lib/plan-ops.md`.
-3. **Flip the matching kanban step.** Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` for `markStep`.
-   - **Phased plan:** identify the phase containing this to-do. Call
+2. **Mark the plan to-do `[x]`.** Read `${CLAUDE_PLUGIN_ROOT}/lib/plan-ops/mutate.md`
+   for `markTodoDone`. Call `markTodoDone(planPath, todoText)`.
+3. **Flip the matching kanban step.** Read
+   `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/steps.md` for `markStep`.
+   - **Phased plan:** identify the phase containing this to-do. Read
+     `${CLAUDE_PLUGIN_ROOT}/lib/plan-ops/mutate.md` for `phaseAllDone`. Call
      `phaseAllDone(phase)`. If true → `markStep(title, "<phase summary>", true)`.
      If false → leave the kanban step as is (other to-dos in the phase remain).
    - **Flat plan:** the kanban step at the same zero-based index as the
@@ -143,11 +158,11 @@ To-do [N] done.
 
 What next?
   → "next" — brief for to-do [N+1]
-  → "end"  — close this session (run /mpi-end-session)
+  → "end"  — close this session (run /mpi-kanban:mpi-end-session)
 ```
 
 Wait for user reply. If "next" → go to Gate 1 for next to-do. If "end" → tell
-the user to invoke `/mpi-end-session`.
+the user to invoke `/mpi-kanban:mpi-end-session`.
 
 ### If this was the last to-do (all `[x]`):
 
@@ -156,12 +171,12 @@ Output:
 ```
 Plan complete. All to-dos done.
 
-Suggested next step: run /mpi-end-session to commit, sync rules/docs, and
+Suggested next step: run /mpi-kanban:mpi-end-session to commit, sync rules/docs, and
 close out the kanban entry (it will move to COMPLETED automatically once all
 steps are flipped).
 ```
 
-Note: the kanban entry stays in IMPLEMENTING until `/mpi-end-session` runs
+Note: the kanban entry stays in IMPLEMENTING until `/mpi-kanban:mpi-end-session` runs
 and confirms all steps are `[x]`. This skill does NOT move the entry to
 COMPLETED — that is `mpi-end-session`'s responsibility.
 
@@ -171,7 +186,7 @@ COMPLETED — that is `mpi-end-session`'s responsibility.
 
 - Do nothing. Stay in the conversation.
 - Wait for the user to tell you what to do next.
-- Append once: *"Context getting large? Run `/mpi-handoff` before starting a
+- Append once: *"Context getting large? Run `/mpi-kanban:mpi-handoff` before starting a
   new session."*
 
 ---
@@ -196,6 +211,6 @@ defeats the purpose of the system.
 
 ## Related commands
 
-- `/mpi-write-plan` — create a plan from a complex goal.
-- `/mpi-handoff` — generate handoff doc when context is large.
-- `/mpi-end-session` — wrap up: commit, sync docs, close kanban entry.
+- `/mpi-kanban:mpi-write-plan` — create a plan from a complex goal.
+- `/mpi-kanban:mpi-handoff` — generate handoff doc when context is large.
+- `/mpi-kanban:mpi-end-session` — wrap up: commit, sync docs, close kanban entry.

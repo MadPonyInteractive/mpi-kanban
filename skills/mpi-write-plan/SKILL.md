@@ -25,7 +25,7 @@ the next begins.
 
 1. Sub-agents write findings to files — they do NOT implement.
 2. Investigation phase: parallel. Execution phase: sequential (via
-   `/mpi-execute-next`).
+   `/mpi-kanban:mpi-execute-next`).
 3. To-dos must be independently verifiable — each is a single, focused task.
 4. Plan file path: `docs/plans/YYYY-MM-DD-<slug>.md`.
 5. **No forward dependencies.** A to-do's verify step must be satisfiable
@@ -100,16 +100,23 @@ without writing code from a later step, it doesn't belong in its own to-do.
 6. **Write the plan file** to `docs/plans/YYYY-MM-DD-<slug>.md` with `[ ]`
    to-dos.
 
-7. **Update the kanban board.** Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops.md` once. Then:
+7. **Update the kanban board.**
+
+   Lib pointers (read each only when its recipe is needed):
+
+   - `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` — `findEntry`, `ensureKanban`
+   - `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/mutate.md` — `moveEntry`, `updateEntry`, `createEntry`
 
    - Determine if a BACKLOG entry exists for this work:
      - If `mpi-brainstorm` passed a title in prompt context → match by that
        title.
      - Otherwise, ask the user: "Does this work already have a BACKLOG entry?
        If yes, what's the title? (or 'no' for a fresh PLANNING entry)".
-   - Call `findEntry(e => e.title === <title>)` to confirm.
+   - Read `lib/kanban-ops/find.md` for `findEntry`. Call
+     `findEntry(e => e.title === <title>)` to confirm.
 
-   **If a BACKLOG entry matches:**
+   **If a BACKLOG entry matches** (read `lib/kanban-ops/mutate.md` for
+   `moveEntry` + `updateEntry`):
    1. `moveEntry(title, "BACKLOG", "PLANNING")`.
    2. `updateEntry(title, ...)` — replace the existing tag with `[PLAN]`.
    3. `updateEntry(title, ...)` — replace the body fence content with:
@@ -117,7 +124,9 @@ without writing code from a later step, it doesn't belong in its own to-do.
       Plan file: docs/plans/YYYY-MM-DD-<slug>.md
       ```
 
-   **If no BACKLOG entry matches (or the user said no):**
+   **If no BACKLOG entry matches (or the user said no)** (read
+   `lib/kanban-ops/find.md` for `ensureKanban` and `lib/kanban-ops/mutate.md`
+   for `createEntry`):
    1. `ensureKanban()`.
    2. Build a PLANNING entry directly:
       - Title: 2-4 word slug from the goal.
@@ -130,15 +139,15 @@ without writing code from a later step, it doesn't belong in its own to-do.
    Confirm to the user: `Kanban: "<title>" → PLANNING. [kanban.md](.claude/mpi-kanban/kanban.md)`.
 
 8. **User reviews the plan** before moving to execution. Suggest:
-   `Run /mpi-execute-next when you're ready to start.`
+   `Run /mpi-kanban:mpi-execute-next when you're ready to start.`
 
 ## Hard rules
 
 - No kanban steps yet — those are derived at the PLANNING → IMPLEMENTING
-  transition by `/mpi-execute-next`.
+  transition by `/mpi-kanban:mpi-execute-next`.
 - One to-do, one file, one commit (the principle — `mpi-execute-next`
   enforces this when running the plan).
 
 ## Related commands
 
-- `/mpi-execute-next` — runs to-dos one at a time with brief gate.
+- `/mpi-kanban:mpi-execute-next` — runs to-dos one at a time with brief gate.
