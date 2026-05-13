@@ -6,34 +6,16 @@ Skills: `init`, `brainstorm`, `create-plan`, `create-large-plan`, `continue`, `e
 
 ## Install
 
-This plugin is distributed as a **local directory marketplace**. There is no public GitHub release yet — clone or copy the plugin folder somewhere on your machine, then point Claude Code at it.
-
-### 1. Get the plugin folder
-
-Copy or clone the `Mpi-Kanban` directory anywhere on disk. Example:
-
-```
-C:\Users\<you>\plugins\Mpi-Kanban
-```
-
-The folder must contain `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json` at the top level.
-
-### 2. Register the marketplace and install
-
-In Claude Code:
+In Claude Code, run:
 
 ```text
-/plugin marketplace add C:\Users\<you>\plugins\Mpi-Kanban
+/plugin marketplace add MadPonyInteractive/Mpi-Kanban
 /plugin install mpi-kanban@mad-pony-interactive
 ```
 
-Use the absolute path to the folder you placed in step 1.
+Claude Code clones the public GitHub repo, registers the marketplace, and installs the plugin. Restart Claude Code so the skills register, then type `/mpi-kanban:` — you should see eleven skills in the autocomplete list.
 
-### 3. Restart Claude Code
-
-Quit and reopen Claude Code so the skills register. Type `/mpi-kanban:` and you should see the eleven skills in the autocomplete list.
-
-### 4. (Recommended) Install the VS Code extension
+### (Recommended) Install the VS Code extension
 
 The board file is plain Markdown, but the **Mpi-Kanban** VS Code extension renders it as an interactive Kanban board:
 
