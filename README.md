@@ -24,7 +24,7 @@ In Claude Code:
 
 ```text
 /plugin marketplace add C:\Users\<you>\plugins\Mpi-Kanban
-/plugin install mpi-kanban@mpi-local
+/plugin install mpi-kanban@mad-pony-interactive
 ```
 
 Use the absolute path to the folder you placed in step 1.
@@ -121,8 +121,8 @@ Plans are living documents. Agents update `Current State`, `Plan Drift`, `Remain
 
 **Slash commands not showing up.** Restart Claude Code. If still missing, uninstall + reinstall:
 ```text
-/plugin uninstall mpi-kanban@mpi-local
-/plugin install mpi-kanban@mpi-local
+/plugin uninstall mpi-kanban@mad-pony-interactive
+/plugin install mpi-kanban@mad-pony-interactive
 ```
 
 **Kanban not auto-creating.** Only workflow skills that mutate the board call `ensureKanban()`. `brief-rule`, `archive`, and `cleanup` do not.
