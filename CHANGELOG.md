@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- README now shows the VS Code companion extension board screenshot.
 - GitHub Actions workflow `validate.yml` runs on push/PR to main. Validates plugin
   manifest, marketplace manifest, every `skills/*/SKILL.md` frontmatter, and
   flags any symlink that would break Windows install.
