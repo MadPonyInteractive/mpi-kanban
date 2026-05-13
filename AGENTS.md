@@ -18,13 +18,16 @@ If `SPEC.md` and `PLAN.md` disagree, ask the user before choosing an interpretat
 
 The plugin's skills are Markdown workflows under `skills/`. They are compatible as reference material for Codex, but Codex should load them selectively:
 
-- `skills/mpi-kanban:mpi-init/SKILL.md` for starting or synchronizing a project kanban workflow.
-- `skills/mpi-kanban:mpi-brainstorm/SKILL.md` for exploring possible approaches before a plan exists.
-- `skills/mpi-kanban:mpi-write-plan/SKILL.md` for turning a goal into a concrete implementation plan.
-- `skills/mpi-kanban:mpi-execute-next/SKILL.md` for executing the next planned kanban item.
-- `skills/mpi-kanban:mpi-end-session/SKILL.md` for ending a work session and preserving state.
-- `skills/mpi-kanban:mpi-handoff/SKILL.md` for preparing another agent or future session to continue.
-- `skills/mpi-kanban:mpi-brief-rule/SKILL.md` for creating or updating concise project rules.
+- `skills/mpi-init/SKILL.md` for starting or synchronizing a project kanban workflow.
+- `skills/mpi-brainstorm/SKILL.md` for exploring possible approaches before a plan exists.
+- `skills/mpi-create-plan/SKILL.md` for compact/default plans.
+- `skills/mpi-create-large-plan/SKILL.md` for adaptive large plans.
+- `skills/mpi-continue/SKILL.md` for resuming and implementing active MPI work.
+- `skills/mpi-execute-parallel/SKILL.md` for explicit parallel batches.
+- `skills/mpi-end-session/SKILL.md` for ending a work session and preserving state.
+- `skills/mpi-handoff/SKILL.md` for preparing another agent or future session to continue.
+- `skills/mpi-cleanup/SKILL.md` for conservative workflow artifact cleanup.
+- `skills/mpi-brief-rule/SKILL.md` for returning configured rule briefings and bundles.
 
 Related reference docs live under `lib/` and templates live under `templates/`. Load them only when the selected skill asks for them or when the task directly concerns kanban/config/plan mechanics.
 

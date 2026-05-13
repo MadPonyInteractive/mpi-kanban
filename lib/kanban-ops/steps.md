@@ -8,7 +8,7 @@ Read this when adding or flipping IMPLEMENTING entry steps. For schema see
 ## `addSteps(title, steps)`
 
 Add a `- steps:` block to an entry that does not yet have one. Used by
-`mpi-execute-next` on the PLANNING → IMPLEMENTING transition.
+`mpi-continue` on the PLANNING → IMPLEMENTING transition.
 
 `steps` is a list of strings (each step's text — 3-6 word summaries).
 

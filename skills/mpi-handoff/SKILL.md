@@ -1,12 +1,13 @@
 ---
 name: mpi-handoff
-description: Generate a structured JSON handoff document so a fresh session can resume work immediately. Use when user says "handoff", "new session", "context is big", or "/mpi-kanban:mpi-handoff", or when a plan phase just completed and a new one starts.
+description: Preserve current MPI work and generate a structured JSON handoff document so a fresh session can resume with mpi-continue. Use when user says "handoff", "new session", "context is big", or "/mpi-kanban:mpi-handoff", or when a plan phase just completed and a new one starts.
 ---
 
 # mpi-handoff Skill
 
-Produces a handoff document at `docs/handoffs/YYYY-MM-DD-HH-MM-<slug>.json`
-that a fresh session can load to resume work — no re-explanation needed.
+Preserves current MPI work and produces a handoff document at
+`docs/handoffs/YYYY-MM-DD-HH-MM-<slug>.json` that a fresh session can load to
+resume with `mpi-continue` — no re-explanation needed.
 
 ## When to invoke
 
@@ -47,7 +48,21 @@ Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` for `findKanban` +
 2. Otherwise call `findEntry(e => e.column === "IMPLEMENTING" && e.body matches "Plan file: <activePlan>")`.
 3. If a match is found → `kanban_entry = entry.title`. Otherwise → `null`.
 
-### Step 4 — Write the handoff document
+### Step 4 — Preservation pass
+
+Before writing the handoff, capture knowledge while the current session still
+has context:
+
+- Update the active plan's `## Current State`, `## Plan Drift`, and
+  `## Preservation Notes` if they are stale.
+- If known docs/rules/memory updates can be made accurately, do them now,
+  respecting project approval rules for architectural rule files.
+- If updates are blocked, need approval, or should wait for completion, record
+  them as pending preservation items in the handoff.
+
+Do not commit. Do not run cleanup.
+
+### Step 5 — Write the handoff document
 
 Create file at `docs/handoffs/YYYY-MM-DD-HH-MM-<slug>.json` (create the
 `docs/handoffs/` directory if missing).
@@ -75,9 +90,17 @@ Use this exact JSON structure:
     "pending": ["<next item 1>", "<next item 2>"]
   },
   "kanban_entry": "<title of active IMPLEMENTING entry, or null>",
+  "knowledge_preservation": {
+    "completed": [
+      "<docs/rules/memory/plan preservation done before handoff>"
+    ],
+    "pending": [
+      "<preservation item the next session or end-session must handle>"
+    ]
+  },
   "next_action": {
     "description": "<exact instruction for fresh session — be precise>",
-    "command": "<optional: skill or command to run first, e.g. /mpi-kanban:mpi-execute-next>"
+    "command": "<optional: skill or command to run first, e.g. /mpi-kanban:mpi-continue>"
   },
   "context": {
     "key_decisions": [
@@ -99,10 +122,10 @@ Use this exact JSON structure:
 }
 ```
 
-### Step 5 — Print the resume prompt
+### Step 6 — Print the resume prompt
 
 After writing the file, output to the user (and ONLY this — do not dump the
-full JSON):
+full JSON). The copy/paste block is mandatory:
 
 ```
 Handoff saved: docs/handoffs/<filename>.json
@@ -110,7 +133,7 @@ Active kanban entry: "<title>"   (or "none" if kanban_entry is null)
 
 To resume in a new session, paste this:
 ---
-Read docs/handoffs/<filename>.json and continue from where we left off.
+Read docs/handoffs/<filename>.json and use /mpi-kanban:mpi-continue to continue from where we left off.
 The next action is: <next_action.description>
 ---
 ```
@@ -119,6 +142,7 @@ The next action is: <next_action.description>
 
 - No git commands — work is mid-flight, git state is not part of the handoff.
 - `resume_prompt` MUST be self-contained. The fresh session has zero memory.
+- The final chat output MUST include the copy/paste resume block every time.
 - `kanban_entry` is required in the JSON — `null` if no IMPLEMENTING entry
   matches the active plan.
 - `files_to_read_first` = files the fresh agent must read before touching code.

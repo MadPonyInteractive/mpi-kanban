@@ -31,8 +31,9 @@ purpose.
    a specific question (e.g. "Does this approach work for you?") and wait for
    a response before continuing.
 5. **Capture the idea on the kanban board.** See "After design approved" below.
-6. **Ask: want a plan?** "Do you want to write a plan for this?" → if yes,
-   invoke `mpi-write-plan` and pass the BACKLOG entry title forward in the
+6. **Ask: want a plan?** "Do you want to create a plan for this?" → if yes,
+   invoke `mpi-create-plan` for normal work or `mpi-create-large-plan` for
+   complex/adaptive work, passing the BACKLOG entry title forward in the
    prompt context. Session ends.
 
 ## Context exploration rule
@@ -99,13 +100,17 @@ Steps:
 
 After the BACKLOG entry is captured:
 
-1. Ask: **"Do you want to write a plan for this?"**
-2. If **yes** → invoke `mpi-write-plan`. Include in the prompt context: the
-   BACKLOG entry title (skills don't pass arguments natively — pass it as
-   prose, e.g. "Write a plan for the BACKLOG entry titled \"<title>\""). The
-   plan skill will move the entry to PLANNING.
+1. Ask: **"Do you want to create a plan for this?"**
+2. If **yes** → choose the plan skill:
+   - Use `mpi-create-plan` by default for compact, normal work.
+   - Use `mpi-create-large-plan` when the work is complex, uncertain,
+     multi-phase, or likely to benefit from parallel investigation.
+   Include in the prompt context: the BACKLOG entry title (skills don't pass
+   arguments natively — pass it as prose, e.g. "Create a plan for the BACKLOG
+   entry titled \"<title>\""). The plan skill will move the entry to PLANNING.
 3. If **no** → session ends. Entry stays in BACKLOG until someone runs
-   `/mpi-kanban:mpi-write-plan` against it later.
+   `/mpi-kanban:mpi-create-plan` or `/mpi-kanban:mpi-create-large-plan`
+   against it later.
 
 **No auto-invocation past this point.** The user is always in control.
 

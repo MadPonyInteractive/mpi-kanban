@@ -21,7 +21,7 @@ Flip a single plan to-do from `[ ]` to `[x]`.
 ## `phaseAllDone(phase)`
 
 Returns `true` if every to-do in the given phase is `[x]`. Used by
-`mpi-execute-next` to decide whether to flip the matching kanban step.
+`mpi-continue` to decide whether to flip the matching kanban step.
 
 ```
 phase.todos.every(t => t.done)

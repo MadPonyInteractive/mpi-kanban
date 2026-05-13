@@ -8,8 +8,9 @@ description: Close session — sync rules/docs, commit touched files, move kanba
 Wrap up the current session cleanly: sync docs/rules with code changes, commit
 touched files, persist any new memory, and close out the active kanban entry.
 
-This skill is the LAST step in the brainstorm → write-plan → execute-next →
-end-session loop. Run it when the user signals the session is done.
+This skill is the LAST step in the brainstorm → create-plan/create-large-plan
+→ continue → handoff/continue → end-session loop. Run it when the user signals
+the session is done.
 
 ## Process
 
@@ -117,3 +118,5 @@ explicitly).
 - Kanban entry moved to COMPLETED if all steps done; otherwise left in
   IMPLEMENTING with a note in the commit.
 - `git status` clean (or remaining items explained).
+- Suggest `/mpi-kanban:mpi-cleanup` after a completed entry if old plans or
+  handoffs are likely stale. Do not run cleanup automatically.

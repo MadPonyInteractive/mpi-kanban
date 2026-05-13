@@ -1,6 +1,6 @@
 ---
 name: mpi-init
-description: Import a freeform to-do / backlog / ideas markdown file into the kanban board, OR scaffold an empty kanban board on explicit request. Use ONLY when the user explicitly asks to "set up the kanban", "initialize kanban", "import backlog", "convert this file to kanban", "build the kanban from <file>", or hands over a markdown file of to-dos and asks to populate the board. Do NOT use for capturing a single new idea (that's mpi-brainstorm), writing a plan (mpi-write-plan), or any normal kanban mutation — those skills create the board on demand via `ensureKanban()`. Do NOT use as a default first-read; only trigger on explicit import/scaffold language.
+description: Import a freeform to-do / backlog / ideas markdown file into the kanban board, OR scaffold an empty kanban board on explicit request. Use ONLY when the user explicitly asks to "set up the kanban", "initialize kanban", "import backlog", "convert this file to kanban", "build the kanban from <file>", or hands over a markdown file of to-dos and asks to populate the board. Do NOT use for capturing a single new idea (that's mpi-brainstorm), creating a plan (mpi-create-plan or mpi-create-large-plan), or any normal kanban mutation — those skills create the board on demand via `ensureKanban()`. Do NOT use as a default first-read; only trigger on explicit import/scaffold language.
 ---
 
 # mpi-init Skill
@@ -146,7 +146,7 @@ for this project"):
 1. Call `ensureKanban()` to create the empty board from the template.
 2. Confirm with the kanban link + extension marketplace link.
 3. Do NOT prompt for further input. The user will populate the board via
-   `mpi-brainstorm`, `mpi-write-plan`, or by re-invoking `mpi-init` with a
+   `mpi-brainstorm`, `mpi-create-plan`, `mpi-create-large-plan`, or by re-invoking `mpi-init` with a
    source file.
 
 ## Hard rules

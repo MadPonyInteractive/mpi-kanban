@@ -1,7 +1,7 @@
 {
   "name": "mpi-kanban",
   "version": "0.4.1",
-  "description": "MPI workflow skills (init, brainstorm, write-plan, execute-next, end-session, archive, handoff, brief-rule) bundled as a plugin that drives a per-project Kanban board.",
+  "description": "MPI workflow skills (init, brainstorm, create-plan, create-large-plan, continue, execute-parallel, handoff, end-session, cleanup, archive, brief-rule) bundled as a plugin that drives a per-project Kanban board.",
   "author": {
     "name": "Fabio Goncalves",
     "email": "fabioargoncalves1981@gmail.com"

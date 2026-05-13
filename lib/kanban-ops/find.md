@@ -64,7 +64,7 @@ Return the clickable markdown link to print in chat whenever referencing the boa
 
 Common predicates:
 
-- `entry.title === <title>` — `mpi-write-plan` matching an existing BACKLOG
-  entry by title.
-- Body contains `Plan file: <path>` — `mpi-execute-next`, `mpi-end-session`,
-  `mpi-handoff` locating the entry tied to the active plan.
+- `entry.title === <title>` — `mpi-create-plan` / `mpi-create-large-plan`
+  matching an existing BACKLOG entry by title.
+- Body contains `Plan file: <path>` — `mpi-continue`, `mpi-end-session`,
+  `mpi-handoff`, and `mpi-cleanup` locating the entry tied to the active plan.

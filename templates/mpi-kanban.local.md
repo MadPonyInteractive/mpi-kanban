@@ -12,6 +12,13 @@ rules: []
 #   - name: events
 #     file: events.md
 
+# Optional bundles return several rule briefings together for sub-agent dispatch.
+bundles: []
+# Example:
+# bundles:
+#   - name: frontend-worker
+#     rules: [components, events]
+
 # File holding the universal "Critical Rules Snapshot" all sub-agents must receive.
 critical_snapshot_file: CLAUDE.md
 
@@ -23,8 +30,8 @@ critical_snapshot_anchor: critical-rules-snapshot
 
 This file is per-project plugin configuration for the `mpi-kanban` plugin.
 
-**Gitignore reminder:** add `.claude/*.local.md` to your `.gitignore` so this file
-is not committed. It contains project-specific configuration that should stay local.
+**Gitignore reminder:** add `.claude/*.local.md` to your `.gitignore` so this
+file is not committed. It contains project-specific configuration that should
+stay local.
 
-The body below is currently unused by the plugin — reserved for future skills that
-may want a project-level prose note. Safe to leave empty.
+The body below is optional project-local context. Safe to leave empty.

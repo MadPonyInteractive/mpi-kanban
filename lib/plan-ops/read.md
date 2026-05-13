@@ -1,22 +1,23 @@
-# plan-ops/read — read to-dos and phases
+# plan-ops/read - read plan work units
 
-Read this to extract structured to-dos from a plan. For shape detection see
-`_shape.md`.
+Read this to extract structured work units from a plan. For shape detection
+see `_shape.md`.
 
 ---
 
-## `readTodos(planPath)` — for flat plans
+## `readTodos(planPath)` - for compact plans or non-phased sections
 
 1. Read the file.
-2. Collect every line matching `^- \[( |x)\] (.+)$` under `## To-do list` (or
-   under no specific heading if the plan has none).
+2. Collect every line matching `^- \[( |x)\] (.+)$` under
+   `## Implementation`, `## Remaining Work`, or under no specific heading if
+   the plan has none.
 3. Return list: `[{ index, text, done }]`. `index` is zero-based.
 
-For a phased plan: prefer `readPhases` instead.
+For a phased plan, prefer `readPhases` instead.
 
 ---
 
-## `readPhases(planPath)` — for phased plans
+## `readPhases(planPath)` - for phased plans
 
 1. Read the file.
 2. For each `## Phase ...` heading:
@@ -26,3 +27,15 @@ For a phased plan: prefer `readPhases` instead.
      to the last phase (mixed-plan rule).
 3. Return list: `[{ index, title, todos: [{ text, done }] }]`. `index` is
    zero-based.
+
+---
+
+## `readParallelBatches(planPath)` - for parallel execution
+
+1. Read the file.
+2. For each `## Parallel Batch` heading:
+   - `title`: heading text after `Parallel Batch:`.
+   - `todos`: every `- [ ]` / `- [x]` bullet until the next `## ` heading.
+   - Parse `Ownership:`, `Briefings:`, and `**Verify:**` from each todo.
+3. Return list:
+   `[{ index, title, todos: [{ text, done, ownership, briefings, verify }] }]`.
