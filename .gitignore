@@ -15,3 +15,6 @@ Desktop.ini
 # Editor
 .vscode/
 .idea/
+
+# User-specific files
+update_live.py
