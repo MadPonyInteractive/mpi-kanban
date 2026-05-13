@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "mpi-kanban",
-      "description": "MPI workflow skills (brainstorm, write-plan, execute-next, end-session, handoff, brief-rule) bundled as a plugin that drives a per-project Kanban board.",
+      "description": "MPI workflow skills (brainstorm, write-plan, execute-next, end-session, archive, handoff, brief-rule) bundled as a plugin that drives a per-project Kanban board.",
       "source": "./",
       "category": "workflow",
       "keywords": ["mpi", "kanban", "workflow", "planning"]

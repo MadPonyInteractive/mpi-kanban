@@ -105,7 +105,7 @@
 
 - [ ] Install plugin locally per current Claude Code plugin docs.
 - [ ] `/plugin list` (or current equivalent) — `mpi-kanban` appears with description.
-- [ ] All six skills + six slash commands are registered.
+- [ ] All workflow skills are registered, including `mpi-archive`.
 - [ ] In a scratch project (NOT CubricStudio yet — that's a separate user step):
   - [ ] Invoke `/mpi-brainstorm` with a tiny idea → BACKLOG entry created with correct shape.
   - [ ] Continue to `/mpi-write-plan` → entry moves to PLANNING with `[PLAN]` tag and `Plan file:` body.
@@ -135,3 +135,11 @@ If all of the above pass, the plugin meets SPEC §13 acceptance criteria. Commit
 - Source skills are at `C:\Users\Fabio\.claude\skills\mpi-*`. The user has backed them up. Do not delete them; they will be removed manually before CubricStudio integration testing.
 - Reference skills `.agents/skills/plugin-structure/SKILL.md` and `.agents/skills/plugin-settings/SKILL.md` are gitignored but present on disk — read them directly.
 - Plugin lives at `C:\AI\Mpi\Plugins\Mpi-Kanban`. Do NOT commit anything to other projects from this build.
+
+## Follow-up: archive operation
+
+- [x] Add `lib/kanban-ops/archive.md` documenting archive file selection,
+  200-line rotation, and exact-block removal.
+- [x] Add `skills/mpi-archive/SKILL.md` for "archive completed kanban entries"
+  and "archive kanban entry <title>" requests.
+- [x] Update README, SPEC, plugin metadata, and archive-related error cases.

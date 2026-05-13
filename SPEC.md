@@ -7,7 +7,7 @@
 
 ## 1. Purpose
 
-Bundle the MPI workflow skills (`brainstorm`, `write-plan`, `execute-next`, `end-session`, `handoff`, `brief-rule`) into a single Claude Code plugin that drives a per-project Kanban board (`kanban.md`).
+Bundle the MPI workflow skills (`brainstorm`, `write-plan`, `execute-next`, `end-session`, `archive`, `handoff`, `brief-rule`) into a single Claude Code plugin that drives a per-project Kanban board (`kanban.md`).
 
 Each skill is responsible for moving a Kanban entry from one column to the next, so the board always reflects the live state of work across the project.
 
@@ -78,7 +78,7 @@ Mpi-Kanban/                  ← folder name on disk (PascalCase by convention)
 {
   "name": "mpi-kanban",
   "version": "0.1.0",
-  "description": "MPI workflow skills (brainstorm, write-plan, execute-next, end-session, handoff, brief-rule) bundled as a plugin that drives a per-project Kanban board.",
+  "description": "MPI workflow skills (brainstorm, write-plan, execute-next, end-session, archive, handoff, brief-rule) bundled as a plugin that drives a per-project Kanban board.",
   "author": { "name": "Fabio Goncalves", "email": "fabioargoncalves1981@gmail.com" },
   "license": "MIT",
   "keywords": ["mpi", "kanban", "workflow", "planning"]
@@ -200,7 +200,7 @@ When any skill is invoked and `kanban.md` does not exist:
    - Marketplace link to the VS Code extension `holooooo.markdown-kanban`
    - One-line note: "Install the extension to see this file as an interactive board."
 
-Auto-creation does NOT trigger if the user invoked `mpi-brief-rule` (board-independent skill).
+Auto-creation does NOT trigger if the user invoked `mpi-brief-rule` (board-independent skill) or `mpi-archive` (archiving a missing board is a no-op).
 
 ---
 
@@ -257,7 +257,7 @@ When `mpi-brief-rule` is invoked and config does not exist:
 
 ## 6. Skills
 
-All six skills follow the existing MPI skill conventions, with one universal rule:
+All workflow skills follow the existing MPI skill conventions, with one universal rule:
 
 - **All references to `kanban.md` in chat** must be a clickable markdown link: `[kanban.md](.claude/mpi-kanban/kanban.md)`.
 
@@ -462,7 +462,7 @@ Plugins can be installed from a local path during development.
 1. Clone / open `C:\AI\Mpi\Plugins\Mpi-Kanban`.
 2. Install locally (exact mechanism per Claude Code plugin docs at build time — see PLAN.md, the build agent should verify the current install command).
 3. Reload skills (`/reload-plugins` or restart Claude Code).
-4. Verify all six skills appear in the skill list.
+4. Verify all workflow skills appear in the skill list.
 5. Test in CubricStudio (or any project) — board ops should work without errors.
 
 ---
@@ -500,10 +500,79 @@ Listed here so the build agent in a fresh session can challenge them:
 
 The plugin is "done" when:
 
-- `Mpi-Kanban` installs locally and registers all six skills.
+- `Mpi-Kanban` installs locally and registers the workflow skills.
 - A fresh project with no `.claude/mpi-kanban/` folder is bootstrapped on first skill invocation (kanban auto-create + extension link notice).
 - A full workflow run (`brainstorm` → `write-plan` → `execute-next` × N → `end-session`) moves a single entry through all four columns correctly.
 - Phased plans produce phase-titled steps; flat plans produce summarized to-do steps.
 - `mpi-brief-rule` works in CubricStudio with a config-driven rule list (parity with current hardcoded behavior).
 - `mpi-handoff` records the active IMPLEMENTING entry in its JSON output.
 - README explains install + usage and links to the VS Code extension.
+
+---
+
+## 14. Archive operation
+
+`mpi-archive` extends the plugin with a board cleanup workflow. It is part of
+the shipped skill set alongside `init`, `brainstorm`, `write-plan`,
+`execute-next`, `end-session`, `handoff`, and `brief-rule`.
+
+### 14.1 Trigger behavior
+
+The skill handles natural-language requests such as:
+
+- `archive completed kanban entries`
+- `archive completed entries`
+- `archive kanban entry <title>`
+- `archive entry <title>`
+- `/mpi-kanban:mpi-archive`
+
+If the user does not specify `completed` or an exact entry title, the skill
+asks a concise clarification before editing files.
+
+### 14.2 Archive files
+
+Archive files live beside the board in `.claude/mpi-kanban/`:
+
+```text
+archived.md
+archived-2.md
+archived-3.md
+```
+
+The operation uses `archived.md` first. If it does not exist, it creates it. If
+it exists and has more than 200 lines, the operation selects the first missing
+or not-over-limit incrementing file.
+
+### 14.3 Mutation rules
+
+The archive operation is documented in `lib/kanban-ops/archive.md`.
+
+Supported selectors:
+
+- `completed`: archive every entry under `## COMPLETED`.
+- `title`: archive the one entry whose H3 title exactly matches the user input.
+
+The skill must write captured entry blocks to the selected archive file before
+removing those exact blocks from `kanban.md`. It must preserve each entry block
+verbatim, including metadata, body fence, steps, and blank-line spacing.
+
+`mpi-archive` must not call `ensureKanban()`. If `kanban.md` is missing,
+archiving reports that there is nothing to archive.
+
+### 14.4 Errors
+
+- Missing exact title: abort and list likely candidates if obvious.
+- Ambiguous title: abort and list matching columns.
+- Empty COMPLETED column: report that there are no completed entries to
+  archive.
+- Archive file over 200 lines: use the next incrementing archive file.
+
+### 14.5 Acceptance criteria
+
+- `Mpi-Kanban` registers `mpi-archive` as a skill.
+- `archive completed kanban entries` moves all COMPLETED entry blocks into an
+  archive file and removes them from `kanban.md`.
+- `archive kanban entry <title>` moves exactly one matching entry block into an
+  archive file and removes it from `kanban.md`.
+- Archive files rotate from `archived.md` to `archived-2.md`,
+  `archived-3.md`, etc. when the current file has more than 200 lines.

@@ -1,7 +1,7 @@
 # Mpi-Kanban — Claude Code Plugin
 
 A Claude Code plugin that bundles the MPI workflow skills (`brainstorm`, `write-plan`,
-`execute-next`, `end-session`, `handoff`, `brief-rule`) and drives a per-project
+`execute-next`, `end-session`, `archive`, `handoff`, `brief-rule`) and drives a per-project
 Kanban board (`kanban.md`) rendered by the `holooooo.markdown-kanban` VS Code extension.
 
 ## Source of truth
