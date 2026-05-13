@@ -3,7 +3,34 @@
 A Claude Code plugin that bundles the MPI workflow skills (`brainstorm`, `create-plan`,
 `create-large-plan`, `continue`, `execute-parallel`, `end-session`, `cleanup`, `archive`,
 `handoff`, `brief-rule`) and drives a per-project Kanban board (`kanban.md`) rendered by
-the `holooooo.markdown-kanban` VS Code extension.
+the `MadPonyInteractive.mpi-kanban` VS Code extension fork.
+
+## Companion VS Code extension
+
+The paired VS Code extension lives next to this plugin at:
+
+```
+C:\AI\Mpi\Plugins\mpi-kanban-vscode
+```
+
+It is published from:
+
+```
+https://github.com/MadPonyInteractive/mpi-kanban-vscode
+```
+
+The extension name is `Mpi-Kanban` and the VS Code Marketplace identity should
+be `MadPonyInteractive.mpi-kanban`. It is a fork of
+`holooooo.markdown-kanban`; keep the original MIT copyright in the extension
+`LICENSE` and keep fork attribution in the extension `NOTICE`.
+
+The fork intentionally watches only the workspace MPI board at
+`.claude/mpi-kanban/kanban.md`. Do not reintroduce generic Markdown file
+switching unless the MPI workflow spec changes.
+
+The extension can be published before this agent plugin becomes universal for
+Claude Code and Codex because the extension depends only on the stable kanban
+file contract.
 
 ## Source of truth
 

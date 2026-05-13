@@ -144,7 +144,7 @@ If the user invokes the skill without a source file (e.g. "set up the kanban
 for this project"):
 
 1. Call `ensureKanban()` to create the empty board from the template.
-2. Confirm with the kanban link + extension marketplace link.
+2. Confirm with the kanban link + Mpi-Kanban extension link.
 3. Do NOT prompt for further input. The user will populate the board via
    `mpi-brainstorm`, `mpi-create-plan`, `mpi-create-large-plan`, or by re-invoking `mpi-init` with a
    source file.

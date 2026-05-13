@@ -14,6 +14,30 @@ Read these files only as needed:
 
 If `SPEC.md` and `PLAN.md` disagree, ask the user before choosing an interpretation.
 
+## Companion VS Code Extension
+
+This plugin is paired with the MPI-specific VS Code extension fork:
+
+- Repository checkout: `C:\AI\Mpi\Plugins\mpi-kanban-vscode`
+- GitHub: `https://github.com/MadPonyInteractive/mpi-kanban-vscode`
+- Extension identity: `MadPonyInteractive.mpi-kanban`
+- Display name: `Mpi-Kanban`
+
+The extension is a fork of `holooooo.markdown-kanban`. Keep the upstream MIT
+copyright in the extension `LICENSE` and keep fork attribution in the extension
+`NOTICE`.
+
+The extension should remain focused on the MPI board contract: it opens and
+watches `.claude/mpi-kanban/kanban.md` in the current workspace. It should not
+restore the original arbitrary Markdown file-switching behavior unless the MPI
+workflow explicitly needs that.
+
+Publishing order can be independent: the VS Code extension depends only on the
+stable board file contract, so it does not need to wait for this agent plugin
+to become fully universal for Claude Code and Codex. Publish the extension fork
+first, then keep this plugin's docs pointing to that extension while universal
+agent packaging work continues.
+
 ## Available Workflow Skills
 
 The plugin's skills are Markdown workflows under `skills/`. They are compatible as reference material for Codex, but Codex should load them selectively:

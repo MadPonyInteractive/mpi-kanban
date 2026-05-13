@@ -39,10 +39,10 @@ part of the workflow skills; you should not need to ask separately.
 
 ## Required: VS Code extension
 
-The board file is rendered as an interactive Kanban by:
+The board file is rendered as an interactive Kanban by the MPI-specific fork:
 
-- **Markdown Kanban** (`holooooo.markdown-kanban`) - version 1.3.2 or later
-- Marketplace: <https://marketplace.visualstudio.com/items?itemName=holooooo.markdown-kanban>
+- **Mpi-Kanban** (`MadPonyInteractive.mpi-kanban`)
+- Repository: <https://github.com/MadPonyInteractive/mpi-kanban-vscode>
 
 Without it, the skills still work; `.claude/mpi-kanban/kanban.md` is just plain
 Markdown.
@@ -169,9 +169,9 @@ must always print the mandatory resume block pointing to `mpi-continue`.
 **Parallel execution refused to run.** Add an explicit `## Parallel Batch`
 section with `Ownership:`, `Briefings:`, and `**Verify:**` for every task.
 
-**Extension not rendering the board.** Confirm the extension version is 1.3.2
-or later and the file is at `.claude/mpi-kanban/kanban.md` with exactly these
-columns: `BACKLOG`, `PLANNING`, `IMPLEMENTING`, `COMPLETED`.
+**Extension not rendering the board.** Confirm the Mpi-Kanban VS Code extension
+is installed and the file is at `.claude/mpi-kanban/kanban.md` with exactly
+these columns: `BACKLOG`, `PLANNING`, `IMPLEMENTING`, `COMPLETED`.
 
 ## What's locked
 

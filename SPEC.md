@@ -168,12 +168,11 @@ It never deletes active files and never deletes archives by default.
 
 ## 10. External Dependency
 
-The board is designed for the VS Code extension:
+The board is designed for the MPI-specific VS Code extension fork:
 
-- Markdown Kanban
-- Id: `holooooo.markdown-kanban`
-- Version: 1.3.2 or later
-- Marketplace: <https://marketplace.visualstudio.com/items?itemName=holooooo.markdown-kanban>
+- Mpi-Kanban
+- Id: `MadPonyInteractive.mpi-kanban`
+- Repository: <https://github.com/MadPonyInteractive/mpi-kanban-vscode>
 
 The plugin still works without the extension; the board remains Markdown.
 

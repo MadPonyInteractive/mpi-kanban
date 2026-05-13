@@ -1,6 +1,6 @@
 <!--
-This file is rendered as an interactive board by the "Markdown Kanban" VS Code extension:
-https://marketplace.visualstudio.com/items?itemName=holooooo.markdown-kanban
+This file is rendered as an interactive board by the "Mpi-Kanban" VS Code extension:
+https://github.com/MadPonyInteractive/mpi-kanban-vscode
 
 Install the extension to see this file as a board. Without it, the file still works as
 plain Markdown — the MPI skills will read and edit it either way.

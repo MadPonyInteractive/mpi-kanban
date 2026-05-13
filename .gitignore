@@ -13,6 +13,7 @@ Desktop.ini
 .DS_Store
 
 # Editor
+Mpi-Kanban.code-workspace
 .vscode/
 .idea/
 

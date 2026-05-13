@@ -26,7 +26,7 @@ find a specific entry. For schema/regexes see `_schema.md`. For mutations see
       Write tool will create the `.claude/mpi-kanban/` directory.
    c. Emit one-time setup notice in chat:
       - Clickable link: `[kanban.md](.claude/mpi-kanban/kanban.md)`
-      - Marketplace link: `https://marketplace.visualstudio.com/items?itemName=holooooo.markdown-kanban`
+      - Extension link: `https://github.com/MadPonyInteractive/mpi-kanban-vscode`
       - One-line note: "Install the extension to see this file as an interactive board."
 4. Return path.
 
