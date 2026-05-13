@@ -21,6 +21,7 @@ The board file is plain Markdown, but the **Mpi-Kanban** VS Code extension rende
 
 - Marketplace ID: `MadPonyInteractive.mpi-kanban`
 - Repository: <https://github.com/MadPonyInteractive/mpi-kanban-vscode>
+- Extension page: <https://marketplace.visualstudio.com/items?itemName=MadPonyInteractive.mpi-kanban>
 
 ![Mpi-Kanban board in VS Code](./imgs/board.png)
 
