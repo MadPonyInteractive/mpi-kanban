@@ -9,7 +9,7 @@ Skills: `init`, `brainstorm`, `create-plan`, `create-large-plan`, `continue`, `e
 In Claude Code, run:
 
 ```text
-/plugin marketplace add MadPonyInteractive/Mpi-Kanban
+/plugin marketplace add MadPonyInteractive/mpi-kanban
 /plugin install mpi-kanban@mad-pony-interactive
 ```
 
