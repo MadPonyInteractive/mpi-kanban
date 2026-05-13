@@ -44,6 +44,21 @@ testing (Phase 10) so they don't conflict with the plugin's bundled versions.
 - Skills are pure markdown; `lib/*.md` are reference docs, not executable code
   (see SPEC §7.4 trade-off — JS layer deferred).
 
+## Live copy maintenance
+
+`update_live.py` copies this development checkout into the filesystem location
+where agents load the plugin. When adding, moving, or renaming plugin behavior,
+agent support files, build helpers, local state, tests, or generated artifacts,
+update either `update_live.py` or `.gitignore` as needed so the live copy remains
+correct.
+
+The live copy must include every file required for Codex and Claude agents to run
+the plugin, and it must exclude ignored development-only content, including the
+`.git/` directory itself. Future work may make this plugin standard for both
+Codex and Claude and may require copying to multiple filesystem destinations; in
+that case, update `update_live.py` so destination handling is explicit rather
+than assuming the current single Claude plugin cache path.
+
 ## Working directory
 
 This plugin lives at `C:\AI\Mpi\Plugins\Mpi-Kanban`. Do NOT commit anything

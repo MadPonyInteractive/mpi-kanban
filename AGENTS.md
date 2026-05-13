@@ -34,6 +34,12 @@ For normal Codex work outside this plugin, treat this plugin directory as read-o
 
 Do not edit existing files in this directory unless the user explicitly asks to modify the plugin. Creating Codex-only bridge files is allowed, but avoid filenames or locations that Claude Code uses as plugin API surface.
 
+## Live Copy Maintenance
+
+`update_live.py` is the deployment bridge from this development checkout into the agent/plugin locations that actually load the plugin. Keep it aligned with `.gitignore` whenever adding, moving, or renaming plugin functionality, agent support files, build helpers, local state, tests, or generated artifacts.
+
+The live copy must include every file required for Codex and Claude agents to run the plugin, and it must exclude ignored development-only content, including `.git/` itself. If this plugin later supports more than the current Claude plugin cache destination, update `update_live.py` to make the destination handling explicit rather than assuming one fixed filesystem location.
+
 ## Project Kanban Usage
 
 When using this plugin from another repository, prefer that repository's local kanban file and plugin state. For CubricStudio, the active project kanban is:
