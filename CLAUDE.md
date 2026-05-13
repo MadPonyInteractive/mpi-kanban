@@ -72,6 +72,22 @@ testing (Phase 10) so they don't conflict with the plugin's bundled versions.
 - Skills are pure markdown; `lib/*.md` are reference docs, not executable code
   (see SPEC §7.4 trade-off — JS layer deferred).
 
+## Maintenance commands
+
+Two project-scope slash commands live at `.claude/commands/` (gitignored — they
+exist only in the maintainer's working copy):
+
+- `/update-live` — runs `update_live.py`, then tells the user whether a
+  `/plugin install ...` reinstall is required (skill set changed) or a Claude
+  Code restart is enough (only file contents changed).
+- `/release <version>` — bumps `.claude-plugin/plugin.json`, rewrites
+  `CHANGELOG.md`, commits, tags `v<version>`, pushes both branch and tag. The
+  `.github/workflows/release.yml` workflow then creates the GitHub Release.
+
+Prefer these over running the underlying steps by hand — they enforce the
+pre-flight checks (validator, clean tree, branch) and keep the CHANGELOG in
+sync with the tag.
+
 ## Live copy maintenance
 
 `update_live.py` copies this development checkout into the filesystem location
