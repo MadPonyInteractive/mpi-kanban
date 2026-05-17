@@ -1,5 +1,27 @@
 # Mpi-Kanban Implementation Plan
 
+## Shared coordination Phase 1
+
+- [x] Add shared coordination reference docs for `.agents/mpi-kanban/state/`.
+- [x] Define compact examples for `state/index.json`, sessions, tasks, file
+  claims, and handoffs.
+- [x] Document lightweight roles and `allowed_actions` expectations.
+- [x] Add shared UUID helper tooling for coordination record IDs.
+- [x] Mark `docs/handoffs/` as legacy compatibility and
+  `.agents/mpi-kanban/state/handoffs/` as canonical.
+- [x] Update `SPEC.md`, `README.md`, `AGENTS.md`, and workflow skills to point
+  at the shared contract.
+- [x] Run validation and targeted contradiction searches.
+
+## Shared coordination Phase 2 follow-up
+
+- [ ] Automate session/task/file claim lifecycle under
+  `.agents/mpi-kanban/state/`.
+- [ ] Add reviewer/verifier/integrator automation.
+- [ ] Add stale claim reclaim behavior for orchestrator/integrator roles.
+- [ ] Extend `mpi-cleanup` to garbage collect coordination state safely.
+- [ ] Decide whether the VS Code extension should visualize active agent state.
+
 ## Current redesign tasks
 
 - [x] Replace `mpi-write-plan` with `mpi-create-large-plan`.

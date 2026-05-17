@@ -28,6 +28,10 @@ The fork intentionally watches only the workspace MPI board at
 `.claude/mpi-kanban/kanban.md`. Do not reintroduce generic Markdown file
 switching unless the MPI workflow spec changes.
 
+Machine-readable Claude/Codex coordination state is separate from the board and
+lives under `.agents/mpi-kanban/state/`. Do not add agent coordination details
+as new board columns or metadata fields.
+
 The extension can be published before this agent plugin becomes universal for
 Claude Code and Codex because the extension depends only on the stable kanban
 file contract.
@@ -38,6 +42,9 @@ file contract.
 - [PLAN.md](./PLAN.md) — phased build to-do list.
 
 If SPEC and PLAN disagree, ask the user — do not silently choose.
+
+Also read [docs/coordination/README.md](./docs/coordination/README.md) before
+changing shared Claude/Codex coordination behavior.
 
 ## Authoring references (installed as project-scope skills)
 

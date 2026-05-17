@@ -7,8 +7,9 @@ description: Review and clean MPI workflow artifacts such as old plans, handoffs
 
 ## Purpose
 
-Conservatively clean workflow artifacts so `docs/plans/`, `docs/handoffs/`,
-and `.claude/mpi-kanban/` do not become stale junk drawers.
+Conservatively clean workflow artifacts so `docs/plans/`, legacy
+`docs/handoffs/`, `.claude/mpi-kanban/`, and eventually
+`.agents/mpi-kanban/state/` do not become stale junk drawers.
 
 This skill proposes cleanup first and waits for approval before editing or
 deleting anything.
@@ -18,7 +19,9 @@ deleting anything.
 Scan:
 
 - `docs/plans/*.md`
-- `docs/handoffs/*.json`
+- `docs/handoffs/*.json` as legacy compatibility handoffs or pointers
+- `.agents/mpi-kanban/state/index.json`
+- `.agents/mpi-kanban/state/handoffs/*.json`
 - `.claude/mpi-kanban/archived*.md`
 - `.claude/mpi-kanban/kanban.md`
 
@@ -58,6 +61,11 @@ Approved cleanup may:
 - leave active and uncertain files untouched.
 
 Never delete active files. Never delete archives by default.
+
+Phase 1 note: `.agents/mpi-kanban/state/` is the canonical machine state root,
+but automated state garbage collection is deferred. For now, classify state
+artifacts and propose actions, but do not delete coordination-state files unless
+the user explicitly approves those exact paths.
 
 ## Final output
 

@@ -11,6 +11,11 @@ Continue active work intelligently. This skill replaces rigid "execute next"
 behavior: it reads the active kanban entry, plan, latest handoff, and current
 workspace state, then proposes the next best action based on reality.
 
+When shared coordination state exists, `mpi-continue` also reads
+`.agents/mpi-kanban/state/index.json` first and follows its pointers only as
+needed. The shared contract is documented in
+`${CLAUDE_PLUGIN_ROOT}/docs/coordination/README.md`.
+
 Plans are living documents. If implementation has drifted, update or annotate
 the plan instead of forcing the next unchecked item.
 
@@ -18,7 +23,9 @@ the plan instead of forcing the next unchecked item.
 
 Find the active work from the first available source:
 
-1. Handoff path mentioned by the user or visible in context.
+1. Handoff path mentioned by the user or visible in context, including either
+   `.agents/mpi-kanban/state/handoffs/<uuid>.json` or legacy
+   `docs/handoffs/*.json`.
 2. Plan path mentioned by the user or visible in context.
 3. IMPLEMENTING kanban entry with a `Plan file:` body line.
 4. PLANNING kanban entry with a `Plan file:` body line.
@@ -37,15 +44,18 @@ Lib pointers, read only when needed:
 - `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/mutate.md` - `moveEntry`
 - `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/steps.md` - `addSteps`, `markStep`
 
-1. Read the handoff if present.
-2. Read the active plan.
-3. Locate the kanban entry whose body contains `Plan file: <planPath>`.
-4. If the entry is in PLANNING, move it to IMPLEMENTING and add stable steps:
+1. Read the handoff if present. If it is a legacy `docs/handoffs/` pointer to a
+   canonical `.agents/` handoff, load the canonical handoff before continuing.
+2. If `.agents/mpi-kanban/state/index.json` exists, read it as the active
+   coordination facade.
+3. Read the active plan.
+4. Locate the kanban entry whose body contains `Plan file: <planPath>`.
+5. If the entry is in PLANNING, move it to IMPLEMENTING and add stable steps:
    - Compact plan: one step, `Implementation`.
    - Large/adaptive plan: phase-level steps when phases exist; otherwise use
      lifecycle steps: `Orient current state`, `Implement active work`,
      `Verify behavior`, `Preserve knowledge`, `Close session`.
-5. Inspect current workspace state with small commands (`git status`,
+6. Inspect current workspace state with small commands (`git status`,
    targeted file reads/searches). Do not run large diffs unless needed.
 
 ## Orient and detect drift

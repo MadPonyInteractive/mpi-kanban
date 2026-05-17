@@ -1,6 +1,8 @@
 # Mpi-Kanban
 
-Claude Code plugin. Bundles MPI workflow skills and drives a per-project Kanban board (`.claude/mpi-kanban/kanban.md`) that reflects live work.
+Claude Code plugin. Bundles MPI workflow skills, drives a per-project Kanban
+board (`.claude/mpi-kanban/kanban.md`) that reflects live work, and defines a
+shared `.agents/mpi-kanban/state/` coordination contract for Claude and Codex.
 
 Skills: `init`, `brainstorm`, `create-plan`, `create-large-plan`, `continue`, `execute-parallel`, `handoff`, `end-session`, `cleanup`, `archive`, `brief-rule`.
 
@@ -69,6 +71,19 @@ Lives at `.claude/mpi-kanban/kanban.md`. Auto-created on first workflow skill th
 
 Commit `.claude/mpi-kanban/kanban.md` for shared boards. Gitignore it for per-developer boards.
 
+### Shared agent coordination state
+
+Canonical machine-readable coordination state lives at
+`.agents/mpi-kanban/state/`. The board remains the human-visible workflow file;
+agent session, task, file-claim, and handoff records belong under `.agents/`.
+
+Agents read `.agents/mpi-kanban/state/index.json` first when it exists. The
+Phase 1 contract is documented in [`docs/coordination/`](docs/coordination/).
+Use `python scripts/new_uuid.py` to generate record IDs.
+
+New canonical handoffs live under `.agents/mpi-kanban/state/handoffs/`.
+`docs/handoffs/` is legacy compatibility during migration.
+
 ### Optional plugin config
 
 For rule briefings and worker bundles, copy [`templates/mpi-kanban.local.md`](templates/mpi-kanban.local.md) to `.claude/mpi-kanban.local.md` and edit:
@@ -97,7 +112,7 @@ Add to `.gitignore` if local-only:
 
 - `mpi-create-plan` — default. Compact living plan, one implementation flow, final verification.
 - `mpi-create-large-plan` — complex/uncertain work. Phases, plan drift notes, preservation notes, explicit `## Parallel Batch` sections.
-- `mpi-continue` — default implementation/resume skill. Reads plan, latest handoff, kanban entry, current repo state before proposing work.
+- `mpi-continue` — default implementation/resume skill. Reads plan, shared coordination index when present, latest handoff, kanban entry, current repo state before proposing work.
 - `mpi-execute-parallel` — runs only explicit parallel batches with declared, disjoint ownership.
 
 Plans are living documents. Agents update `Current State`, `Plan Drift`, `Remaining Work`, and `Preservation Notes` as reality changes.
@@ -113,6 +128,10 @@ Plans are living documents. Agents update `Current State`, `Plan Drift`, `Remain
 **Kanban not auto-creating.** Only workflow skills that mutate the board call `ensureKanban()`. `brief-rule`, `archive`, and `cleanup` do not.
 
 **Handoff did not include a resume prompt.** That is a bug — `mpi-handoff` must always print the mandatory resume block pointing to `mpi-continue`.
+
+**A handoff is under `docs/handoffs/`.** Treat it as legacy compatibility. New
+handoffs should use `.agents/mpi-kanban/state/handoffs/<uuid>.json`; legacy
+files may point to the canonical handoff during migration.
 
 **Parallel execution refused to run.** The plan must contain an explicit `## Parallel Batch` section with `Ownership:`, `Briefings:`, and `**Verify:**` for every task.
 
@@ -141,7 +160,7 @@ For compatibility with the VS Code extension, do not modify:
 - The four columns: `BACKLOG`, `PLANNING`, `IMPLEMENTING`, `COMPLETED`.
 - The metadata field schema (`due`, `tags`, `priority`, `workload`, `defaultExpanded`, `steps`).
 
-See [SPEC.md](./SPEC.md) section 4 for details.
+See the Kanban Contract in [SPEC.md](./SPEC.md) for details.
 
 ## For plugin authors
 
@@ -149,6 +168,8 @@ If you are editing the plugin itself rather than just using it:
 
 - See [CLAUDE.md](./CLAUDE.md) for build constraints and live-copy maintenance.
 - See [SPEC.md](./SPEC.md) and [PLAN.md](./PLAN.md) for design.
+- Run `python scripts/validate_plugin.py` before copying or releasing plugin
+  changes.
 - After editing skills/hooks, run `/reload-plugins` in Claude Code, or uninstall + reinstall the plugin if you added or removed a skill folder.
 
 ## License

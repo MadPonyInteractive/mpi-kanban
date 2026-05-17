@@ -12,8 +12,10 @@ Kanban board and supports a conversational agent workflow:
 brainstorm -> create-plan/create-large-plan -> continue -> handoff/continue -> end-session -> cleanup
 ```
 
-The kanban board tracks high-level work state. Plan files are living documents
-that may drift and be revised as implementation reveals new facts.
+The kanban board tracks high-level human-visible work state. Plan files are
+living documents that may drift and be revised as implementation reveals new
+facts. Shared Claude/Codex machine-readable coordination state lives outside
+the board under `.agents/mpi-kanban/state/`.
 
 ## 2. Skill Set
 
@@ -72,7 +74,61 @@ Plan file: docs/plans/YYYY-MM-DD-<slug>.md
 
 Skills must not add columns or metadata fields.
 
-## 4. Plan Model
+## 4. Shared Coordination Contract
+
+Phase 1 defines a shared Claude/Codex coordination contract without automating
+the full claim lifecycle.
+
+Canonical machine-readable coordination state lives at:
+
+```text
+<project-root>/.agents/mpi-kanban/state/
+```
+
+The state root contains:
+
+- `index.json` - small facade read first by every agent.
+- `sessions/<uuid>.json` - active agent session records.
+- `tasks/<uuid>.json` - active coordination task records.
+- `files/<uuid>.json` - file ownership or claim records.
+- `handoffs/<uuid>.json` - canonical machine-readable handoffs.
+
+Core record IDs are UUIDs. Agents should generate them with the shared helper
+documented in `docs/coordination/uuid-helper.md`.
+
+`state/index.json` directly lists active record paths and claim/state pointers
+so agents do not need to scan every state directory before deciding what to
+read. The default heartbeat timeout is 2 hours. Stale claims are reclaimable by
+an orchestrator or integrator when ownership intent is clear; uncertain cases
+ask the user.
+
+Roles are lightweight behavior contracts:
+
+- orchestrator
+- planner
+- implementer
+- reviewer
+- verifier
+- integrator
+- docs
+
+Session records include explicit `allowed_actions`. Reviewer is first-class and
+read/review by default; it does not take write ownership unless explicitly
+reassigned. User-owned/manual kanban tasks stay board-only unless agent
+coordination is needed.
+
+Active records should keep only a short recent history window, roughly 5-10
+events. `mpi-cleanup` will later own coordination-state garbage collection.
+
+Reference docs live under `docs/coordination/`:
+
+- `state-layout.md`
+- `schemas.md`
+- `roles.md`
+- `uuid-helper.md`
+- `handoff-migration.md`
+
+## 5. Plan Model
 
 Compact plans are created by `mpi-create-plan` and use one coherent
 implementation flow with final verification.
@@ -92,7 +148,7 @@ Plans are living documents. `mpi-continue` may update current state, drift,
 completed work, and remaining work before implementation when the repo state no
 longer matches the written plan.
 
-## 5. Continue Model
+## 6. Continue Model
 
 `mpi-continue` is the normal implementation skill. It:
 
@@ -112,7 +168,10 @@ longer matches the written plan.
 
 `mpi-continue` does not commit or push.
 
-## 6. Parallel Execution
+When present, `mpi-continue` should read `.agents/mpi-kanban/state/index.json`
+before inspecting individual coordination records.
+
+## 7. Parallel Execution
 
 `mpi-execute-parallel` only runs explicit `## Parallel Batch` sections.
 
@@ -128,13 +187,18 @@ The main agent spawns workers, integrates their changes, verifies the batch,
 and updates plan/kanban state. Workers must not edit plan, kanban, handoff,
 rules, or memory files unless explicitly owned.
 
-## 7. Handoff
+## 8. Handoff
 
 `mpi-handoff` writes:
 
 ```text
-docs/handoffs/YYYY-MM-DD-HH-MM-<slug>.json
+.agents/mpi-kanban/state/handoffs/<uuid>.json
 ```
+
+`docs/handoffs/` is legacy compatibility during migration. New canonical
+handoffs live in `.agents/mpi-kanban/state/handoffs/`. When an older resume flow
+needs a `docs/handoffs/` file, `mpi-handoff` may write a small legacy pointer to
+the canonical handoff; the `.agents/` record remains the source of truth.
 
 Before writing, it performs a preservation pass:
 
@@ -145,7 +209,7 @@ Before writing, it performs a preservation pass:
 The final chat output must include a copy/paste resume block pointing the next
 session to `mpi-continue`.
 
-## 8. Brief Rule Bundles
+## 9. Brief Rule Bundles
 
 Project config lives at:
 
@@ -159,14 +223,18 @@ bundle.
 
 The plugin does not hardcode project rules.
 
-## 9. Cleanup
+## 10. Cleanup
 
 `mpi-cleanup` classifies workflow artifacts as active, completed, orphaned,
 superseded, stale, or uncertain. It proposes cleanup and waits for approval.
 
 It never deletes active files and never deletes archives by default.
 
-## 10. External Dependency
+Coordination-state cleanup under `.agents/mpi-kanban/state/` is future Phase 2+
+work. Until then, cleanup docs may classify state artifacts but should not
+delete them automatically.
+
+## 11. External Dependency
 
 The board is designed for the MPI-specific VS Code extension fork:
 
@@ -176,7 +244,7 @@ The board is designed for the MPI-specific VS Code extension fork:
 
 The plugin still works without the extension; the board remains Markdown.
 
-## 11. Acceptance Criteria
+## 12. Acceptance Criteria
 
 - Plugin registers all current skills.
 - Brainstorm can capture BACKLOG and route to compact or large plan creation.
@@ -186,3 +254,6 @@ The plugin still works without the extension; the board remains Markdown.
 - Parallel execution refuses non-batch or unsafe batch work.
 - Brief-rule supports single rules and bundles.
 - Cleanup proposes changes before mutating files.
+- Shared coordination docs consistently describe `.agents/mpi-kanban/state/` as
+  canonical machine state while preserving `.claude/mpi-kanban/kanban.md` as the
+  stable board path.

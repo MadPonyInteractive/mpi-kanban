@@ -1,0 +1,76 @@
+{
+  "schema": "mpi-handoff/v1",
+  "generated_at": "2026-05-17T03:05:39.9296705+01:00",
+  "session": {
+    "name": "Design MPI Kanban as a Claude and Codex multi-agent coordination layer",
+    "branch": null
+  },
+  "goal": {
+    "original": "Continue the conversation inside the mpi-kanban project about evolving MPI Kanban from a visual board into a shared coordination system for Claude Code and Codex agents working on the same project.",
+    "status": "in_progress",
+    "summary": "The user agrees with using MPI Kanban as the human-visible board plus background agent-readable coordination files. The key design concern is that Git worktrees only isolate filesystem edits; they do not prevent two agents in separate worktrees from making conflicting changes to the same files. The next session should design how MPI Kanban can provide file ownership, handoff, and coordination across Claude and Codex."
+  },
+  "plan": {
+    "file": null,
+    "completed": [
+      "Clarified that worktrees are useful for isolation but insufficient for coordination.",
+      "Identified MPI Kanban as the likely shared coordination layer because it already has a Markdown board and VS Code extension integration.",
+      "Confirmed that the user wants the plugin to work for both Claude Code and Codex."
+    ],
+    "pending": [
+      "Decide the canonical location and format for agent-readable coordination state.",
+      "Design file ownership, claim, release, handoff, and integrator workflows.",
+      "Decide how the VS Code extension should display active claims and agent state.",
+      "Update SPEC.md and PLAN.md before implementation."
+    ]
+  },
+  "kanban_entry": null,
+  "knowledge_preservation": {
+    "completed": [
+      "Created this handoff in the mpi-kanban project so the next session can resume the design conversation in the correct repo."
+    ],
+    "pending": [
+      "If the design is accepted, preserve the new coordination contract in SPEC.md and add implementation tasks to PLAN.md.",
+      "Consider whether project memory should record that MPI Kanban is intended to become the shared Claude/Codex coordination layer."
+    ]
+  },
+  "next_action": {
+    "description": "Read this handoff, then discuss and draft the coordination contract for MPI Kanban: human-visible kanban board plus machine-readable agent state for file claims, ownership, handoffs, and same-file integration.",
+    "command": "/mpi-kanban:mpi-continue"
+  },
+  "context": {
+    "key_decisions": [
+      "Worktrees should remain part of the recommended workflow because they prevent live filesystem stomping between agents.",
+      "Worktrees are not enough because conflicts can still appear at merge time, including semantic conflicts that Git merges cleanly.",
+      "MPI Kanban should act as the communication layer between agents, not just a visual board for the user.",
+      "The board should stay useful to humans, while background files should be structured enough for Claude, Codex, and tools to consume reliably.",
+      "For same-file work, the preferred model is explicit ownership: one writer, optional reviewer/proposer, handoff when ownership changes, and one integrator for merging competing proposals."
+    ],
+    "constraints": [
+      "The current SPEC warns not to add Kanban columns or metadata fields beyond the locked board contract because the VS Code extension may break on unknown fields.",
+      "The companion VS Code extension currently watches only .claude/mpi-kanban/kanban.md in the active workspace.",
+      "The plugin currently targets Claude Code, but future work should make the workflow and state files usable by both Claude and Codex.",
+      "Claude-owned plugin files should remain compatible with Codex through AGENTS.md bridge instructions.",
+      "Avoid relying only on free-form Markdown for enforcement; structured state such as JSON may be needed for reliable machine checks."
+    ],
+    "files_modified": [
+      "docs/handoffs/2026-05-17-03-05-agent-coordination.json"
+    ],
+    "files_to_read_first": [
+      "docs/handoffs/2026-05-17-03-05-agent-coordination.json",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "SPEC.md",
+      "PLAN.md",
+      ".claude/mpi-kanban/kanban.md",
+      "C:/AI/Mpi/Plugins/mpi-kanban-vscode"
+    ]
+  },
+  "rules_active": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "SPEC.md",
+    "PLAN.md"
+  ],
+  "resume_prompt": "You are in C:/AI/Mpi/Plugins/mpi-kanban. Read docs/handoffs/2026-05-17-03-05-agent-coordination.json and use /mpi-kanban:mpi-continue to continue from where we left off. There is no active kanban entry yet. The next action is to discuss and draft the coordination contract for MPI Kanban as a shared Claude/Codex multi-agent workflow layer: human-visible kanban board plus machine-readable agent state for file claims, ownership, handoffs, and same-file integration."
+}

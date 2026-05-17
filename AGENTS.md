@@ -11,6 +11,8 @@ Read these files only as needed:
 - `README.md` for user-facing behavior.
 - `SPEC.md` before changing plugin behavior.
 - `PLAN.md` before continuing plugin implementation work.
+- `docs/coordination/README.md` before changing shared Claude/Codex
+  coordination behavior.
 
 If `SPEC.md` and `PLAN.md` disagree, ask the user before choosing an interpretation.
 
@@ -54,6 +56,24 @@ The plugin's skills are Markdown workflows under `skills/`. They are compatible 
 - `skills/mpi-brief-rule/SKILL.md` for returning configured rule briefings and bundles.
 
 Related reference docs live under `lib/` and templates live under `templates/`. Load them only when the selected skill asks for them or when the task directly concerns kanban/config/plan mechanics.
+
+## Shared Agent Coordination
+
+The human-visible board remains:
+
+- `.claude/mpi-kanban/kanban.md`
+
+The canonical machine-readable coordination state lives under:
+
+- `.agents/mpi-kanban/state/`
+
+When agent coordination state is relevant, read
+`docs/coordination/README.md` first, then only the specific referenced
+coordination doc needed for the task. `state/index.json` is the first runtime
+state file agents should inspect when it exists.
+
+New canonical handoffs live under `.agents/mpi-kanban/state/handoffs/`.
+`docs/handoffs/` is legacy compatibility during migration.
 
 ## Read-Only Boundary
 
