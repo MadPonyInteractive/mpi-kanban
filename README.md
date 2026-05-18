@@ -63,6 +63,30 @@ You can also invoke any skill directly via slash command. After each skill runs,
 | `/mpi-kanban:mpi-archive <title>` | Archive one entry by exact title. |
 | `/mpi-kanban:mpi-brief-rule <name>` | Return a configured rule briefing or bundle. |
 
+## Multi-agent coordination
+
+Mpi-Kanban lets multiple Claude, Codex, or compatible agent sessions coordinate
+through project files. The visible board stays simple for humans, while agents
+use `.agents/mpi-kanban/state/` to avoid stepping on each other's work.
+
+The practical workflow:
+
+- Agents read `state/index.json` before editing.
+- A session records its role, such as implementer, reviewer, verifier, or
+  integrator.
+- Before editing a file, an agent creates a file claim.
+- One active writer owns a file at a time.
+- Other agents can wait, review, verify, request handoff, or ask for an
+  integrator instead of silently editing the same file.
+- Finished file work can remain as pending state for review, verification, or
+  integration.
+- The final commit summary belongs to `mpi-end-session` or an explicit
+  integrator after rereading current state.
+
+Kanban tags such as `claimed`, `needs-review`, `needs-verify`, or
+`needs-integration` are only display summaries for the user. The machine source
+of truth is always `.agents/mpi-kanban/state/`.
+
 ## Per-project setup
 
 ### Kanban board

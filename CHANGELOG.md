@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Shared coordination lifecycle reference docs under `lib/coordination-ops/`
+  covering session registration, task records, file claims, pending file state,
+  handoffs, stale reclaim, cleanup, and commit ownership.
+- Phase 2 plan documenting local lifecycle automation and the decision to keep
+  VS Code visualization deferred while using existing kanban tags as
+  display-only summaries.
 - README now shows the VS Code companion extension board screenshot.
 - GitHub Actions workflow `validate.yml` runs on push/PR to main. Validates plugin
   manifest, marketplace manifest, every `skills/*/SKILL.md` frontmatter, and
@@ -18,6 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matching CHANGELOG section, and creates a GitHub Release.
 - `scripts/validate_plugin.py` — local equivalent of the CI validator. Run before
   pushing if you want to catch issues without waiting on CI.
+
+### Changed
+
+- `mpi-continue`, `mpi-execute-parallel`, `mpi-handoff`, `mpi-end-session`, and
+  `mpi-cleanup` now reference the shared `.agents/mpi-kanban/state/` lifecycle
+  model.
+- README now explains the multi-agent coordination workflow in user-facing
+  terms: roles, file claims, pending state, integration, and display-only tags.
+- Shared coordination docs now distinguish active write claims from pending file
+  provenance, and separate file ownership from commit ownership.
 
 ## [0.4.1] - 2026-05-13
 

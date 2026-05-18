@@ -32,6 +32,19 @@ Machine-readable Claude/Codex coordination state is separate from the board and
 lives under `.agents/mpi-kanban/state/`. Do not add agent coordination details
 as new board columns or metadata fields.
 
+Shared lifecycle operation references live under:
+
+- `lib/coordination-ops/statuses.md` for session, task, file-claim, and handoff
+  status vocabulary.
+- `lib/coordination-ops/lifecycle.md` for index, session, task, file-claim,
+  handoff, close, cleanup, and kanban summary-tag operations.
+
+Agents coordinate through `.agents/mpi-kanban/state/` first. Kanban tags are
+only coarse user-facing summaries for the existing VS Code extension. A file
+claim with status `claimed` is an active write lock; completed or released file
+ownership does not grant commit ownership. The closing or integrating session
+must reread current coordination state and Git state before committing.
+
 The extension can be published before this agent plugin becomes universal for
 Claude Code and Codex because the extension depends only on the stable kanban
 file contract.
