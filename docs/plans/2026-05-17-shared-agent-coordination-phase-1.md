@@ -70,7 +70,8 @@ Phase 1 does not include:
 - User-owned/manual kanban tasks stay board-only unless agent coordination is
   needed.
 - Active records retain only a short recent history window, roughly 5-10 events.
-- `mpi-cleanup` will later own coordination-state garbage collection.
+- Phase 2 makes `mpi-cleanup` own conservative coordination-state garbage
+  collection.
 
 ## Minimal Schemas To Define
 

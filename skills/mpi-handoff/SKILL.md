@@ -14,6 +14,8 @@ Shared coordination contract reference:
 - `${CLAUDE_PLUGIN_ROOT}/docs/coordination/README.md`
 - `${CLAUDE_PLUGIN_ROOT}/docs/coordination/handoff-migration.md`
 - `${CLAUDE_PLUGIN_ROOT}/docs/coordination/schemas.md`
+- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/lifecycle.md`
+- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/statuses.md`
 
 ## When to invoke
 
@@ -48,6 +50,9 @@ If `.agents/mpi-kanban/state/index.json` exists, read it next. Use it as a
 small pointer facade to identify active sessions, tasks, file claims, or prior
 handoffs relevant to this handoff.
 
+Read `lib/coordination-ops/lifecycle.md`. If coordination state is active,
+renew or identify the current session and task before writing the handoff.
+
 ### Step 3 - Look up the active kanban entry
 
 Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` for `findKanban` and
@@ -65,6 +70,10 @@ has context:
 
 - Update the active plan's `## Current State`, `## Plan Drift`, and
   `## Preservation Notes` if they are stale.
+- Update active coordination records: mark outgoing session `handoff_ready`,
+  mark unfinished file claims `complete`, `needs_integration`, or
+  `needs_review` as appropriate, and keep pending-change provenance visible in
+  `pending_file_states`.
 - If known docs/rules/memory updates can be made accurately, do them now,
   respecting project approval rules for architectural rule files.
 - If updates are blocked, need approval, or should wait for completion, record
@@ -77,6 +86,9 @@ Do not commit. Do not run cleanup.
 Create file at `.agents/mpi-kanban/state/handoffs/<uuid>.json` and create the
 directory if missing. Generate `<uuid>` with `python scripts/new_uuid.py`. Use
 the same value for the filename and the JSON `id`.
+
+After writing the handoff, add it to `state/index.json` `active_handoffs` and
+update `index.updated_at`.
 
 Use this exact JSON structure:
 

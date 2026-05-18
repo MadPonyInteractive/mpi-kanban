@@ -8,6 +8,8 @@ different role.
 
 Owns task decomposition, assignment, and conflict resolution. May reclaim stale
 claims after the default heartbeat timeout when the situation is clear.
+Coordinates through `.agents/mpi-kanban/state/`; kanban updates are only
+user-facing summaries.
 
 Default actions: `coordinate`, `assign`, `reclaim_stale`, `handoff`.
 
@@ -22,6 +24,8 @@ Default actions: `read`, `write_plan`, `update_kanban`.
 
 Owns scoped code or doc changes for assigned files. Must respect active file
 claims and update handoff or plan state when stopping mid-work.
+Completing or releasing a file claim does not grant later commit ownership; the
+closing or integrating session owns the final commit summary.
 
 Default actions: `read`, `claim_files`, `edit_owned_files`, `verify`, `handoff`.
 
@@ -43,6 +47,8 @@ Default actions: `read`, `run_checks`, `report`.
 
 Owns merging competing proposals and resolving claim conflicts. May reclaim
 stale claims when intent is clear; uncertain ownership cases ask the user.
+Before committing integrated work, rereads current coordination state and Git
+state so the commit message describes the actual final workspace snapshot.
 
 Default actions: `read`, `claim_files`, `integrate`, `reclaim_stale`, `verify`.
 
@@ -52,4 +58,3 @@ Owns documentation updates and preservation notes. Does not alter code or rule
 files unless explicitly assigned.
 
 Default actions: `read`, `write_docs`, `update_plan`.
-

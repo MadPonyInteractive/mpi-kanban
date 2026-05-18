@@ -20,11 +20,19 @@ JSON Schemas. Add fields only when they support agent coordination directly.
   "active_file_claims": [
     ".agents/mpi-kanban/state/files/63f0a8e1-17e1-42ff-8b8e-b510a4f58ec8.json"
   ],
+  "pending_file_states": [
+    ".agents/mpi-kanban/state/files/a90d5036-353d-4b7e-a6cc-0f11c9f804b8.json"
+  ],
   "active_handoffs": [
     ".agents/mpi-kanban/state/handoffs/5e89a64e-5efd-4087-a4a6-75c64d4280a0.json"
   ]
 }
 ```
+
+`active_file_claims` lists only active write locks with file status `claimed`.
+`pending_file_states` lists file records that no longer block writers but still
+carry pending-change provenance, such as `complete`, `needs_review`,
+`needs_verification`, or `needs_integration`.
 
 ## `state/sessions/<uuid>.json`
 
@@ -68,6 +76,12 @@ JSON Schemas. Add fields only when they support agent coordination directly.
   ]
 }
 ```
+
+When a file claim is no longer actively being edited, keep the record and move
+it out of `active_file_claims`. If the work still matters to review,
+verification, integration, or final commit summary, set status to `complete`,
+`needs_review`, `needs_verification`, or `needs_integration` and list it in
+`pending_file_states`.
 
 ## `state/tasks/<uuid>.json`
 
@@ -120,4 +134,3 @@ JSON Schemas. Add fields only when they support agent coordination directly.
   ]
 }
 ```
-

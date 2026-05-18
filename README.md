@@ -78,8 +78,22 @@ Canonical machine-readable coordination state lives at
 agent session, task, file-claim, and handoff records belong under `.agents/`.
 
 Agents read `.agents/mpi-kanban/state/index.json` first when it exists. The
-Phase 1 contract is documented in [`docs/coordination/`](docs/coordination/).
+shared contract is documented in [`docs/coordination/`](docs/coordination/).
 Use `python scripts/new_uuid.py` to generate record IDs.
+
+Lifecycle procedures live under [`lib/coordination-ops/`](lib/coordination-ops/).
+They define session registration, heartbeats, task records, file claims, handoff
+records, stale reclaim behavior, and cleanup expectations.
+
+Kanban tags may be used as a coarse human-visible summary such as
+`agent-active`, `claimed`, `needs-review`, `needs-verify`,
+`needs-integration`, `blocked`, `stale-claim`, or `handoff-ready`. Tags are not
+coordination authority; agents use `.agents/mpi-kanban/state/` first.
+
+File ownership and commit ownership are separate. A released or completed file
+claim means there is no active writer, but pending-change provenance can still
+matter. The final commit summary belongs to `mpi-end-session` or an explicit
+integrator after rereading current state.
 
 New canonical handoffs live under `.agents/mpi-kanban/state/handoffs/`.
 `docs/handoffs/` is legacy compatibility during migration.
@@ -112,8 +126,8 @@ Add to `.gitignore` if local-only:
 
 - `mpi-create-plan` — default. Compact living plan, one implementation flow, final verification.
 - `mpi-create-large-plan` — complex/uncertain work. Phases, plan drift notes, preservation notes, explicit `## Parallel Batch` sections.
-- `mpi-continue` — default implementation/resume skill. Reads plan, shared coordination index when present, latest handoff, kanban entry, current repo state before proposing work.
-- `mpi-execute-parallel` — runs only explicit parallel batches with declared, disjoint ownership.
+- `mpi-continue` — default implementation/resume skill. Reads plan, shared coordination index when present, latest handoff, kanban entry, current repo state before proposing work; claims files before editing.
+- `mpi-execute-parallel` — runs only explicit parallel batches with declared, disjoint ownership and per-worker file claims.
 
 Plans are living documents. Agents update `Current State`, `Plan Drift`, `Remaining Work`, and `Preservation Notes` as reality changes.
 

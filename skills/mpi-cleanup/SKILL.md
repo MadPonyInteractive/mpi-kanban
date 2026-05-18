@@ -21,6 +21,9 @@ Scan:
 - `docs/plans/*.md`
 - `docs/handoffs/*.json` as legacy compatibility handoffs or pointers
 - `.agents/mpi-kanban/state/index.json`
+- `.agents/mpi-kanban/state/sessions/*.json`
+- `.agents/mpi-kanban/state/tasks/*.json`
+- `.agents/mpi-kanban/state/files/*.json`
 - `.agents/mpi-kanban/state/handoffs/*.json`
 - `.claude/mpi-kanban/archived*.md`
 - `.claude/mpi-kanban/kanban.md`
@@ -33,6 +36,12 @@ Classify artifacts:
 - **Superseded handoff:** older handoff for the same active plan when a newer
   handoff exists.
 - **Stale:** older than the chosen threshold and not active.
+- **Active session/task/file claim:** listed in `state/index.json` and not
+  closed.
+- **Pending file state:** no active writer, but provenance remains for review,
+  verification, integration, or final commit summary.
+- **Closed coordination state:** status `closed` or completed records no longer
+  referenced by active tasks/handoffs.
 
 Default stale threshold: 60 days.
 
@@ -58,14 +67,15 @@ Approved cleanup may:
 
 - move completed/orphaned plans and handoffs to `docs/archive/mpi-kanban/`,
 - delete superseded handoffs,
+- move closed coordination records to `.agents/mpi-kanban/state/archive/`,
+- remove closed records from active `index.json` arrays,
 - leave active and uncertain files untouched.
 
 Never delete active files. Never delete archives by default.
 
-Phase 1 note: `.agents/mpi-kanban/state/` is the canonical machine state root,
-but automated state garbage collection is deferred. For now, classify state
-artifacts and propose actions, but do not delete coordination-state files unless
-the user explicitly approves those exact paths.
+Coordination-state cleanup is conservative. Propose actions first. Do not delete
+coordination-state files unless the user explicitly approves those exact paths.
+Prefer moving closed state to archive over deletion.
 
 ## Final output
 

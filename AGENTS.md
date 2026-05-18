@@ -72,6 +72,17 @@ When agent coordination state is relevant, read
 coordination doc needed for the task. `state/index.json` is the first runtime
 state file agents should inspect when it exists.
 
+Lifecycle operation references live under:
+
+- `lib/coordination-ops/statuses.md`
+- `lib/coordination-ops/lifecycle.md`
+
+Agents must coordinate through `.agents/mpi-kanban/state/` first. The kanban
+board is a user display surface; tags are only coarse summaries. A file claim
+with status `claimed` is an active write lock. Completed or released file
+ownership does not equal commit ownership; the closing or integrating session
+must reread current state before committing.
+
 New canonical handoffs live under `.agents/mpi-kanban/state/handoffs/`.
 `docs/handoffs/` is legacy compatibility during migration.
 

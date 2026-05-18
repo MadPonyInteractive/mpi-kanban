@@ -76,8 +76,9 @@ Skills must not add columns or metadata fields.
 
 ## 4. Shared Coordination Contract
 
-Phase 1 defines a shared Claude/Codex coordination contract without automating
-the full claim lifecycle.
+Phase 1 defines a shared Claude/Codex coordination contract. Phase 2 adds the
+shared lifecycle procedures agents use to create, update, release, reclaim, and
+clean up coordination records.
 
 Canonical machine-readable coordination state lives at:
 
@@ -96,11 +97,11 @@ The state root contains:
 Core record IDs are UUIDs. Agents should generate them with the shared helper
 documented in `docs/coordination/uuid-helper.md`.
 
-`state/index.json` directly lists active record paths and claim/state pointers
-so agents do not need to scan every state directory before deciding what to
-read. The default heartbeat timeout is 2 hours. Stale claims are reclaimable by
-an orchestrator or integrator when ownership intent is clear; uncertain cases
-ask the user.
+`state/index.json` directly lists active record paths, active write claims,
+pending file states, and handoff pointers so agents do not need to scan every
+state directory before deciding what to read. The default heartbeat timeout is 2
+hours. Stale claims are reclaimable by an orchestrator or integrator when
+ownership intent is clear; uncertain cases ask the user.
 
 Roles are lightweight behavior contracts:
 
@@ -118,7 +119,20 @@ reassigned. User-owned/manual kanban tasks stay board-only unless agent
 coordination is needed.
 
 Active records should keep only a short recent history window, roughly 5-10
-events. `mpi-cleanup` will later own coordination-state garbage collection.
+events. `mpi-cleanup` owns conservative coordination-state garbage collection.
+
+Shared lifecycle operation docs live under `lib/coordination-ops/`:
+
+- `statuses.md` - session, task, file-claim, and handoff status vocabulary.
+- `lifecycle.md` - index, session, task, file-claim, handoff, close, and kanban
+  summary tag operations.
+
+File ownership and commit ownership are separate. A file claim with status
+`claimed` is an active write lock. Statuses such as `complete`,
+`needs_review`, `needs_verification`, and `needs_integration` mean no active
+writer owns the file, but pending-change provenance still matters. The session
+running `mpi-end-session`, or an explicit integrator, owns the final commit
+summary after rereading current coordination and Git state.
 
 Reference docs live under `docs/coordination/`:
 
@@ -169,7 +183,10 @@ longer matches the written plan.
 `mpi-continue` does not commit or push.
 
 When present, `mpi-continue` should read `.agents/mpi-kanban/state/index.json`
-before inspecting individual coordination records.
+before inspecting individual coordination records. It should register or renew
+an implementer session, attach a task record, and claim files before editing.
+Kanban tags may summarize coordination state for the user, but `.agents/`
+records remain the coordination source.
 
 ## 7. Parallel Execution
 
@@ -230,9 +247,9 @@ superseded, stale, or uncertain. It proposes cleanup and waits for approval.
 
 It never deletes active files and never deletes archives by default.
 
-Coordination-state cleanup under `.agents/mpi-kanban/state/` is future Phase 2+
-work. Until then, cleanup docs may classify state artifacts but should not
-delete them automatically.
+Coordination-state cleanup under `.agents/mpi-kanban/state/` is conservative:
+`mpi-cleanup` proposes changes first, never deletes active state, and prefers
+moving closed coordination records to archive over deletion.
 
 ## 11. External Dependency
 

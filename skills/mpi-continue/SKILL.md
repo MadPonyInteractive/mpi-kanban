@@ -15,6 +15,9 @@ When shared coordination state exists, `mpi-continue` also reads
 `.agents/mpi-kanban/state/index.json` first and follows its pointers only as
 needed. The shared contract is documented in
 `${CLAUDE_PLUGIN_ROOT}/docs/coordination/README.md`.
+Lifecycle operations are documented in
+`${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/lifecycle.md` and status values in
+`${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/statuses.md`.
 
 Plans are living documents. If implementation has drifted, update or annotate
 the plan instead of forcing the next unchecked item.
@@ -43,19 +46,24 @@ Lib pointers, read only when needed:
 - `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` - `findEntry`
 - `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/mutate.md` - `moveEntry`
 - `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/steps.md` - `addSteps`, `markStep`
+- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/lifecycle.md` - session/task/file claim lifecycle
+- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/statuses.md` - state vocabulary
 
 1. Read the handoff if present. If it is a legacy `docs/handoffs/` pointer to a
    canonical `.agents/` handoff, load the canonical handoff before continuing.
-2. If `.agents/mpi-kanban/state/index.json` exists, read it as the active
+2. Read `lib/coordination-ops/lifecycle.md`. Call `ensureStateRoot()` when
+   coordination state is relevant, then read `state/index.json` as the active
    coordination facade.
-3. Read the active plan.
-4. Locate the kanban entry whose body contains `Plan file: <planPath>`.
-5. If the entry is in PLANNING, move it to IMPLEMENTING and add stable steps:
+3. Register or renew an `implementer` session and create or attach a task
+   record for the active kanban entry and plan.
+4. Read the active plan.
+5. Locate the kanban entry whose body contains `Plan file: <planPath>`.
+6. If the entry is in PLANNING, move it to IMPLEMENTING and add stable steps:
    - Compact plan: one step, `Implementation`.
    - Large/adaptive plan: phase-level steps when phases exist; otherwise use
      lifecycle steps: `Orient current state`, `Implement active work`,
      `Verify behavior`, `Preserve knowledge`, `Close session`.
-6. Inspect current workspace state with small commands (`git status`,
+7. Inspect current workspace state with small commands (`git status`,
    targeted file reads/searches). Do not run large diffs unless needed.
 
 ## Orient and detect drift
@@ -88,6 +96,7 @@ Before implementation, output a brief and stop:
 **Current state:** <1-3 bullets>
 **Plan drift:** <none or summary of plan edits made/proposed>
 **Files likely touched:** <files/modules>
+**Coordination:** <active claims, pending file states, or none>
 **Approach:** <2-4 sentences>
 **Risk:** Low | Medium | High
 **Verify after:** <specific check>
@@ -99,9 +108,18 @@ Do not implement before the user approves.
 
 ## Implementation
 
-After approval, implement the briefed action. Keep edits scoped to the stated
-files/modules. If verification needs temporary logs, add them and remove them
-after the user verifies.
+After approval:
+
+1. Renew the session heartbeat.
+2. Claim the files/modules likely to be edited before changing them.
+3. If another fresh active writer owns a needed file, do not edit it. Choose
+   wait, request handoff, create a proposal/review note, ask for an integrator,
+   split ownership, or ask the user.
+4. If a file has pending state but no active writer, read that state before
+   editing and treat it as current provenance.
+5. Implement the briefed action. Keep edits scoped to the stated files/modules.
+6. If verification needs temporary logs, add them and remove them after the
+   user verifies.
 
 After implementation, output:
 
@@ -128,14 +146,21 @@ Stop and wait.
    - Move or mark completed work under `## Completed`.
    - Update `## Current State`.
    - Keep `## Remaining Work` accurate.
-3. Flip the relevant kanban step when a lifecycle/phase boundary is complete.
-4. If meaningful work remains, say:
+3. Complete or release file claims using the lifecycle operation:
+   `complete`, `needs_review`, `needs_verification`, `needs_integration`,
+   `verified`, or `released` as appropriate.
+4. Update the task record to the appropriate status. Remember that released
+   file ownership is not commit ownership; preserve pending-change provenance
+   until review/integration/session close resolves it.
+5. Flip the relevant kanban step when a lifecycle/phase boundary is complete.
+   Update kanban tags only as a coarse user-facing summary and only when useful.
+6. If meaningful work remains, say:
 
 ```text
 Step verified. Say "continue" to keep going, "handoff" to switch sessions, or "end session" to close.
 ```
 
-5. If the plan is complete, say:
+7. If the plan is complete, say:
 
 ```text
 Plan complete. Suggested next step: run /mpi-kanban:mpi-end-session to preserve docs/rules/memory, commit, and close the kanban entry.

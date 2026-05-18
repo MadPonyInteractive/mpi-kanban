@@ -21,11 +21,13 @@ Expected layout:
         <uuid>.json
       handoffs/
         <uuid>.json
+      archive/
 ```
 
 `index.json` is the first machine-readable file every agent checks. It should
-remain small and pointer-driven. It directly lists active record paths and
-claims so agents can decide what to inspect next.
+remain small and pointer-driven. It directly lists active record paths, active
+write claims, pending file states, and handoffs so agents can decide what to
+inspect next.
 
 The Markdown board remains human-visible state only:
 
@@ -43,6 +45,10 @@ Active records should retain only recent operational history. Keep roughly the
 last 5-10 events in each record and move long-term narrative context into
 plans, docs, or handoffs.
 
+Only file records with status `claimed` are active write locks. Completed or
+released write ownership does not erase pending-change provenance; agents must
+inspect pending file states before editing or committing related work.
+
 ## Heartbeats
 
 The default heartbeat timeout is 2 hours.
@@ -53,5 +59,5 @@ should ask the user instead of guessing ownership intent.
 ## Cleanup
 
 `mpi-cleanup` will eventually own garbage collection for coordination state.
-Phase 1 only defines the layout and expected behavior.
-
+It should keep active state out of archive/delete proposals and move closed
+state out of `index.json` only after approval.

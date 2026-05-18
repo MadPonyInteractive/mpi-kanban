@@ -15,12 +15,12 @@
 
 ## Shared coordination Phase 2 follow-up
 
-- [ ] Automate session/task/file claim lifecycle under
+- [x] Automate session/task/file claim lifecycle under
   `.agents/mpi-kanban/state/`.
-- [ ] Add reviewer/verifier/integrator automation.
-- [ ] Add stale claim reclaim behavior for orchestrator/integrator roles.
-- [ ] Extend `mpi-cleanup` to garbage collect coordination state safely.
-- [ ] Decide whether the VS Code extension should visualize active agent state.
+- [x] Add reviewer/verifier/integrator automation.
+- [x] Add stale claim reclaim behavior for orchestrator/integrator roles.
+- [x] Extend `mpi-cleanup` to garbage collect coordination state safely.
+- [x] Defer richer VS Code extension visualization; use existing tags for now.
 
 ## Current redesign tasks
 

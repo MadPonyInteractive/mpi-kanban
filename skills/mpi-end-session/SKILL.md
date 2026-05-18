@@ -14,6 +14,23 @@ the session is done.
 
 ## Process
 
+### 0. Read coordination state
+
+Read these references when `.agents/mpi-kanban/state/index.json` exists:
+
+- `${CLAUDE_PLUGIN_ROOT}/docs/coordination/README.md`
+- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/lifecycle.md`
+- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/statuses.md`
+
+Reread the active session, task, file claim, and handoff records before
+committing. A released file claim means no active writer owns the file; it does
+not mean the pending changes are independently safe to commit.
+
+If this session owns active `claimed` files, complete, release, or hand them off
+before committing. If another fresh active session owns claimed files that are
+part of the current task, do not commit those changes; ask the user or assign an
+integrator.
+
 ### 1. Survey what changed
 
 Run, in this order (small commands only — protect context on big sessions):
@@ -56,6 +73,9 @@ Per `~/.claude/CLAUDE.md`:
 
 - Stage files BY NAME — never use `git add -A` or `git add .`. Mass-staging
   picks up unrelated work and secrets.
+- The session running `mpi-end-session`, or an explicit integrator, owns the
+  final commit summary. Base the message on current coordination state and the
+  current Git state, not stale assumptions from a previous file claim.
 - Commit message follows this repo's recent conventional style (read
   `git log --oneline -10` if uncertain). Write a clear "why" subject + a body
   if multiple distinct changes are bundled.
@@ -88,6 +108,11 @@ Steps:
      entry "<title>" still has open steps.` (Edit the commit if already made,
      or include in the original commit message.)
 
+After commit/kanban close-out, close or complete the active coordination session
+and task according to `lib/coordination-ops/lifecycle.md`. Remove closed records
+from active index arrays, but preserve pending records that still need cleanup,
+review, verification, or integration.
+
 ### 6. Final report
 
 Output to the user:
@@ -109,6 +134,8 @@ explicitly).
 - Never modify a rule file in `.claude/rules/` without explicit user approval.
 - Never auto-overwrite or delete a memory entry — `AskUserQuestion` first.
 - Never push (`git push`) — committing is enough; the user pushes when ready.
+- Never commit over another fresh active writer's claim.
+- Never treat kanban tags as coordination authority; reread `.agents` state.
 
 ## Success criteria
 
