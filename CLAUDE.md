@@ -123,9 +123,11 @@ correct.
 The live copy must include every file required for Codex and Claude agents to run
 the plugin, including `.codex-plugin/plugin.json`, and it must exclude ignored
 development-only content, including the `.git/` directory itself.
-`update_live.py` currently targets the Claude plugin cache only; Codex local
-development installs should point their marketplace entry at a Codex plugin
-checkout/path explicitly.
+`update_live.py` mirrors the checkout into the Claude plugin cache, mirrors a
+home-local Codex checkout at `~/plugins/mpi-kanban`, updates
+`~/.agents/plugins/marketplace.json`, and runs
+`codex plugin add mpi-kanban@mad-pony-interactive` so Codex installs the local
+plugin build into `~/.codex/plugins/cache/...`.
 
 ## Working directory
 

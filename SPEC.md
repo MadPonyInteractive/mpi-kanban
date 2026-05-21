@@ -26,9 +26,11 @@ This repository ships two native manifests that share one workflow source:
 - Shared skill tree: `skills/mpi-*/SKILL.md`
 
 Claude Code users invoke workflows with `/mpi-kanban:mpi-*` slash commands and
-natural language. Codex users invoke workflows with `$mpi-*` skills and natural
-language. Custom Codex slash commands are out of scope unless Codex adds
-official plugin slash-command support.
+natural language. Codex exposes plugin skills with the plugin prefix, such as
+`$mpi-kanban:mpi-continue`, and also routes from natural language. Short
+`$mpi-*` phrases may appear in trigger descriptions, but autocomplete and direct
+skill invocation use the prefixed Codex skill names. Custom Codex slash commands
+are out of scope unless Codex adds official plugin slash-command support.
 
 The Codex manifest points to `./skills/` and includes only native Codex
 metadata required for display and discovery. The Claude manifest remains the
@@ -285,8 +287,8 @@ The plugin still works without the extension; the board remains Markdown.
 - Plugin registers all current skills.
 - Claude and Codex manifests both register the shared `skills/` tree without
   duplicating workflow implementation.
-- Codex invocation is through `$mpi-*` skills and natural language, while
-  Claude Code retains `/mpi-kanban:mpi-*`.
+- Codex invocation is through prefixed `$mpi-kanban:mpi-*` plugin skills and
+  natural language, while Claude Code retains `/mpi-kanban:mpi-*`.
 - Brainstorm can capture BACKLOG and route to compact or large plan creation.
 - Plan creation moves/creates a PLANNING entry with a `Plan file:` body line.
 - Continue moves active work to IMPLEMENTING and uses stable kanban steps.

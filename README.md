@@ -40,6 +40,7 @@ New-Item -ItemType Directory -Force "$env:USERPROFILE\plugins" | Out-Null
 git clone https://github.com/MadPonyInteractive/mpi-kanban "$env:USERPROFILE\plugins\mpi-kanban"
 cd "$env:USERPROFILE\plugins\mpi-kanban"
 python scripts\register_codex_plugin.py
+codex plugin add mpi-kanban@mad-pony-interactive
 ```
 
 Clone on macOS or Linux:
@@ -49,15 +50,25 @@ mkdir -p ~/plugins
 git clone https://github.com/MadPonyInteractive/mpi-kanban ~/plugins/mpi-kanban
 cd ~/plugins/mpi-kanban
 python3 scripts/register_codex_plugin.py
+codex plugin add mpi-kanban@mad-pony-interactive
 ```
 
 If Python is installed as `python` instead of `python3` on macOS/Linux, use
 `python scripts/register_codex_plugin.py`.
 
 The helper is intentionally plain Python 3.8+ and uses only the standard
-library. It creates or updates `~/.agents/plugins/marketplace.json`, points the
-`mpi-kanban` entry at the checkout you ran it from, and prints the path Codex
-will load. To preview without writing, run it from the repository root:
+library. It is a registration helper, not the installer: it creates or updates
+`~/.agents/plugins/marketplace.json` and points the `mpi-kanban` entry at the
+checkout you ran it from. Codex currently accepts local plugin paths from this
+marketplace only when they resolve under your home directory and begin with
+`./`, so use the recommended `~/plugins/mpi-kanban` location or pass
+`--plugin-path` to another checkout under your home directory.
+
+After registration, `codex plugin add mpi-kanban@mad-pony-interactive` is the
+Codex install command. It installs the marketplace entry into
+`~/.codex/plugins/cache/...`; restart Codex after installing so the
+`$mpi-kanban:mpi-*` plugin skills are available. To preview the marketplace
+entry without writing, run it from the repository root:
 
 ```powershell
 python scripts\register_codex_plugin.py --dry-run
@@ -120,27 +131,30 @@ cleanup MPI files
 ```
 
 You can also invoke any skill directly. Claude Code uses plugin slash commands;
-Codex uses `$mpi-*` skills. Do not use Claude slash commands in Codex unless
-Codex adds official custom/plugin slash command support. After each skill runs,
-it tells you the next useful phrase. Kanban updates happen automatically inside
-the workflow — you do not need to ask separately.
+Codex uses plugin-prefixed `$mpi-kanban:mpi-*` skills. Short `$mpi-*` phrases
+are kept in trigger descriptions for natural-language routing, but Codex
+autocomplete and direct skill invocation use the prefixed names. Do not use
+Claude slash commands in Codex unless Codex adds official custom/plugin slash
+command support. After each skill runs, it tells you the next useful phrase.
+Kanban updates happen automatically inside the workflow — you do not need to ask
+separately.
 
 ### Invocation surface
 
 | Workflow | Claude Code | Codex |
 |---|---|---|
-| Bootstrap/import board | `/mpi-kanban:mpi-init` | `$mpi-init` |
-| Brainstorm | `/mpi-kanban:mpi-brainstorm` | `$mpi-brainstorm` |
-| Compact plan | `/mpi-kanban:mpi-create-plan` | `$mpi-create-plan` |
-| Large/adaptive plan | `/mpi-kanban:mpi-create-large-plan` | `$mpi-create-large-plan` |
-| Continue work | `/mpi-kanban:mpi-continue` | `$mpi-continue` |
-| Parallel batch | `/mpi-kanban:mpi-execute-parallel` | `$mpi-execute-parallel` |
-| Handoff | `/mpi-kanban:mpi-handoff` | `$mpi-handoff` |
-| End session | `/mpi-kanban:mpi-end-session` | `$mpi-end-session` |
-| Cleanup | `/mpi-kanban:mpi-cleanup` | `$mpi-cleanup` |
-| Archive completed | `/mpi-kanban:mpi-archive completed` | `$mpi-archive completed` |
-| Archive one entry | `/mpi-kanban:mpi-archive <title>` | `$mpi-archive <title>` |
-| Brief rule/bundle | `/mpi-kanban:mpi-brief-rule <name>` | `$mpi-brief-rule <name>` |
+| Bootstrap/import board | `/mpi-kanban:mpi-init` | `$mpi-kanban:mpi-init` |
+| Brainstorm | `/mpi-kanban:mpi-brainstorm` | `$mpi-kanban:mpi-brainstorm` |
+| Compact plan | `/mpi-kanban:mpi-create-plan` | `$mpi-kanban:mpi-create-plan` |
+| Large/adaptive plan | `/mpi-kanban:mpi-create-large-plan` | `$mpi-kanban:mpi-create-large-plan` |
+| Continue work | `/mpi-kanban:mpi-continue` | `$mpi-kanban:mpi-continue` |
+| Parallel batch | `/mpi-kanban:mpi-execute-parallel` | `$mpi-kanban:mpi-execute-parallel` |
+| Handoff | `/mpi-kanban:mpi-handoff` | `$mpi-kanban:mpi-handoff` |
+| End session | `/mpi-kanban:mpi-end-session` | `$mpi-kanban:mpi-end-session` |
+| Cleanup | `/mpi-kanban:mpi-cleanup` | `$mpi-kanban:mpi-cleanup` |
+| Archive completed | `/mpi-kanban:mpi-archive completed` | `$mpi-kanban:mpi-archive completed` |
+| Archive one entry | `/mpi-kanban:mpi-archive <title>` | `$mpi-kanban:mpi-archive <title>` |
+| Brief rule/bundle | `/mpi-kanban:mpi-brief-rule <name>` | `$mpi-kanban:mpi-brief-rule <name>` |
 
 Natural Codex prompts also work when the plugin is installed:
 
@@ -253,9 +267,11 @@ Plans are living documents. Agents update `Current State`, `Plan Drift`, `Remain
 
 **Kanban not auto-creating.** Only workflow skills that mutate the board call `ensureKanban()`. `brief-rule`, `archive`, and `cleanup` do not.
 
-**Codex does not see `$mpi-*` skills.** Confirm Codex is loading this plugin's
-`.codex-plugin/plugin.json` through the configured marketplace entry and that
-the manifest points to `./skills/`.
+**Codex does not see `$mpi-kanban:mpi-*` skills.** Confirm you ran both local
+install steps: `python scripts/register_codex_plugin.py`, then
+`codex plugin add mpi-kanban@mad-pony-interactive`. Restart Codex afterward.
+Codex direct skill invocation and autocomplete use the plugin-prefixed
+`$mpi-kanban:mpi-*` names, not bare `$mpi-*`.
 
 **Handoff did not include a resume prompt.** That is a bug — `mpi-handoff` must always print the mandatory resume block pointing to `mpi-continue`.
 
@@ -302,7 +318,8 @@ If you are editing the plugin itself rather than just using it:
   changes. The validator checks both Claude and Codex manifests.
 - After editing skills/hooks, run `/reload-plugins` in Claude Code, or uninstall
   + reinstall the plugin if you added or removed a skill folder. For Codex local
-  development, run `python scripts/register_codex_plugin.py` and reload Codex.
+  development, run `python scripts/register_codex_plugin.py`, then
+  `codex plugin add mpi-kanban@mad-pony-interactive`, and restart Codex.
 
 ## License
 

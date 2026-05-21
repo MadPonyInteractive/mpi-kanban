@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+## [0.4.2] - 2026-05-21
+
+### Added
+
 - Shared coordination lifecycle reference docs under `lib/coordination-ops/`
   covering session registration, task records, file claims, pending file state,
   handoffs, stale reclaim, cleanup, and commit ownership.
@@ -34,8 +40,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `mpi-continue`, `mpi-execute-parallel`, `mpi-handoff`, `mpi-end-session`, and
   `mpi-cleanup` now reference the shared `.agents/mpi-kanban/state/` lifecycle
   model.
+- Codex local registration now rejects plugin paths outside the marketplace root
+  instead of writing a marketplace entry Codex will skip.
+- `update_live.py` now mirrors the plugin to `~/plugins/mpi-kanban`, registers
+  that home-local path, and runs `codex plugin add` so Codex installs the
+  current local plugin build.
 - README now explains the multi-agent coordination workflow in user-facing
   terms: roles, file claims, pending state, integration, and display-only tags.
+- README now documents that local Codex plugin paths must resolve under the home
+  directory so the generated marketplace path starts with `./`, and that users
+  must run `codex plugin add mpi-kanban@mad-pony-interactive` after registration.
+- AGENTS and CLAUDE project instructions now describe the current dual Claude
+  cache and Codex install behavior of `update_live.py`.
+- Codex direct invocation docs and starter prompts now use the actual
+  plugin-prefixed skill names, such as `$mpi-kanban:mpi-continue`.
 - Shared coordination docs now distinguish active write claims from pending file
   provenance, and separate file ownership from commit ownership.
 - Skill descriptions and docs now distinguish Claude Code slash commands from
@@ -68,5 +86,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.4.2
 [0.4.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.4.1

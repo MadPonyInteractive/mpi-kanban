@@ -4,8 +4,10 @@ This file is the Codex entry point for this repository. Mpi-Kanban has a native
 Codex plugin manifest at `.codex-plugin/plugin.json` and a Claude Code manifest
 at `.claude-plugin/plugin.json`; both use the same `skills/` workflow tree. When
 installed as a Codex plugin, invoke workflows with `$mpi-*` skills or natural
-language. Claude slash commands such as `/mpi-kanban:mpi-continue` are for
-Claude Code only.
+language. Codex exposes plugin skill names with the plugin prefix, such as
+`$mpi-kanban:mpi-continue`; older `$mpi-*` references are accepted only as
+natural-language trigger phrases when the model routes them. Claude slash
+commands such as `/mpi-kanban:mpi-continue` are for Claude Code only.
 
 ## Source of Truth
 
@@ -106,8 +108,10 @@ Do not edit existing files in this directory unless the user explicitly asks to 
 The live copy must include every file required for Codex and Claude agents to
 run the plugin, including `.codex-plugin/plugin.json`, and it must exclude
 ignored development-only content, including `.git/` itself. `update_live.py`
-currently updates the Claude plugin cache only; Codex local installs should
-point their marketplace entry at a Codex plugin checkout/path explicitly.
+mirrors the checkout into the Claude plugin cache, mirrors a home-local Codex
+checkout at `~/plugins/mpi-kanban`, updates `~/.agents/plugins/marketplace.json`,
+and runs `codex plugin add mpi-kanban@mad-pony-interactive` so Codex installs
+the local plugin build into `~/.codex/plugins/cache/...`.
 
 ## Project Kanban Usage
 

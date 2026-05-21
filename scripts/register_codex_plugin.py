@@ -53,13 +53,18 @@ def source_path(plugin_path, marketplace_path):
     try:
         relative = os.path.relpath(str(plugin_path), str(root))
     except ValueError:
-        return to_posix_path(str(plugin_path))
+        raise RuntimeError(
+            "Codex local plugin paths must be under the marketplace root: {0}".format(root)
+        )
 
     relative = to_posix_path(relative)
     if relative == ".":
         return "."
-    if relative.startswith("../"):
-        return relative
+    if relative.startswith("../") or relative == "..":
+        raise RuntimeError(
+            "Codex local plugin paths must start with './'. Move or clone the plugin "
+            "under {0}, or pass --plugin-path to a checkout under that directory.".format(root)
+        )
     return "./" + relative
 
 
@@ -177,7 +182,8 @@ def main(argv=None):
     print("Codex marketplace {0}: {1}".format(action, marketplace_path))
     print("Plugin: {0}".format(plugin_path))
     print("Source path: {0}".format(entry["source"]["path"]))
-    print("Restart or reload Codex so it reads the updated marketplace.")
+    print("Next: run `codex plugin add mpi-kanban@mad-pony-interactive`.")
+    print("Then restart Codex so it loads the installed plugin skills.")
     return 0
 
 
