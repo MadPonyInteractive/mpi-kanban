@@ -1,6 +1,6 @@
 ---
 name: mpi-create-plan
-description: Create a compact/default MPI plan for normal work. Use when the user asks to create a plan, make a plan, plan this, or after brainstorming when the task can be implemented as one coherent flow with final verification.
+description: Create a compact/default MPI plan for normal work. Use when the user says "MPI create plan", "create an MPI plan", "create a plan", "make a plan", "plan this", "$mpi-create-plan", or after brainstorming when the task can be implemented as one coherent flow with final verification.
 ---
 
 # mpi-create-plan Skill
@@ -9,6 +9,11 @@ description: Create a compact/default MPI plan for normal work. Use when the use
 
 Create a compact plan at `docs/plans/YYYY-MM-DD-<slug>.md` and reflect it on
 the kanban board. This is the default planning path for normal work.
+
+Invocation: Claude Code users may run `/mpi-kanban:mpi-create-plan`; Codex
+users may run `$mpi-create-plan` or ask naturally to create an MPI plan.
+References using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex
+resolves the same files relative to this plugin root.
 
 Use `mpi-create-large-plan` instead when the work needs investigation,
 multiple phases, explicit parallel batches, or complex risk management.
@@ -53,8 +58,9 @@ because several files may change.
 ## Workflow
 
 1. Understand the goal or BACKLOG entry from `mpi-brainstorm`.
-2. If the goal is clearly large or uncertain, recommend
-   `/mpi-kanban:mpi-create-large-plan` instead and wait for confirmation.
+2. If the goal is clearly large or uncertain, recommend `$mpi-create-large-plan`
+   in Codex or `/mpi-kanban:mpi-create-large-plan` in Claude Code instead and
+   wait for confirmation.
 3. Write the compact plan file.
 4. Update the kanban board.
 

@@ -1,8 +1,9 @@
 # Mpi-Kanban — Claude Code Plugin
 
-A Claude Code plugin that bundles the MPI workflow skills (`brainstorm`, `create-plan`,
-`create-large-plan`, `continue`, `execute-parallel`, `end-session`, `cleanup`, `archive`,
-`handoff`, `brief-rule`) and drives a per-project Kanban board (`kanban.md`) rendered by
+A dual Claude Code/Codex plugin that bundles the MPI workflow skills
+(`brainstorm`, `create-plan`, `create-large-plan`, `continue`,
+`execute-parallel`, `end-session`, `cleanup`, `archive`, `handoff`,
+`brief-rule`) and drives a per-project Kanban board (`kanban.md`) rendered by
 the `MadPonyInteractive.mpi-kanban` VS Code extension fork.
 
 ## Companion VS Code extension
@@ -51,6 +52,8 @@ file contract.
 
 ## Source of truth
 
+- [.codex-plugin/plugin.json](./.codex-plugin/plugin.json) — native Codex plugin manifest.
+- [.claude-plugin/plugin.json](./.claude-plugin/plugin.json) — native Claude Code plugin manifest.
 - [SPEC.md](./SPEC.md) — full design spec. Read in full before changing behavior.
 - [PLAN.md](./PLAN.md) — phased build to-do list.
 
@@ -66,7 +69,8 @@ must be consulted while building this plugin. They are gitignored — they are
 build-time helpers, not part of the shipped plugin.
 
 - **Plugin Structure** — canonical Claude Code plugin layout. Key rules:
-  - `plugin.json` lives at `.claude-plugin/plugin.json` (NOT plugin root).
+  - Claude's `plugin.json` lives at `.claude-plugin/plugin.json` (NOT plugin root).
+  - Codex's `plugin.json` lives at `.codex-plugin/plugin.json`.
   - `name` field is kebab-case (`mpi-kanban`).
   - `skills/`, `hooks/` sit at plugin root. (No `commands/` — skills auto-trigger from description; direct invoke via `/mpi-kanban:mpi-X`.)
   - Use `${CLAUDE_PLUGIN_ROOT}` for any intra-plugin path reference.
@@ -117,11 +121,11 @@ update either `update_live.py` or `.gitignore` as needed so the live copy remain
 correct.
 
 The live copy must include every file required for Codex and Claude agents to run
-the plugin, and it must exclude ignored development-only content, including the
-`.git/` directory itself. Future work may make this plugin standard for both
-Codex and Claude and may require copying to multiple filesystem destinations; in
-that case, update `update_live.py` so destination handling is explicit rather
-than assuming the current single Claude plugin cache path.
+the plugin, including `.codex-plugin/plugin.json`, and it must exclude ignored
+development-only content, including the `.git/` directory itself.
+`update_live.py` currently targets the Claude plugin cache only; Codex local
+development installs should point their marketplace entry at a Codex plugin
+checkout/path explicitly.
 
 ## Working directory
 

@@ -1,6 +1,6 @@
 ---
 name: mpi-end-session
-description: Close session — sync rules/docs, commit touched files, move kanban entry to COMPLETED if all steps done. Use when user says "end session", "wrap up", "commit and close", "/mpi-kanban:mpi-end-session".
+description: MPI end session workflow. Close session, sync rules/docs, commit touched files, and move the kanban entry to COMPLETED if all steps are done. Use when user says "MPI end session", "end session", "wrap up", "commit and close", "$mpi-end-session", or "/mpi-kanban:mpi-end-session".
 ---
 
 # mpi-end-session Skill
@@ -11,6 +11,11 @@ touched files, persist any new memory, and close out the active kanban entry.
 This skill is the LAST step in the brainstorm → create-plan/create-large-plan
 → continue → handoff/continue → end-session loop. Run it when the user signals
 the session is done.
+
+Invocation: Claude Code users may run `/mpi-kanban:mpi-end-session`; Codex
+users may run `$mpi-end-session` or ask naturally to end the MPI session.
+References using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex
+resolves the same files relative to this plugin root.
 
 ## Process
 
@@ -145,5 +150,6 @@ explicitly).
 - Kanban entry moved to COMPLETED if all steps done; otherwise left in
   IMPLEMENTING with a note in the commit.
 - `git status` clean (or remaining items explained).
-- Suggest `/mpi-kanban:mpi-cleanup` after a completed entry if old plans or
-  handoffs are likely stale. Do not run cleanup automatically.
+- Suggest `$mpi-cleanup` in Codex or `/mpi-kanban:mpi-cleanup` in Claude Code
+  after a completed entry if old plans or handoffs are likely stale. Do not run
+  cleanup automatically.

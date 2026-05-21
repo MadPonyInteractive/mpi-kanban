@@ -60,84 +60,97 @@ Relevant Codex-native packaging assumptions to verify during implementation:
 
 ## Completed
 
-- [ ] Nothing yet.
+- [x] Confirmed the local Codex plugin scaffold contract from the installed
+  `plugin-creator` reference: `.codex-plugin/plugin.json`, `skills:
+  "./skills/"`, `interface` metadata, and home-local marketplace entries under
+  `~/.agents/plugins/marketplace.json` for local development.
+- [x] Added `.codex-plugin/plugin.json` for `mpi-kanban` using the existing
+  public identity and shared `skills/` tree.
+- [x] Updated skill descriptions and runtime notes so Codex uses `$mpi-*` and
+  natural language while Claude Code keeps `/mpi-kanban:mpi-*`.
+- [x] Updated README, SPEC, AGENTS, CLAUDE, CHANGELOG, validation, and
+  live-copy guidance for the dual-package model.
+- [x] Extended `scripts/validate_plugin.py` to validate the Codex manifest,
+  shared skill path, interface metadata, and Claude/Codex identity drift.
+- [x] Added `scripts/register_codex_plugin.py` to simplify local Codex
+  registration without requiring users to hand-edit marketplace JSON.
 
 ## Remaining Work
 
 ## Phase 1: Codex Native Contract
 
-- [ ] Confirm the exact current Codex plugin and skill manifest contract from
+- [x] Confirm the exact current Codex plugin and skill manifest contract from
   official docs or local installed references before editing files. **Verify:**
   the plan notes any drift from the assumptions in `Current State`, especially
   around `.codex-plugin/plugin.json`, skill discovery, marketplace entries, and
   explicit `$skill-name` invocation.
-- [ ] Define the accepted invocation contract for both systems in one short
+- [x] Define the accepted invocation contract for both systems in one short
   compatibility note: Claude uses `/mpi-kanban:mpi-*`; Codex uses `$mpi-*` and
   natural language triggers. **Verify:** the note explicitly says custom Codex
   slash commands are out of scope unless officially supported.
-- [ ] Decide whether Codex install support needs a repo-local marketplace file,
+- [x] Decide whether Codex install support needs a repo-local marketplace file,
   home-local marketplace instructions, or both. **Verify:** the decision covers
   local development, public install, and user-facing docs without assuming a
   Claude installation already exists.
 
 ## Phase 2: Codex Plugin Manifest
 
-- [ ] Add `.codex-plugin/plugin.json` for `mpi-kanban` using the existing plugin
+- [x] Add `.codex-plugin/plugin.json` for `mpi-kanban` using the existing plugin
   identity, version, author, license, repository, and keywords where compatible.
   **Verify:** the manifest points to `./skills/` and includes native Codex
   interface metadata with concise default prompts for common workflows.
-- [ ] Add only the Codex metadata and assets required for a native Codex plugin
+- [x] Add only the Codex metadata and assets required for a native Codex plugin
   card. **Verify:** no placeholder assets or unused manifest paths are shipped.
-- [ ] Keep `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`
+- [x] Keep `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json`
   synchronized where they represent the same public identity. **Verify:** name,
   version, description, author, license, and repository fields do not drift
   accidentally.
 
 ## Phase 3: Shared Skill Compatibility
 
-- [ ] Audit every `skills/mpi-*/SKILL.md` for Claude-only wording that would
+- [x] Audit every `skills/mpi-*/SKILL.md` for Claude-only wording that would
   confuse Codex users or models. **Verify:** Claude command references remain
   accurate, but Codex-facing instructions do not imply that Codex should use
   Claude slash commands.
-- [ ] Tune frontmatter descriptions for reliable Codex skill triggering,
+- [x] Tune frontmatter descriptions for reliable Codex skill triggering,
   prioritizing `mpi-end-session`, `mpi-cleanup`, `mpi-continue`, and
   `mpi-handoff`. **Verify:** descriptions include natural phrases users are
   likely to type, such as "MPI end session", "run MPI cleanup", "continue this
   MPI plan", and "create an MPI handoff".
-- [ ] Replace hard Claude-only root assumptions where needed with dual-runtime
+- [x] Replace hard Claude-only root assumptions where needed with dual-runtime
   wording. **Verify:** skill references still resolve for Claude plugin use and
   are understandable for Codex plugin use.
-- [ ] Check related `lib/` reference docs for runtime-specific instructions
+- [x] Check related `lib/` reference docs for runtime-specific instructions
   that should become model-neutral. **Verify:** shared workflow behavior is not
   forked between Claude and Codex.
 
 ## Phase 4: Installation and Invocation Documentation
 
-- [ ] Update `README.md` with separate Claude Code and Codex installation
+- [x] Update `README.md` with separate Claude Code and Codex installation
   sections. **Verify:** a new Codex user can identify the native Codex install
   path without reading Claude-only instructions first.
-- [ ] Document the command surface by product:
+- [x] Document the command surface by product:
   `/mpi-kanban:mpi-*` for Claude Code and `$mpi-*` for Codex. **Verify:**
   examples cover at least end session, cleanup, continue, handoff, and natural
   language invocation.
-- [ ] Update `AGENTS.md` so Codex bridge behavior distinguishes installed
+- [x] Update `AGENTS.md` so Codex bridge behavior distinguishes installed
   Codex plugin use from fallback Claude-plugin reference use. **Verify:** Codex
   is not told to browse arbitrary Claude plugins and the MPI fallback remains
   constrained to `mpi-kanban@mad-pony-interactive`.
-- [ ] Update `SPEC.md` with the new dual-packaging contract. **Verify:** the
+- [x] Update `SPEC.md` with the new dual-packaging contract. **Verify:** the
   spec names both manifests and keeps the workflow source of truth in the
   shared `skills/` tree.
 
 ## Phase 5: Validation and Release Tooling
 
-- [ ] Extend `scripts/validate_plugin.py` or add targeted validation so it
+- [x] Extend `scripts/validate_plugin.py` or add targeted validation so it
   checks the Codex manifest, shared skills, and Claude manifest together.
   **Verify:** validation fails on missing `.codex-plugin/plugin.json`, missing
   `skills` path, or manifest identity drift.
-- [ ] Review `update_live.py` against the dual-plugin packaging model.
+- [x] Review `update_live.py` against the dual-plugin packaging model.
   **Verify:** it either supports the Codex live/update path explicitly or
   documents why Codex plugin installation is handled separately.
-- [ ] Update `CHANGELOG.md` only after implementation details are known.
+- [x] Update `CHANGELOG.md` only after implementation details are known.
   **Verify:** the changelog describes actual shipped Codex plugin behavior, not
   aspirational support.
 
@@ -154,12 +167,18 @@ Relevant Codex-native packaging assumptions to verify during implementation:
 - [ ] Confirm natural language triggering for "MPI cleanup" and "MPI end
   session". **Verify:** Codex selects the expected skills or asks a reasonable
   clarification instead of ignoring the plugin.
-- [ ] Run the existing Claude plugin validation path after Codex changes.
+- [x] Run the existing Claude plugin validation path after Codex changes.
   **Verify:** Claude slash commands and plugin metadata still work.
 
 ## Plan Drift
 
-- None yet.
+- 2026-05-21: Native Codex packaging was implemented from the local installed
+  Codex plugin scaffold reference rather than external docs. No repo-local
+  `.agents/plugins/marketplace.json` was added because `.agents/` is project
+  state and gitignored here; README documents the home-local marketplace path
+  instead.
+- 2026-05-21: Added a Python 3.8+ stdlib-only registration helper so local
+  Codex installation does not require manual JSON editing.
 
 ## Verification
 

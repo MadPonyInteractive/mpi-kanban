@@ -24,13 +24,13 @@
 
 ## Dual Claude/Codex plugin packaging Phase 3
 
-- [ ] Add a native Codex plugin manifest and metadata while preserving the
+- [x] Add a native Codex plugin manifest and metadata while preserving the
   existing Claude plugin manifest.
-- [ ] Keep the shared `skills/` tree as the workflow source for both Claude and
+- [x] Keep the shared `skills/` tree as the workflow source for both Claude and
   Codex.
-- [ ] Make Codex invocation native through `$mpi-*` skills and natural language,
+- [x] Make Codex invocation native through `$mpi-*` skills and natural language,
   not Claude-style slash commands.
-- [ ] Update README, SPEC, AGENTS, validation, and live-copy guidance for the
+- [x] Update README, SPEC, AGENTS, validation, and live-copy guidance for the
   dual-package model.
 - [ ] Smoke-test `mpi-cleanup` and `mpi-end-session` in Codex, then rerun Claude
   plugin validation.
@@ -50,10 +50,10 @@
 
 ## Validation checklist
 
-- [ ] Confirm old `mpi-write-plan` / `mpi-execute-next` references are gone or
+- [x] Confirm old `mpi-write-plan` / `mpi-execute-next` references are gone or
   only appear in migration notes.
-- [ ] Confirm all skill frontmatter names match folder names.
-- [ ] Confirm plugin metadata lists the current skills.
+- [x] Confirm all skill frontmatter names match folder names.
+- [x] Confirm plugin metadata lists the current skills.
 - [ ] Run `update_live.py` after review to copy the plugin into the live cache.
 - [ ] In a test project, run brainstorm -> create-plan -> continue -> handoff
   -> continue -> end-session.

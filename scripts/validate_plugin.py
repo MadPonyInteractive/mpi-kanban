@@ -1,8 +1,10 @@
-"""Validate the Mpi-Kanban Claude Code plugin layout before release.
+"""Validate the Mpi-Kanban dual Claude/Codex plugin layout before release.
 
 Checks (fail-fast):
   - .claude-plugin/plugin.json: required fields, kebab-case name
   - .claude-plugin/marketplace.json: required fields, plugin entry present
+  - .codex-plugin/plugin.json: required fields, shared skill path, interface
+  - Claude and Codex manifests stay synchronized for public identity fields
   - plugin.json name matches the entry in marketplace.json
   - Each skills/*/ contains a SKILL.md with valid YAML frontmatter
   - SKILL.md `name` field matches its parent directory name (kebab-case)
@@ -42,7 +44,10 @@ def parse_frontmatter(text: str) -> dict[str, str] | None:
     return data
 
 
-def validate_plugin_json() -> dict:
+IDENTITY_FIELDS = ("name", "version", "description", "author", "repository", "license", "keywords")
+
+
+def validate_claude_plugin_json() -> dict:
     path = ROOT / ".claude-plugin" / "plugin.json"
     if not path.exists():
         fail(f"missing: {path.relative_to(ROOT)}")
@@ -55,6 +60,41 @@ def validate_plugin_json() -> dict:
     if name and not KEBAB.match(name):
         fail(f"plugin.json name '{name}' is not kebab-case")
     return data
+
+
+def validate_codex_plugin_json() -> dict:
+    path = ROOT / ".codex-plugin" / "plugin.json"
+    if not path.exists():
+        fail(f"missing: {path.relative_to(ROOT)}")
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    for field in ("name", "version", "description", "skills", "interface"):
+        if not data.get(field):
+            fail(f".codex-plugin/plugin.json missing required field: {field}")
+    name = data.get("name", "")
+    if name and not KEBAB.match(name):
+        fail(f".codex-plugin/plugin.json name '{name}' is not kebab-case")
+    if data.get("skills") != "./skills/":
+        fail(".codex-plugin/plugin.json skills must point to ./skills/")
+    interface = data.get("interface", {})
+    if not isinstance(interface, dict):
+        fail(".codex-plugin/plugin.json interface must be an object")
+    else:
+        for field in ("displayName", "shortDescription", "developerName", "category"):
+            if not interface.get(field):
+                fail(f".codex-plugin/plugin.json interface missing field: {field}")
+        prompts = interface.get("defaultPrompt", [])
+        if prompts and (not isinstance(prompts, list) or len(prompts) > 3):
+            fail(".codex-plugin/plugin.json interface.defaultPrompt must be a list of at most 3 prompts")
+    return data
+
+
+def validate_manifest_sync(claude_data: dict, codex_data: dict) -> None:
+    if not claude_data or not codex_data:
+        return
+    for field in IDENTITY_FIELDS:
+        if claude_data.get(field) != codex_data.get(field):
+            fail(f"manifest identity drift on field: {field}")
 
 
 def validate_marketplace_json(plugin_name: str) -> None:
@@ -113,7 +153,9 @@ def check_no_symlinks() -> None:
 
 
 def main() -> int:
-    plugin_data = validate_plugin_json()
+    plugin_data = validate_claude_plugin_json()
+    codex_data = validate_codex_plugin_json()
+    validate_manifest_sync(plugin_data, codex_data)
     validate_marketplace_json(plugin_data.get("name", ""))
     validate_skills()
     check_no_symlinks()

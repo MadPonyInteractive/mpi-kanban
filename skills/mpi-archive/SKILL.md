@@ -1,6 +1,6 @@
 ---
 name: mpi-archive
-description: Archive entries from the MPI kanban board into rotating archive markdown files. Use when the user says "archive completed kanban entries", "archive completed entries", "archive kanban entry <title>", "archive entry <title>", "/mpi-kanban:mpi-archive", or asks to move old/completed kanban entries out of kanban.md.
+description: Archive entries from the MPI kanban board into rotating archive markdown files. Use when the user says "MPI archive", "archive completed kanban entries", "archive completed entries", "archive kanban entry <title>", "archive entry <title>", "$mpi-archive", or "/mpi-kanban:mpi-archive".
 ---
 
 # mpi-archive Skill
@@ -10,6 +10,11 @@ Archive entries out of `.claude/mpi-kanban/kanban.md` into
 
 This skill removes entries from the active board only after preserving their
 full entry blocks in an archive file.
+
+Invocation: Claude Code users may run `/mpi-kanban:mpi-archive`; Codex users
+may run `$mpi-archive` or ask naturally to archive MPI kanban entries.
+References using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex
+resolves the same files relative to this plugin root.
 
 ## Inputs
 

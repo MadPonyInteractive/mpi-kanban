@@ -1,12 +1,15 @@
 # Mpi-Kanban
 
-Claude Code plugin. Bundles MPI workflow skills, drives a per-project Kanban
-board (`.claude/mpi-kanban/kanban.md`) that reflects live work, and defines a
-shared `.agents/mpi-kanban/state/` coordination contract for Claude and Codex.
+Claude Code and Codex plugin. Bundles MPI workflow skills, drives a per-project
+Kanban board (`.claude/mpi-kanban/kanban.md`) that reflects live work, and
+defines a shared `.agents/mpi-kanban/state/` coordination contract for Claude
+and Codex.
 
 Skills: `init`, `brainstorm`, `create-plan`, `create-large-plan`, `continue`, `execute-parallel`, `handoff`, `end-session`, `cleanup`, `archive`, `brief-rule`.
 
 ## Install
+
+### Claude Code
 
 In Claude Code, run:
 
@@ -16,6 +19,78 @@ In Claude Code, run:
 ```
 
 Claude Code clones the public GitHub repo, registers the marketplace, and installs the plugin. Restart Claude Code so the skills register, then type `/mpi-kanban:` — you should see eleven skills in the autocomplete list.
+
+### Codex
+
+Codex uses the native `.codex-plugin/plugin.json` manifest in this repo. Clone
+the repository first, then register that checkout in your home-local Codex
+marketplace.
+
+Recommended local plugin location:
+
+| Platform | Directory |
+|---|---|
+| Windows PowerShell | `$env:USERPROFILE\plugins\mpi-kanban` |
+| macOS/Linux shell | `~/plugins/mpi-kanban` |
+
+Clone on Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\plugins" | Out-Null
+git clone https://github.com/MadPonyInteractive/mpi-kanban "$env:USERPROFILE\plugins\mpi-kanban"
+cd "$env:USERPROFILE\plugins\mpi-kanban"
+python scripts\register_codex_plugin.py
+```
+
+Clone on macOS or Linux:
+
+```bash
+mkdir -p ~/plugins
+git clone https://github.com/MadPonyInteractive/mpi-kanban ~/plugins/mpi-kanban
+cd ~/plugins/mpi-kanban
+python3 scripts/register_codex_plugin.py
+```
+
+If Python is installed as `python` instead of `python3` on macOS/Linux, use
+`python scripts/register_codex_plugin.py`.
+
+The helper is intentionally plain Python 3.8+ and uses only the standard
+library. It creates or updates `~/.agents/plugins/marketplace.json`, points the
+`mpi-kanban` entry at the checkout you ran it from, and prints the path Codex
+will load. To preview without writing, run it from the repository root:
+
+```powershell
+python scripts\register_codex_plugin.py --dry-run
+```
+
+The marketplace entry has this shape:
+
+```json
+{
+  "name": "mad-pony-interactive",
+  "interface": {
+    "displayName": "MadPonyInteractive"
+  },
+  "plugins": [
+    {
+      "name": "mpi-kanban",
+      "source": {
+        "source": "local",
+        "path": "<relative path to this checkout>"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
+```
+
+With the home-local convention, the marketplace file is
+`~/.agents/plugins/marketplace.json`. Public Codex distribution can use the same
+manifest; Claude installation is not required for Codex.
 
 ### (Recommended) Install the VS Code extension
 
@@ -44,24 +119,37 @@ end session
 cleanup MPI files
 ```
 
-You can also invoke any skill directly via slash command. After each skill runs, it tells you the next useful phrase. Kanban updates happen automatically inside the workflow — you do not need to ask separately.
+You can also invoke any skill directly. Claude Code uses plugin slash commands;
+Codex uses `$mpi-*` skills. Do not use Claude slash commands in Codex unless
+Codex adds official custom/plugin slash command support. After each skill runs,
+it tells you the next useful phrase. Kanban updates happen automatically inside
+the workflow — you do not need to ask separately.
 
-### Slash commands
+### Invocation surface
 
-| Command | What it does |
-|---|---|
-| `/mpi-kanban:mpi-init` | Bootstrap the board, optionally import a backlog file. |
-| `/mpi-kanban:mpi-brainstorm` | Explore an idea, capture it as a BACKLOG entry. |
-| `/mpi-kanban:mpi-create-plan` | Create a compact default plan. |
-| `/mpi-kanban:mpi-create-large-plan` | Create an adaptive plan for complex/uncertain work. |
-| `/mpi-kanban:mpi-continue` | Resume active work from plan/handoff/current state. |
-| `/mpi-kanban:mpi-execute-parallel` | Execute an explicit `## Parallel Batch`. |
-| `/mpi-kanban:mpi-handoff` | Generate a JSON handoff + resume prompt for a fresh session. |
-| `/mpi-kanban:mpi-end-session` | Commit, preserve docs/rules, close the active kanban entry. |
-| `/mpi-kanban:mpi-cleanup` | Propose cleanup for stale plans, handoffs, artifacts. |
-| `/mpi-kanban:mpi-archive completed` | Archive all COMPLETED entries. |
-| `/mpi-kanban:mpi-archive <title>` | Archive one entry by exact title. |
-| `/mpi-kanban:mpi-brief-rule <name>` | Return a configured rule briefing or bundle. |
+| Workflow | Claude Code | Codex |
+|---|---|---|
+| Bootstrap/import board | `/mpi-kanban:mpi-init` | `$mpi-init` |
+| Brainstorm | `/mpi-kanban:mpi-brainstorm` | `$mpi-brainstorm` |
+| Compact plan | `/mpi-kanban:mpi-create-plan` | `$mpi-create-plan` |
+| Large/adaptive plan | `/mpi-kanban:mpi-create-large-plan` | `$mpi-create-large-plan` |
+| Continue work | `/mpi-kanban:mpi-continue` | `$mpi-continue` |
+| Parallel batch | `/mpi-kanban:mpi-execute-parallel` | `$mpi-execute-parallel` |
+| Handoff | `/mpi-kanban:mpi-handoff` | `$mpi-handoff` |
+| End session | `/mpi-kanban:mpi-end-session` | `$mpi-end-session` |
+| Cleanup | `/mpi-kanban:mpi-cleanup` | `$mpi-cleanup` |
+| Archive completed | `/mpi-kanban:mpi-archive completed` | `$mpi-archive completed` |
+| Archive one entry | `/mpi-kanban:mpi-archive <title>` | `$mpi-archive <title>` |
+| Brief rule/bundle | `/mpi-kanban:mpi-brief-rule <name>` | `$mpi-brief-rule <name>` |
+
+Natural Codex prompts also work when the plugin is installed:
+
+```text
+run MPI cleanup
+continue this MPI plan
+create an MPI handoff
+MPI end session
+```
 
 ## Multi-agent coordination
 
@@ -157,13 +245,17 @@ Plans are living documents. Agents update `Current State`, `Plan Drift`, `Remain
 
 ## Troubleshooting
 
-**Slash commands not showing up.** Restart Claude Code. If still missing, uninstall + reinstall:
+**Claude slash commands not showing up.** Restart Claude Code. If still missing, uninstall + reinstall:
 ```text
 /plugin uninstall mpi-kanban@mad-pony-interactive
 /plugin install mpi-kanban@mad-pony-interactive
 ```
 
 **Kanban not auto-creating.** Only workflow skills that mutate the board call `ensureKanban()`. `brief-rule`, `archive`, and `cleanup` do not.
+
+**Codex does not see `$mpi-*` skills.** Confirm Codex is loading this plugin's
+`.codex-plugin/plugin.json` through the configured marketplace entry and that
+the manifest points to `./skills/`.
 
 **Handoff did not include a resume prompt.** That is a bug — `mpi-handoff` must always print the mandatory resume block pointing to `mpi-continue`.
 
@@ -207,8 +299,10 @@ If you are editing the plugin itself rather than just using it:
 - See [CLAUDE.md](./CLAUDE.md) for build constraints and live-copy maintenance.
 - See [SPEC.md](./SPEC.md) and [PLAN.md](./PLAN.md) for design.
 - Run `python scripts/validate_plugin.py` before copying or releasing plugin
-  changes.
-- After editing skills/hooks, run `/reload-plugins` in Claude Code, or uninstall + reinstall the plugin if you added or removed a skill folder.
+  changes. The validator checks both Claude and Codex manifests.
+- After editing skills/hooks, run `/reload-plugins` in Claude Code, or uninstall
+  + reinstall the plugin if you added or removed a skill folder. For Codex local
+  development, run `python scripts/register_codex_plugin.py` and reload Codex.
 
 ## License
 

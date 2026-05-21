@@ -1,6 +1,6 @@
 ---
 name: mpi-create-large-plan
-description: Create an adaptive, investigation-backed MPI plan for large or uncertain work. Use when the user asks for a large plan, complex plan, adaptive plan, multi-phase implementation, non-trivial bug investigation, parallel-safe plan, or when normal planning would be too shallow.
+description: Create an adaptive, investigation-backed MPI plan for large or uncertain work. Use when the user says "MPI create large plan", "create a large MPI plan", "large plan", "complex plan", "adaptive plan", "multi-phase implementation", "$mpi-create-large-plan", or asks for non-trivial investigation or a parallel-safe plan.
 ---
 
 # mpi-create-large-plan Skill
@@ -11,6 +11,11 @@ Create a large adaptive plan at `docs/plans/YYYY-MM-DD-<slug>.md` and reflect
 it on the kanban board. Use this for work with unclear root cause, multiple
 subsystems, meaningful risk, or enough moving pieces that a compact plan would
 hide important decisions.
+
+Invocation: Claude Code users may run `/mpi-kanban:mpi-create-large-plan`;
+Codex users may run `$mpi-create-large-plan` or ask naturally to create a
+large MPI plan. References using `${CLAUDE_PLUGIN_ROOT}` mean the installed
+plugin root; Codex resolves the same files relative to this plugin root.
 
 Large plans are living documents. They guide work, but `mpi-continue` may
 revise the remaining work as implementation reveals new facts.
@@ -123,8 +128,8 @@ Next: say "continue this plan" to start, or "create a handoff" if you want a fre
   PLANNING -> IMPLEMENTING.
 - Do not create parallel batches without explicit ownership for every task.
 
-## Related commands
+## Related invocations
 
-- `/mpi-kanban:mpi-create-plan` - compact/default plan.
-- `/mpi-kanban:mpi-continue` - adaptive implementation/resume.
-- `/mpi-kanban:mpi-execute-parallel` - opt-in parallel batch execution.
+- Codex: `$mpi-create-plan`, `$mpi-continue`, `$mpi-execute-parallel`.
+- Claude Code: `/mpi-kanban:mpi-create-plan`,
+  `/mpi-kanban:mpi-continue`, `/mpi-kanban:mpi-execute-parallel`.

@@ -4,6 +4,9 @@ Read this when you need to find the board, ensure it exists, list entries, or
 find a specific entry. For schema/regexes see `_schema.md`. For mutations see
 `mutate.md`.
 
+`${CLAUDE_PLUGIN_ROOT}` means the installed plugin root in Claude Code. Codex
+plugin users resolve the same relative paths from the Codex plugin root.
+
 ---
 
 ## `findKanban()`

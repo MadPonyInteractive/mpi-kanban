@@ -1,6 +1,6 @@
 ---
 name: mpi-handoff
-description: Preserve current MPI work and generate a structured JSON handoff document so a fresh session can resume with mpi-continue. Use when user says "handoff", "new session", "context is big", or "/mpi-kanban:mpi-handoff", or when a plan phase just completed and a new one starts.
+description: Create an MPI handoff. Preserve current MPI work and generate a structured JSON handoff document so a fresh session can resume with mpi-continue. Use when user says "create an MPI handoff", "handoff", "new session", "context is big", "$mpi-handoff", or "/mpi-kanban:mpi-handoff", or when a plan phase just completed and a new one starts.
 ---
 
 # mpi-handoff Skill
@@ -17,10 +17,15 @@ Shared coordination contract reference:
 - `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/lifecycle.md`
 - `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/statuses.md`
 
+Invocation: Claude Code users may run `/mpi-kanban:mpi-handoff`; Codex users
+may run `$mpi-handoff` or ask naturally to create an MPI handoff. References
+using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex resolves
+the same files relative to this plugin root.
+
 ## When to invoke
 
 - User says "handoff", "new session", "start fresh", "context is big", or runs
-  `/mpi-kanban:mpi-handoff`.
+  `$mpi-handoff` in Codex or `/mpi-kanban:mpi-handoff` in Claude Code.
 - Context usage is high and work is mid-flight.
 - A plan phase just completed and a new phase starts next.
 
@@ -128,7 +133,7 @@ Use this exact JSON structure:
   },
   "next_action": {
     "description": "<exact instruction for fresh session>",
-    "command": "<optional skill or command to run first, e.g. /mpi-kanban:mpi-continue>"
+    "command": "<optional skill or command to run first, e.g. $mpi-continue or /mpi-kanban:mpi-continue>"
   },
   "context": {
     "key_decisions": [
@@ -180,7 +185,7 @@ Active kanban entry: "<title>"   (or "none" if kanban_entry is null)
 
 To resume in a new session, paste this:
 ---
-Read .agents/mpi-kanban/state/handoffs/<uuid>.json and use /mpi-kanban:mpi-continue to continue from where we left off.
+Read .agents/mpi-kanban/state/handoffs/<uuid>.json and use $mpi-continue in Codex or /mpi-kanban:mpi-continue in Claude Code to continue from where we left off.
 The next action is: <next_action.description>
 ---
 ```

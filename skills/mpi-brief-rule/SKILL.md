@@ -1,6 +1,6 @@
 ---
 name: mpi-brief-rule
-description: Extract and return Sub-Agent Briefing text from configured project rules or rule bundles. Use when dispatching sub-agents, resolving worker briefings, or when the user runs "/mpi-kanban:mpi-brief-rule <name>".
+description: Extract and return Sub-Agent Briefing text from configured project rules or rule bundles. Use when dispatching sub-agents, resolving worker briefings, or when the user runs "$mpi-brief-rule <name>" in Codex or "/mpi-kanban:mpi-brief-rule <name>" in Claude Code.
 ---
 
 # mpi-brief-rule Skill
@@ -13,7 +13,8 @@ copy-paste.
 ## Invocation
 
 ```
-/mpi-kanban:mpi-brief-rule <rule_name>
+Codex: $mpi-brief-rule <rule_name>
+Claude Code: /mpi-kanban:mpi-brief-rule <rule_name>
 ```
 
 `<rule_name>` is one of the names listed in `.claude/mpi-kanban.local.md`
@@ -25,7 +26,8 @@ The list is project-specific — the plugin ships no hardcoded rules.
 All recipes (`loadConfig`, `resolveRulePath`, `resolveBundle`, `getRuleList`,
 `getBundleList`, `loadCriticalSnapshot`, bootstrap notice) live in
 `${CLAUDE_PLUGIN_ROOT}/lib/config-ops.md`. Read it once when you actually
-need the first recipe — not before.
+need the first recipe — not before. In Codex, resolve the same file relative
+to this plugin root.
 
 1. **Load config.** Call `loadConfig()`.
    - If `null` (file missing) → emit the bootstrap notice from
@@ -74,5 +76,6 @@ need the first recipe — not before.
 ## Notes
 
 - This skill is invoked BY a main agent when dispatching sub-agents — and is
-  user-invocable for testing via the `/mpi-kanban:mpi-brief-rule` command.
+  user-invocable for testing via `$mpi-brief-rule` in Codex or
+  `/mpi-kanban:mpi-brief-rule` in Claude Code.
 - Briefing sections may contain markdown formatting; pass it through unchanged.

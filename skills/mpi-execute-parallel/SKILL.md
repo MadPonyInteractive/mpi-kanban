@@ -1,6 +1,6 @@
 ---
 name: mpi-execute-parallel
-description: Execute an explicit parallel batch from an MPI large plan using worker sub-agents. Use only when a plan contains a `## Parallel Batch` section with task ownership, or when the user asks to run a parallel batch.
+description: Execute an explicit parallel batch from an MPI large plan using worker sub-agents. Use only when a plan contains a `## Parallel Batch` section with task ownership, or when the user says "MPI execute parallel", "run a parallel batch", "$mpi-execute-parallel", or asks to run a parallel batch.
 ---
 
 # mpi-execute-parallel Skill
@@ -17,6 +17,11 @@ Shared coordination lifecycle references:
 
 - `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/lifecycle.md`
 - `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/statuses.md`
+
+Invocation: Claude Code users may run `/mpi-kanban:mpi-execute-parallel`;
+Codex users may run `$mpi-execute-parallel` or ask naturally to run an MPI
+parallel batch. References using `${CLAUDE_PLUGIN_ROOT}` mean the installed
+plugin root; Codex resolves the same files relative to this plugin root.
 
 ## Eligibility gate
 

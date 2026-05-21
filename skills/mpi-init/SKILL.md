@@ -1,12 +1,17 @@
 ---
 name: mpi-init
-description: Import a freeform to-do / backlog / ideas markdown file into the kanban board, OR scaffold an empty kanban board on explicit request. Use ONLY when the user explicitly asks to "set up the kanban", "initialize kanban", "import backlog", "convert this file to kanban", "build the kanban from <file>", or hands over a markdown file of to-dos and asks to populate the board. Do NOT use for capturing a single new idea (that's mpi-brainstorm), creating a plan (mpi-create-plan or mpi-create-large-plan), or any normal kanban mutation — those skills create the board on demand via `ensureKanban()`. Do NOT use as a default first-read; only trigger on explicit import/scaffold language.
+description: Initialize MPI kanban or import a freeform to-do / backlog / ideas markdown file into the board. Use ONLY when the user explicitly asks to "MPI init", "set up the kanban", "initialize kanban", "import backlog", "convert this file to kanban", "build the kanban from <file>", "$mpi-init", or hands over markdown to-dos. Do NOT use for a single new idea, creating a plan, or normal kanban mutation.
 ---
 
 # mpi-init Skill
 
 Turn a freeform to-do / backlog / ideas markdown file into properly-structured
 BACKLOG and COMPLETED entries on `.claude/mpi-kanban/kanban.md`.
+
+Invocation: Claude Code users may run `/mpi-kanban:mpi-init`; Codex users may
+run `$mpi-init` or ask naturally to initialize MPI kanban. References using
+`${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex resolves the same
+files relative to this plugin root.
 
 This is the on-ramp skill. It exists so a user can hand over any informal
 to-do file ("backlog.md", "todo.md", "ideas.md", a section of a README) and

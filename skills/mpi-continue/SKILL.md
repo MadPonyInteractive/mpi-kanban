@@ -1,6 +1,6 @@
 ---
 name: mpi-continue
-description: Continue active MPI work from the real current state. Use when the user says continue, resume, keep going, pick this back up, read a handoff and continue, continue this plan, or wants implementation to proceed from an MPI plan or handoff.
+description: Continue active MPI work from the real current state. Use when the user says "continue this MPI plan", "MPI continue", "continue", "resume", "keep going", "pick this back up", "read a handoff and continue", "$mpi-continue", or wants implementation to proceed from an MPI plan or handoff.
 ---
 
 # mpi-continue Skill
@@ -21,6 +21,11 @@ Lifecycle operations are documented in
 
 Plans are living documents. If implementation has drifted, update or annotate
 the plan instead of forcing the next unchecked item.
+
+Invocation: Claude Code users may run `/mpi-kanban:mpi-continue`; Codex users
+may run `$mpi-continue` or ask naturally to continue the MPI plan. References
+using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex resolves
+the same files relative to this plugin root.
 
 ## Pre-conditions
 
@@ -163,7 +168,7 @@ Step verified. Say "continue" to keep going, "handoff" to switch sessions, or "e
 7. If the plan is complete, say:
 
 ```text
-Plan complete. Suggested next step: run /mpi-kanban:mpi-end-session to preserve docs/rules/memory, commit, and close the kanban entry.
+Plan complete. Suggested next step: run $mpi-end-session in Codex or /mpi-kanban:mpi-end-session in Claude Code to preserve docs/rules/memory, commit, and close the kanban entry.
 ```
 
 ## If user chooses Option 2
@@ -171,7 +176,7 @@ Plan complete. Suggested next step: run /mpi-kanban:mpi-end-session to preserve 
 Do nothing else. Stay in conversation and append once:
 
 ```text
-Context getting large? Run /mpi-kanban:mpi-handoff before starting a new session.
+Context getting large? Run $mpi-handoff in Codex or /mpi-kanban:mpi-handoff in Claude Code before starting a new session.
 ```
 
 ## Hard rules
@@ -180,5 +185,6 @@ Context getting large? Run /mpi-kanban:mpi-handoff before starting a new session
 - Post-implementation verification choice is mandatory.
 - Do not commit or push; committing is `mpi-end-session`'s responsibility.
 - Do not force stale plan tasks. Update the plan when reality has changed.
-- Do not run parallel implementation. Use `/mpi-kanban:mpi-execute-parallel`
-  only for explicit `## Parallel Batch` sections.
+- Do not run parallel implementation. Use `$mpi-execute-parallel` in Codex or
+  `/mpi-kanban:mpi-execute-parallel` in Claude Code only for explicit
+  `## Parallel Batch` sections.

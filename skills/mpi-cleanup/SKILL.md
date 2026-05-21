@@ -1,6 +1,6 @@
 ---
 name: mpi-cleanup
-description: Review and clean MPI workflow artifacts such as old plans, handoffs, and archives. Use when the user says cleanup MPI files, garbage collect plans, clean handoffs, archive workflow artifacts, or after ending a completed MPI session.
+description: Run MPI cleanup. Review and clean MPI workflow artifacts such as old plans, handoffs, archives, and closed coordination state. Use when the user says "MPI cleanup", "run MPI cleanup", "cleanup MPI files", "garbage collect plans", "clean handoffs", "$mpi-cleanup", or after ending a completed MPI session.
 ---
 
 # mpi-cleanup Skill
@@ -13,6 +13,9 @@ Conservatively clean workflow artifacts so `docs/plans/`, legacy
 
 This skill proposes cleanup first and waits for approval before editing or
 deleting anything.
+
+Invocation: Claude Code users may run `/mpi-kanban:mpi-cleanup`; Codex users
+may run `$mpi-cleanup` or ask naturally to run MPI cleanup.
 
 ## Classification
 

@@ -1,12 +1,17 @@
 ---
 name: mpi-brainstorm
-description: Collaboratively explore an idea and design a solution through dialogue — no spec doc needed. Use when the user says "I have an idea", "let's think through this", "brainstorm with me", "help me figure out how to approach X", "what's the best way to do Y", or wants to explore options before committing to implementation.
+description: MPI brainstorm workflow. Collaboratively explore an idea and design a solution through dialogue before planning. Use when the user says "MPI brainstorm", "I have an idea", "let's think through this", "brainstorm with me", "help me figure out how to approach X", "$mpi-brainstorm", or wants to explore options before implementation.
 ---
 
 # mpi-brainstorm Skill
 
 Help turn ideas into fully formed designs through natural collaborative
 dialogue.
+
+Invocation: Claude Code users may run `/mpi-kanban:mpi-brainstorm`; Codex
+users may run `$mpi-brainstorm` or ask naturally to brainstorm. References
+using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex resolves
+the same files relative to this plugin root.
 
 Start by understanding the current project context only when needed — only
 docs/rules relevant to the topic, or what the user explicitly calls out. Do
@@ -109,8 +114,9 @@ After the BACKLOG entry is captured:
    arguments natively — pass it as prose, e.g. "Create a plan for the BACKLOG
    entry titled \"<title>\""). The plan skill will move the entry to PLANNING.
 3. If **no** → session ends. Entry stays in BACKLOG until someone runs
-   `/mpi-kanban:mpi-create-plan` or `/mpi-kanban:mpi-create-large-plan`
-   against it later.
+   `$mpi-create-plan` / `$mpi-create-large-plan` in Codex or
+   `/mpi-kanban:mpi-create-plan` / `/mpi-kanban:mpi-create-large-plan` in
+   Claude Code against it later.
 
 **No auto-invocation past this point.** The user is always in control.
 

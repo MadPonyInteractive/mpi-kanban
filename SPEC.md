@@ -5,8 +5,8 @@
 
 ## 1. Purpose
 
-Bundle MPI workflow skills into a Claude Code plugin that drives a per-project
-Kanban board and supports a conversational agent workflow:
+Bundle MPI workflow skills into a dual Claude Code and Codex plugin that drives
+a per-project Kanban board and supports a conversational agent workflow:
 
 ```text
 brainstorm -> create-plan/create-large-plan -> continue -> handoff/continue -> end-session -> cleanup
@@ -17,7 +17,26 @@ living documents that may drift and be revised as implementation reveals new
 facts. Shared Claude/Codex machine-readable coordination state lives outside
 the board under `.agents/mpi-kanban/state/`.
 
-## 2. Skill Set
+## 2. Packaging and Invocation
+
+This repository ships two native manifests that share one workflow source:
+
+- Claude Code manifest: `.claude-plugin/plugin.json`
+- Codex manifest: `.codex-plugin/plugin.json`
+- Shared skill tree: `skills/mpi-*/SKILL.md`
+
+Claude Code users invoke workflows with `/mpi-kanban:mpi-*` slash commands and
+natural language. Codex users invoke workflows with `$mpi-*` skills and natural
+language. Custom Codex slash commands are out of scope unless Codex adds
+official plugin slash-command support.
+
+The Codex manifest points to `./skills/` and includes only native Codex
+metadata required for display and discovery. The Claude manifest remains the
+source for Claude Code marketplace packaging. Public identity fields shared by
+both manifests must stay synchronized: name, version, description, author,
+repository, license, and keywords.
+
+## 3. Skill Set
 
 - `mpi-init` - bootstrap/import a board.
 - `mpi-brainstorm` - explore an idea and capture a BACKLOG entry.
@@ -40,7 +59,7 @@ the board under `.agents/mpi-kanban/state/`.
 `mpi-write-plan` and `mpi-execute-next` are removed. Their roles are replaced
 by `mpi-create-plan` / `mpi-create-large-plan` and `mpi-continue`.
 
-## 3. Kanban Contract
+## 4. Kanban Contract
 
 The board lives at:
 
@@ -74,7 +93,7 @@ Plan file: docs/plans/YYYY-MM-DD-<slug>.md
 
 Skills must not add columns or metadata fields.
 
-## 4. Shared Coordination Contract
+## 5. Shared Coordination Contract
 
 Phase 1 defines a shared Claude/Codex coordination contract. Phase 2 adds the
 shared lifecycle procedures agents use to create, update, release, reclaim, and
@@ -142,7 +161,7 @@ Reference docs live under `docs/coordination/`:
 - `uuid-helper.md`
 - `handoff-migration.md`
 
-## 5. Plan Model
+## 6. Plan Model
 
 Compact plans are created by `mpi-create-plan` and use one coherent
 implementation flow with final verification.
@@ -162,7 +181,7 @@ Plans are living documents. `mpi-continue` may update current state, drift,
 completed work, and remaining work before implementation when the repo state no
 longer matches the written plan.
 
-## 6. Continue Model
+## 7. Continue Model
 
 `mpi-continue` is the normal implementation skill. It:
 
@@ -188,7 +207,7 @@ an implementer session, attach a task record, and claim files before editing.
 Kanban tags may summarize coordination state for the user, but `.agents/`
 records remain the coordination source.
 
-## 7. Parallel Execution
+## 8. Parallel Execution
 
 `mpi-execute-parallel` only runs explicit `## Parallel Batch` sections.
 
@@ -204,7 +223,7 @@ The main agent spawns workers, integrates their changes, verifies the batch,
 and updates plan/kanban state. Workers must not edit plan, kanban, handoff,
 rules, or memory files unless explicitly owned.
 
-## 8. Handoff
+## 9. Handoff
 
 `mpi-handoff` writes:
 
@@ -226,7 +245,7 @@ Before writing, it performs a preservation pass:
 The final chat output must include a copy/paste resume block pointing the next
 session to `mpi-continue`.
 
-## 9. Brief Rule Bundles
+## 10. Brief Rule Bundles
 
 Project config lives at:
 
@@ -240,7 +259,7 @@ bundle.
 
 The plugin does not hardcode project rules.
 
-## 10. Cleanup
+## 11. Cleanup
 
 `mpi-cleanup` classifies workflow artifacts as active, completed, orphaned,
 superseded, stale, or uncertain. It proposes cleanup and waits for approval.
@@ -251,7 +270,7 @@ Coordination-state cleanup under `.agents/mpi-kanban/state/` is conservative:
 `mpi-cleanup` proposes changes first, never deletes active state, and prefers
 moving closed coordination records to archive over deletion.
 
-## 11. External Dependency
+## 12. External Dependency
 
 The board is designed for the MPI-specific VS Code extension fork:
 
@@ -261,9 +280,13 @@ The board is designed for the MPI-specific VS Code extension fork:
 
 The plugin still works without the extension; the board remains Markdown.
 
-## 12. Acceptance Criteria
+## 13. Acceptance Criteria
 
 - Plugin registers all current skills.
+- Claude and Codex manifests both register the shared `skills/` tree without
+  duplicating workflow implementation.
+- Codex invocation is through `$mpi-*` skills and natural language, while
+  Claude Code retains `/mpi-kanban:mpi-*`.
 - Brainstorm can capture BACKLOG and route to compact or large plan creation.
 - Plan creation moves/creates a PLANNING entry with a `Plan file:` body line.
 - Continue moves active work to IMPLEMENTING and uses stable kanban steps.

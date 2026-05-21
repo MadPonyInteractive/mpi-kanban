@@ -1,13 +1,19 @@
 ﻿# Codex Bridge for mpi-kanban
 
-This file is a Codex-only bridge for the Claude Code plugin in this directory. It is intentionally separate from the Claude plugin manifest, commands, skills, library docs, and templates.
+This file is the Codex entry point for this repository. Mpi-Kanban has a native
+Codex plugin manifest at `.codex-plugin/plugin.json` and a Claude Code manifest
+at `.claude-plugin/plugin.json`; both use the same `skills/` workflow tree. When
+installed as a Codex plugin, invoke workflows with `$mpi-*` skills or natural
+language. Claude slash commands such as `/mpi-kanban:mpi-continue` are for
+Claude Code only.
 
 ## Source of Truth
 
 Read these files only as needed:
 
 - `CLAUDE.md` for plugin development constraints and source-of-truth notes.
-- `.claude-plugin/plugin.json` for plugin metadata.
+- `.codex-plugin/plugin.json` for Codex plugin metadata.
+- `.claude-plugin/plugin.json` for Claude Code plugin metadata.
 - `README.md` for user-facing behavior.
 - `SPEC.md` before changing plugin behavior.
 - `PLAN.md` before continuing plugin implementation work.
@@ -42,7 +48,8 @@ agent packaging work continues.
 
 ## Available Workflow Skills
 
-The plugin's skills are Markdown workflows under `skills/`. They are compatible as reference material for Codex, but Codex should load them selectively:
+The plugin's skills are Markdown workflows under `skills/`. They are the shared
+source for both Claude Code and Codex; Codex should load them selectively:
 
 - `skills/mpi-init/SKILL.md` for starting or synchronizing a project kanban workflow.
 - `skills/mpi-brainstorm/SKILL.md` for exploring possible approaches before a plan exists.
@@ -96,7 +103,11 @@ Do not edit existing files in this directory unless the user explicitly asks to 
 
 `update_live.py` is the deployment bridge from this development checkout into the agent/plugin locations that actually load the plugin. Keep it aligned with `.gitignore` whenever adding, moving, or renaming plugin functionality, agent support files, build helpers, local state, tests, or generated artifacts.
 
-The live copy must include every file required for Codex and Claude agents to run the plugin, and it must exclude ignored development-only content, including `.git/` itself. If this plugin later supports more than the current Claude plugin cache destination, update `update_live.py` to make the destination handling explicit rather than assuming one fixed filesystem location.
+The live copy must include every file required for Codex and Claude agents to
+run the plugin, including `.codex-plugin/plugin.json`, and it must exclude
+ignored development-only content, including `.git/` itself. `update_live.py`
+currently updates the Claude plugin cache only; Codex local installs should
+point their marketplace entry at a Codex plugin checkout/path explicitly.
 
 ## Project Kanban Usage
 

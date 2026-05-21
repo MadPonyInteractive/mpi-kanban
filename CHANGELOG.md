@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matching CHANGELOG section, and creates a GitHub Release.
 - `scripts/validate_plugin.py` — local equivalent of the CI validator. Run before
   pushing if you want to catch issues without waiting on CI.
+- Native Codex plugin manifest at `.codex-plugin/plugin.json`, pointing to the
+  shared `skills/` tree and exposing `$mpi-*` starter prompts.
+- `scripts/register_codex_plugin.py` registers a local checkout in a Codex
+  marketplace using Python 3.8+ standard-library APIs.
 
 ### Changed
 
@@ -34,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   terms: roles, file claims, pending state, integration, and display-only tags.
 - Shared coordination docs now distinguish active write claims from pending file
   provenance, and separate file ownership from commit ownership.
+- Skill descriptions and docs now distinguish Claude Code slash commands from
+  Codex `$mpi-*` skill invocation.
 
 ## [0.4.1] - 2026-05-13
 
