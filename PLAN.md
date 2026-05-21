@@ -22,6 +22,19 @@
 - [x] Extend `mpi-cleanup` to garbage collect coordination state safely.
 - [x] Defer richer VS Code extension visualization; use existing tags for now.
 
+## Dual Claude/Codex plugin packaging Phase 3
+
+- [ ] Add a native Codex plugin manifest and metadata while preserving the
+  existing Claude plugin manifest.
+- [ ] Keep the shared `skills/` tree as the workflow source for both Claude and
+  Codex.
+- [ ] Make Codex invocation native through `$mpi-*` skills and natural language,
+  not Claude-style slash commands.
+- [ ] Update README, SPEC, AGENTS, validation, and live-copy guidance for the
+  dual-package model.
+- [ ] Smoke-test `mpi-cleanup` and `mpi-end-session` in Codex, then rerun Claude
+  plugin validation.
+
 ## Current redesign tasks
 
 - [x] Replace `mpi-write-plan` with `mpi-create-large-plan`.
