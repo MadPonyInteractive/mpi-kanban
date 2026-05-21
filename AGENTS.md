@@ -1,4 +1,4 @@
-﻿# Codex Bridge for mpi-kanban
+﻿# Codex Entry Point for mpi-kanban
 
 This file is the Codex entry point for this repository. Mpi-Kanban has a native
 Codex plugin manifest at `.codex-plugin/plugin.json` and a Claude Code manifest
