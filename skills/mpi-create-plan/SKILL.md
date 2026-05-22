@@ -16,7 +16,10 @@ References using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex
 resolves the same files relative to this plugin root.
 
 Use `mpi-create-large-plan` instead when the work needs investigation,
-multiple phases, explicit parallel batches, or complex risk management.
+multiple phases, explicit parallel batches, or complex risk management. In
+particular, if the work can be split into independent implementation tasks with
+disjoint ownership, it belongs in a large plan: compact plans stay one coherent
+flow and never carry `## Parallel Batch` sections.
 
 ## Plan shape
 
@@ -58,9 +61,11 @@ because several files may change.
 ## Workflow
 
 1. Understand the goal or BACKLOG entry from `mpi-brainstorm`.
-2. If the goal is clearly large or uncertain, recommend `$mpi-create-large-plan`
-   in Codex or `/mpi-kanban:mpi-create-large-plan` in Claude Code instead and
-   wait for confirmation.
+2. If the goal is clearly large or uncertain, or if independent parallel
+   implementation looks likely (work splits into disjoint-ownership tasks),
+   recommend `$mpi-create-large-plan` in Codex or
+   `/mpi-kanban:mpi-create-large-plan` in Claude Code instead and wait for
+   confirmation.
 3. Write the compact plan file.
 4. Update the kanban board.
 
@@ -101,5 +106,6 @@ Next: say "continue this plan" to start implementation.
 
 - Do not implement.
 - Do not create a large multi-step checklist in this skill.
-- If the work obviously needs phased investigation, redirect to
-  `mpi-create-large-plan`.
+- Do not add `## Parallel Batch` syntax to a compact plan.
+- If the work obviously needs phased investigation, or splits into independent
+  parallel implementation tasks, redirect to `mpi-create-large-plan`.

@@ -179,6 +179,20 @@ Large plans are created by `mpi-create-large-plan` and may include:
 - `## Verification`
 - `## Preservation Notes`
 
+Parallelism is the default for eligible work, not an opt-in extra:
+
+- During investigation, large planning defaults to spawning read-only sub-agents
+  for independent investigation areas.
+- For implementation, large planning defaults to writing `## Parallel Batch`
+  sections whenever tasks have disjoint, declarable ownership and batch-safe
+  verification. When work is large but cannot be split safely, the plan keeps
+  normal phases and states why no batch was created.
+
+This default never overrides the safety gates. Parallel batches still require
+disjoint `Ownership:`, a per-task `**Verify:**`, no intra-batch dependencies,
+and no active write claim on owned files. Compact plans never gain parallel
+batches; parallel-capable work belongs in a large plan.
+
 Plans are living documents. `mpi-continue` may update current state, drift,
 completed work, and remaining work before implementation when the repo state no
 longer matches the written plan.
@@ -201,6 +215,10 @@ longer matches the written plan.
 8. Presents a continue brief and waits for approval before implementation.
 9. Presents a post-implementation verification gate before marking work done.
 
+When the next eligible unit is a valid `## Parallel Batch`, `mpi-continue`
+defaults to routing it to `mpi-execute-parallel` rather than offering sequential
+implementation. It still does not spawn workers itself.
+
 `mpi-continue` does not commit or push.
 
 When present, `mpi-continue` should read `.agents/mpi-kanban/state/index.json`
@@ -211,7 +229,10 @@ records remain the coordination source.
 
 ## 8. Parallel Execution
 
-`mpi-execute-parallel` only runs explicit `## Parallel Batch` sections.
+`mpi-execute-parallel` only runs explicit `## Parallel Batch` sections. For
+eligible batches it is the default execution path, not an opt-in extra:
+`mpi-continue` routes a valid next batch here before offering sequential
+implementation, and `mpi-continue` never spawns implementation workers itself.
 
 Each batch task must include:
 

@@ -7,8 +7,12 @@ description: Execute an explicit parallel batch from an MPI large plan using wor
 
 ## Purpose
 
-Run a parallel implementation batch from an MPI large plan. This skill is
-opt-in and only applies to explicit `## Parallel Batch` sections.
+Run a parallel implementation batch from an MPI large plan. This skill only
+applies to explicit `## Parallel Batch` sections, and for eligible batches it is
+the default execution path — `mpi-continue` routes valid batches here rather
+than implementing them sequentially. "Only explicit batches" is a safety scope,
+not a discouragement: when a batch passes the eligibility gate below, running it
+in parallel is the expected default.
 
 The main agent coordinates workers, integrates changes, verifies the batch,
 and updates the plan/kanban. Workers implement only their assigned task.

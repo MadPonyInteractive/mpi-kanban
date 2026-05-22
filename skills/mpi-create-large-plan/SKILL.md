@@ -22,10 +22,16 @@ revise the remaining work as implementation reveals new facts.
 
 ## Core principles
 
-1. Parallel sub-agents are encouraged during investigation.
+1. Default to parallel read-only sub-agents for independent investigation
+   areas, not just "where useful." Use a single agent only when investigation
+   areas are not independent or the work is trivial.
 2. Implementation is adaptive through `mpi-continue`.
-3. Parallel implementation is opt-in only through explicit `## Parallel Batch`
-   sections that declare ownership.
+3. Default to explicit `## Parallel Batch` sections whenever implementation
+   tasks have disjoint, declarable ownership and batch-safe verification.
+   Parallel implementation runs only through these sections (executed by
+   `mpi-execute-parallel`), but writing them is the default for splittable work,
+   not an opt-in extra. When work is large but cannot be split safely, keep
+   normal phases and state in the plan why no batch was created.
 4. Every executable task or batch must include a concrete `**Verify:**` line.
 5. No forward dependencies inside a task or parallel batch. If verification
    depends on later work, merge the work or move it later.
@@ -69,19 +75,24 @@ Final end-to-end verification criteria.
 Docs, rules, memory, or cleanup items likely to matter before handoff/end-session.
 ```
 
-Only include `## Parallel Batch` when tasks are genuinely independent and have
-disjoint ownership. Otherwise use normal phases.
+Default to `## Parallel Batch` whenever tasks are genuinely independent and have
+disjoint ownership. Use normal phases only when work cannot be split safely,
+and note why in the plan.
 
 ## Workflow
 
 1. Understand the user's goal or the BACKLOG entry passed by `mpi-brainstorm`.
-2. Identify 2-4 investigation areas. Spawn read-only sub-agents where useful.
-   Sub-agents write findings to `/tmp/investigation/<area>.md` and never edit
-   project files.
+2. Identify 2-4 investigation areas. Default to spawning one read-only sub-agent
+   per independent area, in parallel. Sub-agents write findings to
+   `/tmp/investigation/<area>.md` and never edit project files. Use a single
+   agent only when the areas are not independent or the work is trivial.
 3. Synthesize findings into an adaptive plan with `Current State`,
    `Remaining Work`, `Plan Drift`, `Verification`, and `Preservation Notes`.
 4. Self-audit:
    - Each task has `**Verify:**`.
+   - Independent implementation work is in `## Parallel Batch` sections by
+     default; if splittable work was left as sequential phases, the plan says
+     why.
    - Parallel batch tasks declare `Ownership:` and do not overlap.
    - No task assumes later work has already happened.
    - The plan says when `mpi-execute-parallel` is appropriate, if at all.

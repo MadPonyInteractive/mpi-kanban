@@ -48,6 +48,20 @@
 - [x] Update plan/kanban/config reference docs for the new workflow.
 - [x] Update README and SPEC for the new skill set.
 
+## Parallel agent defaults
+
+Plan file: `docs/plans/2026-05-22-parallel-agent-defaults.md`. Independent of the
+project-knowledge Phase 4 work; does not block or imply Phase 4.
+
+- [x] Make parallel use the default for eligible work in `SPEC.md` and
+  `README.md`, keeping ownership/verification gates.
+- [x] Default planning skills to parallel: brainstorm routing, create-plan
+  redirect, create-large-plan investigation + batch defaults.
+- [x] Route eligible batches through `mpi-continue` to `mpi-execute-parallel`;
+  reword `mpi-execute-parallel` from opt-in to default-for-eligible.
+- [x] Align `lib/plan-ops/_shape.md` and `read.md` with the new default.
+- [ ] Run `validate_plugin.py` and the parallel-policy contradiction sweep.
+
 ## Validation checklist
 
 - [x] Confirm old `mpi-write-plan` / `mpi-execute-next` references are gone or

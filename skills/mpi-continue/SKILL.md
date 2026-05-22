@@ -79,7 +79,10 @@ Before proposing work, compare the plan/handoff with actual state:
 - What is pending?
 - What changed since the plan was written?
 - Are any remaining plan items obsolete, merged, or blocked?
-- Is a `## Parallel Batch` now the right next unit?
+- Is a `## Parallel Batch` now the next unit? If the next eligible unit is a
+  valid batch (disjoint `Ownership:`, per-task `**Verify:**`, no intra-batch
+  dependency, no active write claim on owned files), the default is to route to
+  `mpi-execute-parallel`, not to implement it sequentially here.
 - Are there docs/rules/memory notes that should be preserved before handoff?
 
 If the plan is stale, edit the plan before implementation:
@@ -89,6 +92,21 @@ If the plan is stale, edit the plan before implementation:
 - Move obsolete work into `## Completed` or remove/rewrite remaining items.
 - Keep the plan concise; do not preserve stale tasks for history when a drift
   note explains the change.
+
+## Parallel batch routing
+
+If the next eligible unit is a valid `## Parallel Batch`, make the parallel path
+the default. Instead of a sequential continue brief, tell the user:
+
+```text
+Next unit is a parallel batch: "<batch title>". Default path is to run it through
+$mpi-execute-parallel in Codex or /mpi-kanban:mpi-execute-parallel in Claude Code.
+Say "go parallel" to route there, or "sequential" to implement it one task at a time here.
+```
+
+Route to `mpi-execute-parallel` on confirmation. `mpi-continue` never spawns
+implementation workers itself. Fall back to a sequential continue brief only if
+the user explicitly chooses sequential, or the batch fails an eligibility gate.
 
 ## Gate 1 - Continue brief
 
@@ -185,6 +203,7 @@ Context getting large? Run $mpi-handoff in Codex or /mpi-kanban:mpi-handoff in C
 - Post-implementation verification choice is mandatory.
 - Do not commit or push; committing is `mpi-end-session`'s responsibility.
 - Do not force stale plan tasks. Update the plan when reality has changed.
-- Do not run parallel implementation. Use `$mpi-execute-parallel` in Codex or
-  `/mpi-kanban:mpi-execute-parallel` in Claude Code only for explicit
-  `## Parallel Batch` sections.
+- Do not spawn implementation workers here. When the next eligible unit is a
+  valid `## Parallel Batch`, default to routing it to `$mpi-execute-parallel` in
+  Codex or `/mpi-kanban:mpi-execute-parallel` in Claude Code; that skill is the
+  only worker-spawning implementation path.

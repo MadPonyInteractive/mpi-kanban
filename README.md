@@ -250,10 +250,10 @@ Add to `.gitignore` if local-only:
 
 ## Planning model
 
-- `mpi-create-plan` — default. Compact living plan, one implementation flow, final verification.
-- `mpi-create-large-plan` — complex/uncertain work. Phases, plan drift notes, preservation notes, explicit `## Parallel Batch` sections.
-- `mpi-continue` — default implementation/resume skill. Reads plan, shared coordination index when present, latest handoff, kanban entry, current repo state before proposing work; claims files before editing.
-- `mpi-execute-parallel` — runs only explicit parallel batches with declared, disjoint ownership and per-worker file claims.
+- `mpi-create-plan` — default for genuinely small work. Compact living plan, one implementation flow, final verification. Redirects to large planning when independent parallel implementation is likely.
+- `mpi-create-large-plan` — complex/uncertain work, or any work that can be split into independent parallel tasks. Defaults to read-only investigation sub-agents for independent investigation areas and to explicit `## Parallel Batch` sections when implementation ownership is disjoint and verification is batch-safe. Phases, plan drift notes, preservation notes.
+- `mpi-continue` — default implementation/resume skill. Reads plan, shared coordination index when present, latest handoff, kanban entry, current repo state before proposing work; claims files before editing. When the next eligible unit is a valid `## Parallel Batch`, it routes to `mpi-execute-parallel` rather than running it sequentially.
+- `mpi-execute-parallel` — the default execution path for eligible explicit parallel batches: declared, disjoint ownership and per-worker file claims. Strict refusal gates remain (overlapping ownership, missing metadata, active write claims, intra-batch dependencies).
 
 Plans are living documents. Agents update `Current State`, `Plan Drift`, `Remaining Work`, and `Preservation Notes` as reality changes.
 

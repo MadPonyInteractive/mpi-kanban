@@ -109,7 +109,10 @@ After the BACKLOG entry is captured:
 2. If **yes** → choose the plan skill:
    - Use `mpi-create-plan` by default for compact, normal work.
    - Use `mpi-create-large-plan` when the work is complex, uncertain,
-     multi-phase, or likely to benefit from parallel investigation.
+     multi-phase, likely to benefit from parallel investigation, or splittable
+     into independent parallel implementation tasks. Parallel implementation
+     eligibility alone is enough reason to choose the large-plan path, since
+     compact plans cannot carry `## Parallel Batch` sections.
    Include in the prompt context: the BACKLOG entry title (skills don't pass
    arguments natively — pass it as prose, e.g. "Create a plan for the BACKLOG
    entry titled \"<title>\""). The plan skill will move the entry to PLANNING.
