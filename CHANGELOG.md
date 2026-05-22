@@ -11,6 +11,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [0.4.3] - 2026-05-22
+
+### Changed
+
+- Parallel agents are now the default for eligible large-plan work rather than
+  an opt-in extra, with ownership and verification safety gates intact. SPEC and
+  README describe parallel investigation and disjoint-ownership parallel batches
+  as the default.
+- `mpi-brainstorm` and `mpi-create-plan` route parallel-capable work to
+  `mpi-create-large-plan`; compact plans never carry parallel batches.
+- `mpi-create-large-plan` defaults to parallel investigation sub-agents and to
+  writing Parallel Batch sections when ownership is disjoint and verification is
+  batch-safe.
+- `mpi-continue` routes a valid next batch to `mpi-execute-parallel` instead of
+  running it sequentially, and still never spawns workers itself.
+- `mpi-execute-parallel` reworded from opt-in to default-for-eligible with
+  refusal gates intact.
+
 ## [0.4.2] - 2026-05-21
 
 ### Added
@@ -86,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.4.3...HEAD
+[0.4.3]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.4.3
 [0.4.2]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.4.2
 [0.4.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.4.1
