@@ -1,11 +1,12 @@
 {
   "name": "mpi-kanban",
   "version": "0.5.1",
-  "description": "MPI workflow skills (init, project-setup, project-mode, project-refresh, brainstorm, create-plan, create-large-plan, continue, execute-parallel, handoff, end-session, cleanup, archive, brief-rule) bundled as a plugin.",
+  "description": "MPI workflow skills (init, project-setup, project-mode, project-refresh, brainstorm, create-plan, create-large-plan, continue, execute-parallel, handoff, end-session, cleanup, archive, brief-rule) bundled as a plugin that drives a per-project Kanban board and durable project knowledge.",
   "author": {
     "name": "Fabio Goncalves",
     "email": "fabioargoncalves1981@gmail.com"
   },
+  "homepage": "https://github.com/MadPonyInteractive/mpi-kanban",
   "repository": "https://github.com/MadPonyInteractive/mpi-kanban",
   "license": "MIT",
   "keywords": ["mpi", "kanban", "workflow", "planning"],
@@ -16,6 +17,13 @@
     "developerName": "MadPonyInteractive",
     "category": "Productivity",
     "composerIcon": "plugins/MadPonyInteractive/mpi-kanban/icon.svg",
-    "capabilities": ["Interactive", "Write"]
+    "capabilities": ["Interactive", "Write"],
+    "websiteURL": "https://github.com/MadPonyInteractive/mpi-kanban",
+    "defaultPrompt": [
+      "$mpi-kanban:mpi-continue this MPI plan",
+      "$mpi-kanban:mpi-end-session wrap up and commit",
+      "$mpi-kanban:mpi-cleanup review MPI artifacts"
+    ],
+    "brandColor": "#2563EB"
   }
 }

@@ -45,6 +45,9 @@ def parse_frontmatter(text: str) -> dict[str, str] | None:
 
 
 IDENTITY_FIELDS = ("name", "version", "description", "author", "repository", "license", "keywords")
+CODEX_BUNDLE_DIR = ROOT / "plugins" / "MadPonyInteractive" / "mpi-kanban"
+CODEX_BUNDLE_JSON = CODEX_BUNDLE_DIR / "plugins.json"
+CODEX_BUNDLE_ICON = CODEX_BUNDLE_DIR / "icon.svg"
 
 
 def validate_claude_plugin_json() -> dict:
@@ -95,6 +98,41 @@ def validate_manifest_sync(claude_data: dict, codex_data: dict) -> None:
     for field in IDENTITY_FIELDS:
         if claude_data.get(field) != codex_data.get(field):
             fail(f"manifest identity drift on field: {field}")
+
+
+def validate_codex_marketplace_bundle(codex_data: dict) -> None:
+    if not codex_data:
+        return
+    if not CODEX_BUNDLE_DIR.is_dir():
+        fail(f"missing Codex marketplace bundle directory: {CODEX_BUNDLE_DIR.relative_to(ROOT)}")
+        return
+    if not CODEX_BUNDLE_JSON.exists():
+        fail(f"missing: {CODEX_BUNDLE_JSON.relative_to(ROOT)}")
+        return
+    if not CODEX_BUNDLE_ICON.exists():
+        fail(f"missing: {CODEX_BUNDLE_ICON.relative_to(ROOT)}")
+
+    data = json.loads(CODEX_BUNDLE_JSON.read_text(encoding="utf-8"))
+    for field in ("name", "version", "description", "author", "repository", "license", "keywords", "interface"):
+        if not data.get(field):
+            fail(f"Codex marketplace bundle missing required field: {field}")
+
+    for field in (*IDENTITY_FIELDS, "homepage"):
+        if data.get(field) != codex_data.get(field):
+            fail(f"Codex marketplace bundle identity drift on field: {field}")
+
+    bundle_interface = data.get("interface", {})
+    codex_interface = codex_data.get("interface", {})
+    if bundle_interface != codex_interface:
+        fail("Codex marketplace bundle interface drift from .codex-plugin/plugin.json")
+
+    composer_icon = bundle_interface.get("composerIcon")
+    if composer_icon != "plugins/MadPonyInteractive/mpi-kanban/icon.svg":
+        fail("Codex marketplace bundle interface.composerIcon must point at plugins/MadPonyInteractive/mpi-kanban/icon.svg")
+    if CODEX_BUNDLE_ICON.exists():
+        icon_text = CODEX_BUNDLE_ICON.read_text(encoding="utf-8").lstrip()
+        if not icon_text.startswith("<svg"):
+            fail("Codex marketplace bundle icon must be an SVG file")
 
 
 def validate_marketplace_json(plugin_name: str) -> None:
@@ -156,6 +194,7 @@ def main() -> int:
     plugin_data = validate_claude_plugin_json()
     codex_data = validate_codex_plugin_json()
     validate_manifest_sync(plugin_data, codex_data)
+    validate_codex_marketplace_bundle(codex_data)
     validate_marketplace_json(plugin_data.get("name", ""))
     validate_skills()
     check_no_symlinks()
