@@ -1,6 +1,6 @@
 # Mpi-Kanban
 
-[![Mentioned in Awesome Codex CLI](https://awesome.re/mentioned-badge.svg)](https://github.com/hashgraph-online/awesome-codex-plugins)
+<!-- [![Mentioned in Awesome Codex CLI](https://awesome.re/mentioned-badge.svg)](https://github.com/hashgraph-online/awesome-codex-plugins) -->
 
 Claude Code and Codex plugin. Bundles MPI workflow skills, drives a per-project
 Kanban board (`.claude/mpi-kanban/kanban.md`) that reflects live work, and

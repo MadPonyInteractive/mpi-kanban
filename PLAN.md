@@ -96,3 +96,13 @@ Plan file: `docs/plans/2026-05-20-project-knowledge-architectural-intent-phase-4
   contradiction sweep.
 - [ ] Run `update_live.py` only after Phase 4 is reviewed and the user
   explicitly asks for the live cache update.
+
+## Plugin listing and marketplace compliance Phase 5
+
+- [x] Add the marketplace bundle directory required by plugin submission checks:
+  `plugins/MadPonyInteractive/mpi-kanban/`.
+- [x] Add `plugins/MadPonyInteractive/mpi-kanban/plugins.json` with complete
+  plugin metadata for Codex marketplace consumption.
+- [x] Add an SVG icon in the bundle as required by the submission schema.
+- [x] Point the Codex plugin interface at the icon using
+  `interface.composerIcon`.
