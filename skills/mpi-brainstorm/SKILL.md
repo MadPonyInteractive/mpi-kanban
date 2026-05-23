@@ -101,6 +101,22 @@ Steps:
 
 5. Confirm to the user: `Captured on board: "<title>" → BACKLOG. [kanban.md](.claude/mpi-kanban/kanban.md)`.
 
+## New-project routing
+
+If this brainstorm is about a brand-new project (no `README.md` content,
+no source tree, no `AGENTS.md`/`CLAUDE.md`, or the user explicitly said
+"new project"), recommend `mpi-project-setup` after the BACKLOG entry is
+captured:
+
+```text
+This looks like a new project. Run $mpi-project-setup in Codex or
+/mpi-kanban:mpi-project-setup in Claude Code to establish project mode and
+knowledge before planning?
+```
+
+Do not invoke setup automatically. The user chooses whether to set up
+project knowledge before planning, or proceed directly to a plan.
+
 ## End state
 
 After the BACKLOG entry is captured:

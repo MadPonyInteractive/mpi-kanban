@@ -1,11 +1,13 @@
 # Mpi-Kanban
 
+[![Mentioned in Awesome Codex CLI](https://awesome.re/mentioned-badge.svg)](https://github.com/hashgraph-online/awesome-codex-plugins)
+
 Claude Code and Codex plugin. Bundles MPI workflow skills, drives a per-project
 Kanban board (`.claude/mpi-kanban/kanban.md`) that reflects live work, and
 defines a shared `.agents/mpi-kanban/state/` coordination contract for Claude
 and Codex.
 
-Skills: `init`, `brainstorm`, `create-plan`, `create-large-plan`, `continue`, `execute-parallel`, `handoff`, `end-session`, `cleanup`, `archive`, `brief-rule`.
+Skills: `init`, `project-setup`, `project-mode`, `project-refresh`, `brainstorm`, `create-plan`, `create-large-plan`, `continue`, `execute-parallel`, `handoff`, `end-session`, `cleanup`, `archive`, `brief-rule`.
 
 ## Install
 
@@ -18,7 +20,7 @@ In Claude Code, run:
 /plugin install mpi-kanban@mad-pony-interactive
 ```
 
-Claude Code clones the public GitHub repo, registers the marketplace, and installs the plugin. Restart Claude Code so the skills register, then type `/mpi-kanban:` — you should see eleven skills in the autocomplete list.
+Claude Code clones the public GitHub repo, registers the marketplace, and installs the plugin. Restart Claude Code so the skills register, then type `/mpi-kanban:` — you should see fourteen skills in the autocomplete list.
 
 ### Codex
 
@@ -121,6 +123,9 @@ Natural language is the intended interface. Each skill auto-triggers from phrase
 
 ```text
 brainstorm with me
+set up project knowledge
+change project mode
+refresh project knowledge
 create a plan
 create a large plan
 continue this plan
@@ -144,6 +149,9 @@ separately.
 | Workflow | Claude Code | Codex |
 |---|---|---|
 | Bootstrap/import board | `/mpi-kanban:mpi-init` | `$mpi-kanban:mpi-init` |
+| Project setup | `/mpi-kanban:mpi-project-setup` | `$mpi-kanban:mpi-project-setup` |
+| Project mode | `/mpi-kanban:mpi-project-mode` | `$mpi-kanban:mpi-project-mode` |
+| Project refresh | `/mpi-kanban:mpi-project-refresh` | `$mpi-kanban:mpi-project-refresh` |
 | Brainstorm | `/mpi-kanban:mpi-brainstorm` | `$mpi-kanban:mpi-brainstorm` |
 | Compact plan | `/mpi-kanban:mpi-create-plan` | `$mpi-kanban:mpi-create-plan` |
 | Large/adaptive plan | `/mpi-kanban:mpi-create-large-plan` | `$mpi-kanban:mpi-create-large-plan` |
@@ -188,6 +196,33 @@ The practical workflow:
 Kanban tags such as `claimed`, `needs-review`, `needs-verify`, or
 `needs-integration` are only display summaries for the user. The machine source
 of truth is always `.agents/mpi-kanban/state/`.
+
+## Project knowledge
+
+Mpi-Kanban can record durable project knowledge so fresh sessions do not
+rediscover the project every time.
+
+- `.agents/mpi-kanban/project-profile.md` — project mode, summary,
+  architecture, conventions, important commands, files to read first, open
+  gaps.
+- `.agents/mpi-kanban/project-knowledge-index.md` — topic-to-files map so
+  agents load only relevant docs/rules/memory.
+
+Three skills own this layer:
+
+- `mpi-project-setup` — first-time establishment. Inspects existing docs,
+  rules, memory, and backlog files. Produces an adoption map and proposes
+  artifacts before writing.
+- `mpi-project-mode` — review, reaffirm, or change project mode
+  (`prototype`, `mvp`, `scalable-foundation`). Default when unclear is
+  `scalable-foundation`.
+- `mpi-project-refresh` — audit drift between project knowledge and repo
+  reality; propose updates and a lightweight mode reassessment.
+
+Other skills consume project knowledge: planning, continue, handoff, and
+end-session read the profile/index when present and propose pointer
+updates rather than duplicating content. Setup and refresh ALWAYS propose
+first and write only after user approval.
 
 ## Per-project setup
 
@@ -252,7 +287,7 @@ Add to `.gitignore` if local-only:
 
 - `mpi-create-plan` — default for genuinely small work. Compact living plan, one implementation flow, final verification. Redirects to large planning when independent parallel implementation is likely.
 - `mpi-create-large-plan` — complex/uncertain work, or any work that can be split into independent parallel tasks. Defaults to read-only investigation sub-agents for independent investigation areas and to explicit `## Parallel Batch` sections when implementation ownership is disjoint and verification is batch-safe. Phases, plan drift notes, preservation notes.
-- `mpi-continue` — default implementation/resume skill. Reads plan, shared coordination index when present, latest handoff, kanban entry, current repo state before proposing work; claims files before editing. When the next eligible unit is a valid `## Parallel Batch`, it routes to `mpi-execute-parallel` rather than running it sequentially.
+- `mpi-continue` — default implementation/resume skill. Reads plan, shared coordination index when present, project profile/knowledge index when present, latest handoff, kanban entry, current repo state before proposing work; claims files before editing. When the next eligible unit is a valid `## Parallel Batch`, it routes to `mpi-execute-parallel` rather than running it sequentially.
 - `mpi-execute-parallel` — the default execution path for eligible explicit parallel batches: declared, disjoint ownership and per-worker file claims. Strict refusal gates remain (overlapping ownership, missing metadata, active write claims, intra-batch dependencies).
 
 Plans are living documents. Agents update `Current State`, `Plan Drift`, `Remaining Work`, and `Preservation Notes` as reality changes.

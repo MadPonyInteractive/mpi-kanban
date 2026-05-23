@@ -64,6 +64,32 @@ wait for explicit approval per file.
 Edits MUST be concise — short bullets, no prose bloat, no new headings unless
 strictly required.
 
+### 2b. Lightweight project knowledge refresh
+
+When `.agents/mpi-kanban/project-profile.md` or
+`.agents/mpi-kanban/project-knowledge-index.md` exists, check whether this
+session's changes affected architecture, conventions, important commands,
+or agent guidance. Refer to
+`${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/updates.md` for the update
+shape.
+
+If any of the following changed in this session, propose a single,
+concise edit:
+
+- Top-level component moved/renamed/added → profile architecture summary
+  or knowledge index topic pointer.
+- New command worth recording → profile `Important Commands`.
+- New convention or convention change → profile `Conventions` or the
+  referenced rule file.
+- New subsystem with no topic block → knowledge index `Topics`.
+- `AGENTS.md`/`CLAUDE.md` no longer accurately points at the profile/index
+  → propose a pointer update.
+
+Surface ONE proposal per file with current vs proposed content. Wait for
+per-file approval. If nothing has drifted, say so in one line and move on.
+For broader drift, recommend `mpi-project-refresh` instead of expanding
+this pass.
+
 ### 3. Memory pass
 
 Per `~/.claude/CLAUDE.md`:
@@ -124,6 +150,7 @@ Output to the user:
 
 - Files committed (one line each).
 - Rules/docs updated (one line each, or "none").
+- Project profile/index updates (one line each, or "none").
 - Memory entries written/updated (one line each, or "none").
 - Kanban result — one of:
   - `Kanban: "<title>" → COMPLETED. [kanban.md](.claude/mpi-kanban/kanban.md)`

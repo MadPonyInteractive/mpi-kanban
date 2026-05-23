@@ -54,6 +54,9 @@ The plugin's skills are Markdown workflows under `skills/`. They are the shared
 source for both Claude Code and Codex; Codex should load them selectively:
 
 - `skills/mpi-init/SKILL.md` for starting or synchronizing a project kanban workflow.
+- `skills/mpi-project-setup/SKILL.md` for establishing project mode and durable project knowledge (profile + index).
+- `skills/mpi-project-mode/SKILL.md` for reviewing, reaffirming, or changing project mode.
+- `skills/mpi-project-refresh/SKILL.md` for auditing and refreshing project knowledge drift.
 - `skills/mpi-brainstorm/SKILL.md` for exploring possible approaches before a plan exists.
 - `skills/mpi-create-plan/SKILL.md` for compact/default plans.
 - `skills/mpi-create-large-plan/SKILL.md` for adaptive large plans.
@@ -94,6 +97,26 @@ must reread current state before committing.
 
 New canonical handoffs live under `.agents/mpi-kanban/state/handoffs/`.
 `docs/handoffs/` is legacy compatibility during migration.
+
+## Project Knowledge
+
+Durable per-project knowledge lives outside `state/`:
+
+- `.agents/mpi-kanban/project-profile.md`
+- `.agents/mpi-kanban/project-knowledge-index.md`
+
+When these files exist, agents must read the profile and the topic block in
+the index that matches the current task BEFORE deep-loading rules, docs, or
+memory. See `lib/project-knowledge/indexing.md` for context-budget rules.
+
+Mode contracts live in `lib/project-intent/modes.md`. Default mode is
+`scalable-foundation` when unclear. The active mode is recorded in the
+profile frontmatter; only `mpi-project-mode` changes it.
+
+`mpi-project-setup`, `mpi-project-mode`, and `mpi-project-refresh` are the
+skills that manage project knowledge. Other skills consume it without
+duplicating content; profile/index edits require user approval per the
+rules in `lib/project-knowledge/updates.md`.
 
 ## Read-Only Boundary
 

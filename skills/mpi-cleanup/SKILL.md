@@ -28,6 +28,8 @@ Scan:
 - `.agents/mpi-kanban/state/tasks/*.json`
 - `.agents/mpi-kanban/state/files/*.json`
 - `.agents/mpi-kanban/state/handoffs/*.json`
+- `.agents/mpi-kanban/project-profile.md`
+- `.agents/mpi-kanban/project-knowledge-index.md`
 - `.claude/mpi-kanban/archived*.md`
 - `.claude/mpi-kanban/kanban.md`
 
@@ -45,6 +47,9 @@ Classify artifacts:
   verification, integration, or final commit summary.
 - **Closed coordination state:** status `closed` or completed records no longer
   referenced by active tasks/handoffs.
+- **Active project knowledge:** project profile and knowledge index are
+  active by default. Never delete or auto-rewrite. Recommend
+  `mpi-project-refresh` when the user wants drift cleaned up.
 
 Default stale threshold: 60 days.
 
@@ -79,6 +84,10 @@ Never delete active files. Never delete archives by default.
 Coordination-state cleanup is conservative. Propose actions first. Do not delete
 coordination-state files unless the user explicitly approves those exact paths.
 Prefer moving closed state to archive over deletion.
+
+Never delete `.agents/mpi-kanban/project-profile.md` or
+`.agents/mpi-kanban/project-knowledge-index.md`. They are active project
+knowledge. If they appear stale, recommend `mpi-project-refresh`.
 
 ## Final output
 

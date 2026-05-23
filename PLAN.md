@@ -74,3 +74,25 @@ project-knowledge Phase 4 work; does not block or imply Phase 4.
 - [ ] Test `mpi-execute-parallel` refusal on a plan without a valid
   `## Parallel Batch`.
 - [ ] Test `mpi-cleanup` proposal mode without approval.
+
+## Project knowledge and architectural intent Phase 4
+
+Plan file: `docs/plans/2026-05-20-project-knowledge-architectural-intent-phase-4.md`.
+
+- [x] Add `lib/project-intent/modes.md` (mode contracts, default-mode rule,
+  intentional engineering guardrails).
+- [x] Add `lib/project-knowledge/` reference docs (`profile-schema.md`,
+  `index-schema.md`, `adoption.md`, `indexing.md`, `updates.md`).
+- [x] Add `templates/project-profile.md` and
+  `templates/project-knowledge-index.md`.
+- [x] Add `mpi-project-setup`, `mpi-project-mode`, and `mpi-project-refresh`
+  skills.
+- [x] Wire `mpi-brainstorm`, `mpi-create-plan`, `mpi-create-large-plan`,
+  `mpi-continue`, `mpi-handoff`, `mpi-end-session`, and `mpi-cleanup` to
+  the project profile/knowledge index.
+- [x] Update `SPEC.md`, `README.md`, `AGENTS.md`, and `PLAN.md` for the new
+  skill set and project knowledge contract.
+- [ ] Run `python scripts/validate_plugin.py` and the project-knowledge
+  contradiction sweep.
+- [ ] Run `update_live.py` only after Phase 4 is reviewed and the user
+  explicitly asks for the live cache update.

@@ -147,6 +147,12 @@ Use this exact JSON structure:
     "files_modified": ["<path1>", "<path2>"],
     "files_to_read_first": ["<path1>", "<path2>"]
   },
+  "project_knowledge": {
+    "profile": "<.agents/mpi-kanban/project-profile.md if present, else null>",
+    "knowledge_index": "<.agents/mpi-kanban/project-knowledge-index.md if present, else null>",
+    "mode": "<profile mode if present, else null>",
+    "relevant_topics": ["<topic block names the fresh session should load first>"]
+  },
   "rules_active": [
     "<rule file that must be read>",
     "<rule file 2>"
@@ -202,3 +208,6 @@ The next action is: <next_action.description>
 - `allowed_actions` is required in the JSON.
 - `files_to_read_first` = files the fresh agent must read before touching code.
 - `rules_active` = rule files relevant to the pending work.
+- `project_knowledge` = pointer to profile/index and the relevant topic
+  blocks the fresh session should load first. Fields are `null` when no
+  profile/index exists.

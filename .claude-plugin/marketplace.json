@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "mpi-kanban",
-      "description": "MPI workflow skills (init, brainstorm, create-plan, create-large-plan, continue, execute-parallel, handoff, end-session, cleanup, archive, brief-rule) bundled as a plugin that drives a per-project Kanban board.",
+      "description": "MPI workflow skills (init, project-setup, project-mode, project-refresh, brainstorm, create-plan, create-large-plan, continue, execute-parallel, handoff, end-session, cleanup, archive, brief-rule) bundled as a plugin that drives a per-project Kanban board and durable project knowledge.",
       "source": "./",
       "category": "workflow",
       "keywords": ["mpi", "kanban", "workflow", "planning"]

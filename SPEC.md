@@ -41,6 +41,12 @@ repository, license, and keywords.
 ## 3. Skill Set
 
 - `mpi-init` - bootstrap/import a board.
+- `mpi-project-setup` - establish project mode and durable project knowledge
+  (profile and knowledge index), adopting existing docs/rules/memory.
+- `mpi-project-mode` - review, reaffirm, or change project mode without
+  rerunning setup.
+- `mpi-project-refresh` - audit drift between project knowledge and repo
+  reality; propose updates.
 - `mpi-brainstorm` - explore an idea and capture a BACKLOG entry.
 - `mpi-create-plan` - create a compact/default plan.
 - `mpi-create-large-plan` - create an adaptive, investigation-backed large plan.
@@ -50,8 +56,8 @@ repository, license, and keywords.
   worker sub-agents.
 - `mpi-handoff` - preserve current state and print a mandatory copy/paste
   resume prompt for `mpi-continue`.
-- `mpi-end-session` - sync docs/rules/memory, commit, and close the active
-  kanban entry when complete.
+- `mpi-end-session` - sync docs/rules/memory, commit, run a lightweight
+  project-knowledge refresh, and close the active kanban entry when complete.
 - `mpi-cleanup` - propose conservative cleanup for stale plans, handoffs, and
   workflow artifacts.
 - `mpi-archive` - archive kanban entries out of the active board.
@@ -282,6 +288,61 @@ bundle.
 
 The plugin does not hardcode project rules.
 
+## 10b. Project Knowledge
+
+Mpi-Kanban includes a model-neutral project knowledge layer so fresh agent
+sessions do not rediscover architecture, conventions, important commands,
+and engineering intent each time.
+
+Project knowledge files (outside `.agents/mpi-kanban/state/`):
+
+```text
+<project-root>/.agents/mpi-kanban/project-profile.md
+<project-root>/.agents/mpi-kanban/project-knowledge-index.md
+```
+
+The profile records project mode (`prototype`, `mvp`, `scalable-foundation`),
+mode rationale and source, a project summary, an architecture summary, a
+short conventions list, important commands, files to read first, setup and
+refresh dates, and open knowledge gaps. The knowledge index maps task
+topics to specific docs/rules/memory pointers so agents load only relevant
+context.
+
+Mode contracts and the default-mode rule live in
+`lib/project-intent/modes.md`. The default is `scalable-foundation` when
+project mode is unclear. Profile/index schemas, adoption procedures,
+indexing rules, and update rules live under `lib/project-knowledge/`.
+
+The three skills that own this layer are:
+
+- `mpi-project-setup` - first-time establishment. Inspects existing docs,
+  rules, memory, and backlog/process files. Produces an adoption map and a
+  full proposal before writing.
+- `mpi-project-mode` - mode review/change. Records rationale and migration
+  notes. Does not rewrite code.
+- `mpi-project-refresh` - on-demand drift audit. Includes a lightweight
+  mode reassessment but does not change mode.
+
+Existing skills consume project knowledge without duplicating it:
+
+- `mpi-brainstorm` recommends `mpi-project-setup` for new projects after
+  design approval.
+- `mpi-create-plan` and `mpi-create-large-plan` read profile/index when
+  present and include project mode in plan current state.
+- `mpi-continue` reads profile/index before the Continue Brief and includes
+  mode + matched topic conventions in the brief.
+- `mpi-handoff` records profile/index pointers and relevant topic blocks in
+  the canonical handoff JSON.
+- `mpi-end-session` runs a lightweight refresh on session-touched files.
+- `mpi-cleanup` treats the profile and index as active by default; recommends
+  `mpi-project-refresh` instead of editing them.
+
+Setup and refresh inspect the repo and propose changes, but never write to
+project files, rules, or memory before the user approves the proposal.
+`AGENTS.md` may be created or updated directly after the setup proposal is
+approved, pointer-first: existing entrypoints stay concise and link to the
+profile/index.
+
 ## 11. Cleanup
 
 `mpi-cleanup` classifies workflow artifacts as active, completed, orphaned,
@@ -305,7 +366,8 @@ The plugin still works without the extension; the board remains Markdown.
 
 ## 13. Acceptance Criteria
 
-- Plugin registers all current skills.
+- Plugin registers all current skills, including `mpi-project-setup`,
+  `mpi-project-mode`, and `mpi-project-refresh`.
 - Claude and Codex manifests both register the shared `skills/` tree without
   duplicating workflow implementation.
 - Codex invocation is through prefixed `$mpi-kanban:mpi-*` plugin skills and
@@ -320,3 +382,6 @@ The plugin still works without the extension; the board remains Markdown.
 - Shared coordination docs consistently describe `.agents/mpi-kanban/state/` as
   canonical machine state while preserving `.claude/mpi-kanban/kanban.md` as the
   stable board path.
+- Project knowledge artifacts live at `.agents/mpi-kanban/project-profile.md`
+  and `.agents/mpi-kanban/project-knowledge-index.md`; the kanban schema is
+  unchanged.

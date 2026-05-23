@@ -61,13 +61,22 @@ because several files may change.
 ## Workflow
 
 1. Understand the goal or BACKLOG entry from `mpi-brainstorm`.
-2. If the goal is clearly large or uncertain, or if independent parallel
+2. **Load project knowledge if present.** Read
+   `.agents/mpi-kanban/project-profile.md` and
+   `.agents/mpi-kanban/project-knowledge-index.md` when they exist. Follow
+   the context-budget rules in
+   `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/indexing.md`: read pointer
+   files first, then only the topic-matching docs/rules. Do not scan all
+   rules and docs.
+3. If the goal is clearly large or uncertain, or if independent parallel
    implementation looks likely (work splits into disjoint-ownership tasks),
    recommend `$mpi-create-large-plan` in Codex or
    `/mpi-kanban:mpi-create-large-plan` in Claude Code instead and wait for
    confirmation.
-3. Write the compact plan file.
-4. Update the kanban board.
+4. Write the compact plan file. Include project mode in `## Current State`
+   when the profile exists ("Project mode: scalable-foundation"). Pull
+   relevant conventions or commands from the matched topic block only.
+5. Update the kanban board.
 
 ## Kanban update
 

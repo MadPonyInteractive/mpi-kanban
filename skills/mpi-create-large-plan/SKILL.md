@@ -82,13 +82,21 @@ and note why in the plan.
 ## Workflow
 
 1. Understand the user's goal or the BACKLOG entry passed by `mpi-brainstorm`.
-2. Identify 2-4 investigation areas. Default to spawning one read-only sub-agent
+2. **Load project knowledge if present.** Read
+   `.agents/mpi-kanban/project-profile.md` and
+   `.agents/mpi-kanban/project-knowledge-index.md` when they exist. Follow
+   the context-budget rules in
+   `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/indexing.md`. Brief each
+   investigation sub-agent with the profile mode and the relevant topic
+   block(s), not the whole project.
+3. Identify 2-4 investigation areas. Default to spawning one read-only sub-agent
    per independent area, in parallel. Sub-agents write findings to
    `/tmp/investigation/<area>.md` and never edit project files. Use a single
    agent only when the areas are not independent or the work is trivial.
-3. Synthesize findings into an adaptive plan with `Current State`,
+4. Synthesize findings into an adaptive plan with `Current State`,
    `Remaining Work`, `Plan Drift`, `Verification`, and `Preservation Notes`.
-4. Self-audit:
+   Include project mode in `## Current State` when the profile exists.
+5. Self-audit:
    - Each task has `**Verify:**`.
    - Independent implementation work is in `## Parallel Batch` sections by
      default; if splittable work was left as sequential phases, the plan says
@@ -96,8 +104,8 @@ and note why in the plan.
    - Parallel batch tasks declare `Ownership:` and do not overlap.
    - No task assumes later work has already happened.
    - The plan says when `mpi-execute-parallel` is appropriate, if at all.
-5. Write the plan file to `docs/plans/YYYY-MM-DD-<slug>.md`.
-6. Update the kanban board.
+6. Write the plan file to `docs/plans/YYYY-MM-DD-<slug>.md`.
+7. Update the kanban board.
 
 ## Kanban update
 

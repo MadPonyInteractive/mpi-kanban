@@ -53,22 +53,29 @@ Lib pointers, read only when needed:
 - `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/steps.md` - `addSteps`, `markStep`
 - `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/lifecycle.md` - session/task/file claim lifecycle
 - `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/statuses.md` - state vocabulary
+- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/indexing.md` - context-budget rules
 
 1. Read the handoff if present. If it is a legacy `docs/handoffs/` pointer to a
    canonical `.agents/` handoff, load the canonical handoff before continuing.
-2. Read `lib/coordination-ops/lifecycle.md`. Call `ensureStateRoot()` when
+2. **Load project knowledge if present.** Read
+   `.agents/mpi-kanban/project-profile.md` and
+   `.agents/mpi-kanban/project-knowledge-index.md` before the Continue Brief.
+   Pick the topic block matching the active plan. Load only the listed
+   docs/rules; do not rediscover the whole project. If the profile is
+   absent, fall back to the existing pre-condition behavior.
+3. Read `lib/coordination-ops/lifecycle.md`. Call `ensureStateRoot()` when
    coordination state is relevant, then read `state/index.json` as the active
    coordination facade.
-3. Register or renew an `implementer` session and create or attach a task
+4. Register or renew an `implementer` session and create or attach a task
    record for the active kanban entry and plan.
-4. Read the active plan.
-5. Locate the kanban entry whose body contains `Plan file: <planPath>`.
-6. If the entry is in PLANNING, move it to IMPLEMENTING and add stable steps:
+5. Read the active plan.
+6. Locate the kanban entry whose body contains `Plan file: <planPath>`.
+7. If the entry is in PLANNING, move it to IMPLEMENTING and add stable steps:
    - Compact plan: one step, `Implementation`.
    - Large/adaptive plan: phase-level steps when phases exist; otherwise use
      lifecycle steps: `Orient current state`, `Implement active work`,
      `Verify behavior`, `Preserve knowledge`, `Close session`.
-7. Inspect current workspace state with small commands (`git status`,
+8. Inspect current workspace state with small commands (`git status`,
    targeted file reads/searches). Do not run large diffs unless needed.
 
 ## Orient and detect drift
@@ -116,7 +123,9 @@ Before implementation, output a brief and stop:
 ## Continue Brief: <next action>
 
 **Source:** <plan path and handoff path if any>
+**Project mode:** <profile mode, or "no profile">
 **Current state:** <1-3 bullets>
+**Conventions in play:** <1-3 bullets from matched topic block, or "none">
 **Plan drift:** <none or summary of plan edits made/proposed>
 **Files likely touched:** <files/modules>
 **Coordination:** <active claims, pending file states, or none>
