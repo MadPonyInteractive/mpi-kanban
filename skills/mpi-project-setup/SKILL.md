@@ -1,6 +1,6 @@
 ---
 name: mpi-project-setup
-description: Establish durable MPI project knowledge. Ask for project mode, inspect existing docs/rules/memory, propose an adoption map, and create or update the project profile, knowledge index, agent entrypoint pointers, and rule/memory pointers after explicit user approval. Use when the user says "MPI project setup", "set up project knowledge", "adopt this project", "create a project profile", "$mpi-project-setup", or "/mpi-kanban:mpi-project-setup", or right after `mpi-brainstorm` for a brand-new project.
+description: Establish durable MPI project knowledge. Ask for project mode, inspect existing docs/rules/memory, propose an adoption map, and create or update the project profile, knowledge index, agent entrypoint pointers, rule files, and memory pointers after explicit user approval. Use when the user says "MPI project setup", "set up project knowledge", "adopt this project", "create a project profile", "$mpi-project-setup", or "/mpi-kanban:mpi-project-setup", or right after `mpi-brainstorm` for a brand-new project.
 ---
 
 # mpi-project-setup Skill
@@ -112,6 +112,18 @@ Classify each inspected source per `lib/project-knowledge/adoption.md`:
 `usable as-is`, `small update`, `index pointer`, `convert to MPI-managed`,
 `superseded historical reference`, `conflict / uncertain`.
 
+When no `.claude/rules/*.md` files exist, do not treat that as "rules out of
+scope." Decide whether any discovered project-specific conventions are better
+stored as:
+
+- short bullets in `.agents/mpi-kanban/project-profile.md`;
+- pointers to existing docs; or
+- a proposed new `.claude/rules/<topic>.md` file when the convention is
+  reusable, important for sub-agents, or too detailed for the profile.
+
+If no rule file is warranted, state why ("no reusable project-specific
+conventions found yet" or "profile bullets are enough for now").
+
 For new projects, the adoption map is short or empty. State that explicitly.
 
 ### 6. Draft the proposal
@@ -128,7 +140,8 @@ The proposal is a single message containing:
    the profile and index. Default to creating `AGENTS.md` only if it does
    not exist OR if existing entrypoints are silent about MPI. Keep
    entrypoint edits to short pointer additions.
-6. Any rule edits proposed (per file, one-line summary).
+6. Any rule file changes proposed, including new `.claude/rules/*.md` files or
+   edits to existing rules (per file, one-line summary and purpose).
 7. Any memory pointers proposed (existing Claude memory preferred; new
    memory entries called out explicitly).
 8. Any deferred items the user should know about.
@@ -148,7 +161,7 @@ The user may:
 - skip an artifact ("skip the knowledge index for now");
 - change project mode ("make it mvp instead");
 - redirect adoption ("treat docs/old-arch.md as historical not pointer");
-- defer rule/memory writes ("skip memory writes");
+- defer rule/memory writes ("skip rule files", "skip memory writes");
 - request edits before approval.
 
 Loop until the user approves, declines, or specifies a partial approval.
@@ -169,7 +182,9 @@ out of.
 4. Create or update `AGENTS.md` if approved. Pointer-first: add a short
    `## Project Knowledge` section that links to the profile and index.
    Preserve existing content; do not rewrite the file.
-5. Apply approved rule edits per file. Each edit is concise.
+5. Apply approved rule file creations or edits per file. Each file should be
+   concise and include a `## Sub-Agent Briefing` section when it is intended
+   for `mpi-brief-rule` or parallel worker briefings.
 6. Apply approved memory pointer entries.
 7. Confirm: state which files were written, link them, and suggest the next
    useful step. If no kanban exists, suggest `mpi-init`. If brainstorm just
@@ -191,7 +206,10 @@ Output to the user:
 - Default mode is `scalable-foundation` when unclear.
 - Pointer-first: prefer pointing at existing docs/rules over copying
   content into profile/index.
-- Never edit `.claude/rules/*.md` without explicit per-file approval.
+- Creating `.claude/rules/*.md` is allowed during setup when the approved
+  proposal identifies reusable project-specific conventions that do not already
+  have a good home.
+- Never create or edit `.claude/rules/*.md` without explicit per-file approval.
 - Never overwrite an existing profile or index without showing diff and
   getting approval.
 - Memory writes use `AskUserQuestion` before removing or modifying existing

@@ -205,6 +205,8 @@ usually creates or updates:
 - `.agents/mpi-kanban/project-profile.md`
 - `.agents/mpi-kanban/project-knowledge-index.md`
 - a short `AGENTS.md` project-knowledge pointer, when useful
+- `.claude/rules/<topic>.md`, when reusable project-specific conventions need a
+  dedicated rule file for future agents or worker briefings
 
 After setup, planning, continue, handoff, end-session, and cleanup can use the
 project profile and knowledge index automatically when they are present. If the
@@ -220,6 +222,11 @@ handoffs, and closed coordination state, but it does not create or rewrite the
 project profile or knowledge index. Legacy `docs/handoffs/` files remain
 readable during migration; new canonical handoffs live under
 `.agents/mpi-kanban/state/handoffs/`.
+
+If setup says no rule files were proposed, that means it did not identify a
+convention that needed a dedicated `.claude/rules/*.md` file. You can ask it to
+re-run setup or refresh and specifically propose rule files for known
+conventions.
 
 ## Multi-agent coordination
 

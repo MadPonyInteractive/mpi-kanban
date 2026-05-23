@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Clarified that `mpi-project-setup` and `mpi-project-refresh` may propose new
+  `.claude/rules/*.md` files, not only edits to existing rules, when reusable
+  project-specific conventions need dedicated briefable rule files.
+
 ## [0.5.0] - 2026-05-23
 
 ### Added

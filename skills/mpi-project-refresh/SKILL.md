@@ -142,8 +142,10 @@ After approval, in order:
    Bump `last_refresh` to today.
 2. Update `.agents/mpi-kanban/project-knowledge-index.md` per approved
    findings. Bump `last_refresh` to today.
-3. Apply approved rule edits per file. ASK before touching any
-   `.claude/rules/*.md` per `lib/project-knowledge/updates.md`.
+3. Apply approved rule file creations or edits per file. ASK before touching
+   any `.claude/rules/*.md` per `lib/project-knowledge/updates.md`. New rule
+   files are appropriate when refresh finds reusable project-specific
+   conventions that should be briefable to future agents or workers.
 4. Apply approved memory pointer edits. Use `AskUserQuestion` before
    removing or modifying existing memory entries.
 5. Apply approved `AGENTS.md` or `CLAUDE.md` pointer edits. Preserve
@@ -164,7 +166,7 @@ Refresh applied.
 ## Hard rules
 
 - Inspect first, propose second, write third. No write without approval.
-- Never edit a rule file without explicit per-file approval.
+- Never create or edit a rule file without explicit per-file approval.
 - Never auto-delete or auto-overwrite a memory entry.
 - Never overwrite user-customized sections of the profile/index without
   showing the diff and getting approval.
