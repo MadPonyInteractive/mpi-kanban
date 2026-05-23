@@ -11,6 +11,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [0.5.0] - 2026-05-23
+
+### Added
+
+- Durable project knowledge layer so fresh sessions stop rediscovering
+  architecture, conventions, and intent each session. New reference docs under
+  `lib/project-knowledge/` cover profile schema, index schema, adoption,
+  context-budget indexing, and update/approval rules. Templates added for
+  `project-profile.md` and `project-knowledge-index.md`.
+- Project mode contract and intentional-engineering guardrails at
+  `lib/project-intent/modes.md`. Default mode is `scalable-foundation`.
+- Three new skills bringing the surface to 14:
+  - `mpi-project-setup` — builds an adoption map and waits for approval before
+    writing profile/index.
+  - `mpi-project-mode` — records mode-change rationale and migration notes
+    without rewriting code.
+  - `mpi-project-refresh` — audits drift and runs lightweight mode reassessment.
+- Phase 4 plan documents project-knowledge architectural intent and parallel
+  implementation strategy.
+
+### Changed
+
+- Existing skills now consume project knowledge when present:
+  - `mpi-brainstorm` routes new-project ideas to `mpi-project-setup`.
+  - `mpi-create-plan` and `mpi-create-large-plan` read profile/index.
+  - `mpi-continue` reads profile/index before the Continue Brief; brief gains
+    Project mode and Conventions-in-play fields.
+  - `mpi-handoff` records `project_knowledge` pointers in canonical JSON.
+  - `mpi-end-session` runs a lightweight refresh on session-touched files.
+  - `mpi-cleanup` treats profile/index as active by default and defers drift
+    cleanup to `mpi-project-refresh`.
+- SPEC, README, AGENTS, PLAN, plugin manifests, and marketplace description
+  updated to reflect the 14-skill surface. Kanban schema unchanged.
+
 ## [0.4.3] - 2026-05-22
 
 ### Changed
@@ -104,7 +138,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.5.0
 [0.4.3]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.4.3
 [0.4.2]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.4.2
 [0.4.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.4.1

@@ -1,6 +1,6 @@
 {
   "name": "mpi-kanban",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "description": "MPI workflow skills (init, project-setup, project-mode, project-refresh, brainstorm, create-plan, create-large-plan, continue, execute-parallel, handoff, end-session, cleanup, archive, brief-rule) bundled as a plugin that drives a per-project Kanban board and durable project knowledge.",
   "author": {
     "name": "Fabio Goncalves",
