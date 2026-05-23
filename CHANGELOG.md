@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [0.5.1] - 2026-05-23
+
+### Changed
+
 - Clarified that `mpi-project-setup` and `mpi-project-refresh` may propose new
   `.claude/rules/*.md` files, not only edits to existing rules, when reusable
   project-specific conventions need dedicated briefable rule files.
@@ -142,7 +146,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.5.1
 [0.5.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.5.0
 [0.4.3]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.4.3
 [0.4.2]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.4.2
