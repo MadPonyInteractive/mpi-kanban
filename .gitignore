@@ -7,6 +7,9 @@
 .agents/
 skills-lock.json
 
+# Generated KiloCode-portable skill tree (rebuilt by scripts/build_kilo_skills.py)
+skills-kilo/
+
 # OS noise
 Thumbs.db
 Desktop.ini
