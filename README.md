@@ -173,6 +173,54 @@ create an MPI handoff
 MPI end session
 ```
 
+## Set up or migrate a project
+
+Run project setup once in every project that should use the full MPI workflow.
+This is the adoption step that teaches future Claude, Codex, or compatible
+agent sessions what the project is, which mode it is in, which docs/rules/memory
+matter, and where to read first.
+
+```text
+set up project knowledge
+```
+
+Direct invocation:
+
+| Agent | Command |
+|---|---|
+| Claude Code | `/mpi-kanban:mpi-project-setup` |
+| Codex | `$mpi-kanban:mpi-project-setup` |
+
+Use `mpi-project-setup` for both new and existing projects:
+
+- For a new project, it asks for the project mode, records initial intent, and
+  creates a pointer-driven project profile and knowledge index after approval.
+- For an existing project, it inspects current entrypoints, docs, rules, memory
+  pointers, README, and backlog/process files. It then shows an adoption map so
+  you can approve what should be reused, pointed to, updated, or deferred.
+
+The setup skill proposes first and writes only after you approve. Approved setup
+usually creates or updates:
+
+- `.agents/mpi-kanban/project-profile.md`
+- `.agents/mpi-kanban/project-knowledge-index.md`
+- a short `AGENTS.md` project-knowledge pointer, when useful
+
+After setup, planning, continue, handoff, end-session, and cleanup can use the
+project profile and knowledge index automatically when they are present. If the
+project architecture, commands, conventions, or important docs change later,
+run:
+
+```text
+refresh project knowledge
+```
+
+`mpi-cleanup` is housekeeping, not migration. It can archive old plans, legacy
+handoffs, and closed coordination state, but it does not create or rewrite the
+project profile or knowledge index. Legacy `docs/handoffs/` files remain
+readable during migration; new canonical handoffs live under
+`.agents/mpi-kanban/state/handoffs/`.
+
 ## Multi-agent coordination
 
 Mpi-Kanban lets multiple Claude, Codex, or compatible agent sessions coordinate
