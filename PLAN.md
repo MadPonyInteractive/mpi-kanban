@@ -115,6 +115,24 @@ Plan file: `docs/plans/2026-05-20-project-knowledge-architectural-intent-phase-4
   `codex plugin add`.
 - [x] Keep `scripts/register_codex_plugin.py` documented as a local development
   helper, not the public install path.
+- [x] Record the Superpowers / Kilo generator lesson for a future Codex target
+  adapter: shared workflow source, runtime-native packaging, and target-specific
+  overlays instead of bridges.
+
+## Future multi-agent packaging adapters
+
+Follow-up idea from comparing `obra/superpowers` and the Phase 6 Kilo generator:
+keep `skills/mpi-*/SKILL.md` canonical for now, but treat Kilo, Codex,
+OpenCode, and future systems as target adapters around that source.
+
+- Kilo currently needs generated self-contained skills because marketplace pulls
+  one skill folder at a time.
+- Codex does not need that same inlining path today; it consumes the shared
+  `skills/` tree through `.codex-plugin/plugin.json`.
+- A future `build_agent_skills.py --target kilo|codex|opencode` could reuse
+  discovery, validation, and overlay metadata while keeping each runtime native.
+- Prefer Option C first: shared Markdown plus per-runtime overlays. Reconsider a
+  neutral source format only if overlays become the real source of truth.
 
 ## KiloCode plugin packaging Phase 6
 
