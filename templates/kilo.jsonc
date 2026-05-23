@@ -1,0 +1,32 @@
+// KiloCode workspace config for Mpi-Kanban.
+//
+// Drop this file at the workspace root as `kilo.jsonc`, or merge the
+// `skills.paths` entry into an existing kilo.jsonc.
+//
+// Adjust the path to wherever you cloned MadPonyInteractive/mpi-kanban.
+// KiloCode accepts absolute paths, `~/` home-relative paths, or paths
+// relative to the workspace root.
+//
+// See docs/kilocode-install.md for full install instructions.
+{
+  "skills": {
+    "paths": [
+      "~/plugins/mpi-kanban/skills"
+    ]
+  }
+
+  // Optional: define an MPI orchestrator agent under the `agent` key.
+  // The MPI workflow is skill-driven, so a custom agent is not required.
+  // Uncomment and adjust if you want a one-tap MPI mode in the Kilo agent
+  // picker.
+  //
+  // ,
+  // "agent": {
+  //   "mpi-orchestrator": {
+  //     "description": "MPI workflow orchestrator (brainstorm, plan, continue, handoff, end-session).",
+  //     "mode": "primary",
+  //     "color": "#2563EB",
+  //     "prompt": "You are the MPI workflow orchestrator. Use the mpi-* skills to drive planning, implementation, and handoff. Coordinate through .agents/mpi-kanban/state/. The board lives at .claude/mpi-kanban/kanban.md."
+  //   }
+  // }
+}

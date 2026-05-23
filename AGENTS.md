@@ -143,3 +143,17 @@ When using this plugin from another repository, prefer that repository's local k
 - `C:\AI\Mpi\CubricStudio\.claude\mpi-kanban\kanban.md`
 
 Read that file only when the user asks for MPI kanban workflow actions or when the current task explicitly depends on the kanban state.
+
+## KiloCode
+
+KiloCode auto-discovers Agent Skills from `.claude/skills/`, `.agents/skills/`,
+`.kilo/skills/`, `~/.kilo/skills/`, and any path or URL listed in `kilo.jsonc`.
+A workspace that already has Mpi-Kanban installed as a Claude plugin therefore
+needs no extra setup — KiloCode finds the same skill tree through the
+compatibility path.
+
+For Codex-free or Claude-free KiloCode workspaces, see
+[`docs/kilocode-install.md`](docs/kilocode-install.md) for the
+`kilo.jsonc skills.paths` clone path and the marketplace pull via the
+generated `skills-kilo/` tree (built by `python scripts/build_kilo_skills.py`).
+
