@@ -3,8 +3,11 @@
 .claude/*.local.md
 .claude/*.local.json
 
-# Project-local skill installs (transient build helpers)
-.agents/
+# Project-local agent state and skill installs (transient build helpers)
+.agents/*
+!.agents/plugins/
+.agents/plugins/*
+!.agents/plugins/marketplace.json
 skills-lock.json
 
 # Generated KiloCode-portable skill tree (rebuilt by scripts/build_kilo_skills.py)

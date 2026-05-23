@@ -2,10 +2,14 @@
 
 <!-- [![Mentioned in Awesome Codex CLI](https://awesome.re/mentioned-badge.svg)](https://github.com/hashgraph-online/awesome-codex-plugins) -->
 
-Claude Code and Codex plugin. Bundles MPI workflow skills, drives a per-project
-Kanban board (`.claude/mpi-kanban/kanban.md`) that reflects live work, and
-defines a shared `.agents/mpi-kanban/state/` coordination contract for Claude
-and Codex.
+A Claude Code and Codex plugin that lets multiple AI agents work side by side on
+the same project — even on the same files — without overwriting each other.
+Agents share a live coordination state so one can implement while another
+reviews, verifies, or integrates, and a visible Kanban board keeps you in the
+loop on what every agent is doing. Bundles the full MPI workflow (brainstorm,
+plan, continue, parallel execution, handoff, end session, cleanup) so a single
+session or a whole team of Claude and Codex agents can pick up work, coordinate
+file ownership, and ship together.
 
 Skills: `init`, `project-setup`, `project-mode`, `project-refresh`, `brainstorm`, `create-plan`, `create-large-plan`, `continue`, `execute-parallel`, `handoff`, `end-session`, `cleanup`, `archive`, `brief-rule`.
 
@@ -24,9 +28,51 @@ Claude Code clones the public GitHub repo, registers the marketplace, and instal
 
 ### Codex
 
-Codex uses the native `.codex-plugin/plugin.json` manifest in this repo. Clone
-the repository first, then register that checkout in your home-local Codex
-marketplace.
+Codex uses the native `.codex-plugin/plugin.json` manifest in this repo. Public
+installs use Codex's marketplace commands directly against the GitHub repo:
+
+```text
+codex plugin marketplace add MadPonyInteractive/mpi-kanban --ref main
+codex plugin add mpi-kanban@mad-pony-interactive
+```
+
+Restart Codex after installing so the `$mpi-kanban:mpi-*` plugin skills are
+available. Verify the marketplace snapshot before installing with:
+
+```text
+codex plugin list --marketplace mad-pony-interactive
+```
+
+The repository includes `.agents/plugins/marketplace.json` as the public Codex
+marketplace manifest. That file points the `mpi-kanban` plugin at this repo
+root, where `.codex-plugin/plugin.json` exposes the shared `skills/` tree.
+
+To pin to a release branch or tag, pass a different ref when adding the
+marketplace:
+
+```text
+codex plugin marketplace add MadPonyInteractive/mpi-kanban --ref v0.6.0
+```
+
+Update an existing Codex install after a new release:
+
+```text
+codex plugin marketplace upgrade mad-pony-interactive
+codex plugin add mpi-kanban@mad-pony-interactive
+```
+
+Restart Codex after the reinstall so running sessions load the refreshed plugin
+cache. If the cache appears stale, remove and reinstall:
+
+```text
+codex plugin remove mpi-kanban
+codex plugin add mpi-kanban@mad-pony-interactive
+```
+
+#### Local Codex development checkout
+
+For local plugin development, clone the repository first, then register that
+checkout in your home-local Codex marketplace.
 
 Recommended local plugin location:
 
@@ -102,8 +148,8 @@ The marketplace entry has this shape:
 ```
 
 With the home-local convention, the marketplace file is
-`~/.agents/plugins/marketplace.json`. Public Codex distribution can use the same
-manifest; Claude installation is not required for Codex.
+`~/.agents/plugins/marketplace.json`. Claude installation is not required for
+Codex.
 
 ### (Recommended) Install the VS Code extension
 
@@ -358,10 +404,13 @@ Plans are living documents. Agents update `Current State`, `Plan Drift`, `Remain
 **Kanban not auto-creating.** Only workflow skills that mutate the board call `ensureKanban()`. `brief-rule`, `archive`, and `cleanup` do not.
 
 **Codex does not see `$mpi-kanban:mpi-*` skills.** Confirm you ran both local
-install steps: `python scripts/register_codex_plugin.py`, then
-`codex plugin add mpi-kanban@mad-pony-interactive`. Restart Codex afterward.
-Codex direct skill invocation and autocomplete use the plugin-prefixed
-`$mpi-kanban:mpi-*` names, not bare `$mpi-*`.
+install steps. For public installs, run `codex plugin marketplace add
+MadPonyInteractive/mpi-kanban --ref main`, then `codex plugin add
+mpi-kanban@mad-pony-interactive`. For local development checkouts, run
+`python scripts/register_codex_plugin.py`, then `codex plugin add
+mpi-kanban@mad-pony-interactive`. Restart Codex afterward. Codex direct skill
+invocation and autocomplete use the plugin-prefixed `$mpi-kanban:mpi-*` names,
+not bare `$mpi-*`.
 
 **Handoff did not include a resume prompt.** That is a bug — `mpi-handoff` must always print the mandatory resume block pointing to `mpi-continue`.
 
@@ -410,6 +459,12 @@ If you are editing the plugin itself rather than just using it:
   + reinstall the plugin if you added or removed a skill folder. For Codex local
   development, run `python scripts/register_codex_plugin.py`, then
   `codex plugin add mpi-kanban@mad-pony-interactive`, and restart Codex.
+- Before a Codex-facing release, confirm `.claude-plugin/plugin.json`,
+  `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, and
+  `plugins/MadPonyInteractive/mpi-kanban/plugins.json` agree. Then validate,
+  tag the release, and smoke the public flow:
+  `codex plugin marketplace add MadPonyInteractive/mpi-kanban --ref <tag>` and
+  `codex plugin add mpi-kanban@mad-pony-interactive`.
 
 ## License
 

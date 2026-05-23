@@ -14,6 +14,8 @@ Checks (fail-fast):
     scripts/build_kilo_skills.py) exist and parse
   - SKILL.md name <=64 chars, description <=1024 chars (Kilo schema; harmless
     for Claude/Codex)
+  - .agents/plugins/marketplace.json: public Codex marketplace source is valid
+    and points mpi-kanban at the repository root
 """
 from __future__ import annotations
 
@@ -59,6 +61,7 @@ KILO_TEMPLATE = ROOT / "templates" / "kilo.jsonc"
 KILO_GENERATOR = ROOT / "scripts" / "build_kilo_skills.py"
 KILO_NAME_MAX = 64
 KILO_DESC_MAX = 1024
+PUBLIC_CODEX_MARKETPLACE = ROOT / ".agents" / "plugins" / "marketplace.json"
 
 
 def validate_claude_plugin_json() -> dict:
@@ -166,6 +169,39 @@ def validate_marketplace_json(plugin_name: str) -> None:
         )
 
 
+def validate_public_codex_marketplace(plugin_name: str) -> None:
+    if not PUBLIC_CODEX_MARKETPLACE.exists():
+        fail(f"missing public Codex marketplace manifest: {PUBLIC_CODEX_MARKETPLACE.relative_to(ROOT)}")
+        return
+    data = json.loads(PUBLIC_CODEX_MARKETPLACE.read_text(encoding="utf-8"))
+    if data.get("name") != "mad-pony-interactive":
+        fail(".agents/plugins/marketplace.json name must be mad-pony-interactive")
+    interface = data.get("interface")
+    if not isinstance(interface, dict) or not interface.get("displayName"):
+        fail(".agents/plugins/marketplace.json must include interface.displayName")
+    entries = data.get("plugins")
+    if not isinstance(entries, list):
+        fail(".agents/plugins/marketplace.json plugins must be a list")
+        return
+    match = next((entry for entry in entries if entry.get("name") == plugin_name), None)
+    if match is None:
+        fail(f".agents/plugins/marketplace.json does not list plugin '{plugin_name}'")
+        return
+    source = match.get("source")
+    if source != {"source": "local", "path": "."}:
+        fail(".agents/plugins/marketplace.json mpi-kanban source must be local path '.'")
+    policy = match.get("policy")
+    if not isinstance(policy, dict):
+        fail(".agents/plugins/marketplace.json mpi-kanban policy must be an object")
+    else:
+        if policy.get("installation") != "AVAILABLE":
+            fail(".agents/plugins/marketplace.json policy.installation must be AVAILABLE")
+        if policy.get("authentication") != "ON_INSTALL":
+            fail(".agents/plugins/marketplace.json policy.authentication must be ON_INSTALL")
+    if not match.get("category"):
+        fail(".agents/plugins/marketplace.json mpi-kanban category is required")
+
+
 def validate_skills() -> None:
     skills_dir = ROOT / "skills"
     if not skills_dir.is_dir():
@@ -256,6 +292,7 @@ def main() -> int:
     validate_manifest_sync(plugin_data, codex_data)
     validate_codex_marketplace_bundle(codex_data)
     validate_marketplace_json(plugin_data.get("name", ""))
+    validate_public_codex_marketplace(plugin_data.get("name", ""))
     validate_skills()
     validate_kilo_assets()
     validate_kilo_skill_limits()

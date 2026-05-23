@@ -38,6 +38,28 @@ source for Claude Code marketplace packaging. Public identity fields shared by
 both manifests must stay synchronized: name, version, description, author,
 repository, license, and keywords.
 
+Codex public distribution uses the repository as a Codex marketplace source.
+The repo root contains `.agents/plugins/marketplace.json`, whose marketplace
+name is `mad-pony-interactive` and whose `mpi-kanban` entry points at `.`. A
+Codex user can install from GitHub with:
+
+```text
+codex plugin marketplace add MadPonyInteractive/mpi-kanban --ref main
+codex plugin add mpi-kanban@mad-pony-interactive
+```
+
+Updates use:
+
+```text
+codex plugin marketplace upgrade mad-pony-interactive
+codex plugin add mpi-kanban@mad-pony-interactive
+```
+
+For local development, `scripts/register_codex_plugin.py` may still write a
+home-local `~/.agents/plugins/marketplace.json` entry pointing at a checkout
+under the user's home directory. That helper is a development convenience, not
+the public install path.
+
 ## 3. Skill Set
 
 - `mpi-init` - bootstrap/import a board.
@@ -372,6 +394,10 @@ The plugin still works without the extension; the board remains Markdown.
   duplicating workflow implementation.
 - Codex invocation is through prefixed `$mpi-kanban:mpi-*` plugin skills and
   natural language, while Claude Code retains `/mpi-kanban:mpi-*`.
+- Public Codex installation works through `codex plugin marketplace add
+  MadPonyInteractive/mpi-kanban` followed by `codex plugin add
+  mpi-kanban@mad-pony-interactive`; local checkout registration remains a
+  development helper.
 - Brainstorm can capture BACKLOG and route to compact or large plan creation.
 - Plan creation moves/creates a PLANNING entry with a `Plan file:` body line.
 - Continue moves active work to IMPLEMENTING and uses stable kanban steps.

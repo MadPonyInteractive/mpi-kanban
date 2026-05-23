@@ -108,6 +108,13 @@ Plan file: `docs/plans/2026-05-20-project-knowledge-architectural-intent-phase-4
   `interface.composerIcon`.
 - [x] Extend plugin validation to check the Codex marketplace bundle metadata,
   icon asset, and `composerIcon` path.
+- [x] Add the public Codex marketplace manifest at
+  `.agents/plugins/marketplace.json`.
+- [x] Document the public Codex install/update flow with
+  `codex plugin marketplace add`, `marketplace upgrade`, and
+  `codex plugin add`.
+- [x] Keep `scripts/register_codex_plugin.py` documented as a local development
+  helper, not the public install path.
 
 ## KiloCode plugin packaging Phase 6
 
