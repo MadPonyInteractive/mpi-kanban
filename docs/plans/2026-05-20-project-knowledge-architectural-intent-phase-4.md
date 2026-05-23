@@ -41,6 +41,28 @@ Hard constraints:
 - Setup and refresh may inspect the repository, but must show a proposal and
   wait for user approval before creating or modifying project docs, rules,
   memory, profile, or agent instruction files.
+- Project setup may create or update `AGENTS.md` directly after the user
+  approves the setup proposal. The default strategy is pointer-first: keep
+  existing agent entrypoints concise and point them at MPI profile/index files
+  instead of duplicating project knowledge.
+
+Approved planning decisions:
+
+- Project modes are `prototype`, `mvp`, and `scalable-foundation`.
+- `scalable-foundation` is the default when project mode is unclear.
+- New skill names are `mpi-project-setup`, `mpi-project-mode`, and
+  `mpi-project-refresh`.
+- Profile and knowledge index files live at
+  `.agents/mpi-kanban/project-profile.md` and
+  `.agents/mpi-kanban/project-knowledge-index.md`, outside
+  `.agents/mpi-kanban/state/`.
+- `mpi-project-refresh` audits and proposes updates when repository reality
+  drifts from the project profile, knowledge index, rules, memory pointers,
+  commands, architecture summary, or conventions.
+- `mpi-end-session` performs a lightweight refresh proposal when work changes
+  architecture, conventions, commands, or agent guidance.
+- Memory writes require explicit approval. Prefer pointing to existing Claude
+  memory before proposing new or changed memory entries.
 
 ## Completed
 
@@ -48,60 +70,74 @@ Hard constraints:
 
 ## Remaining Work
 
-## Phase 1: Project Intent Reference Model
+## Parallel Batch: Reference Model and Schemas
+
+Batch ownership: `lib/project-intent/`, `lib/project-knowledge/`, and
+`templates/`.
 
 - [ ] Add `lib/project-intent/modes.md` defining `prototype`, `mvp`, and
-  `scalable-foundation` as explicit behavior contracts. **Verify:** each mode
-  defines planning depth, acceptable shortcuts, hardcoding/duplication stance,
-  reuse expectations, file/module structure expectations, clarification
-  behavior, and preservation requirements.
+  `scalable-foundation` as explicit behavior contracts. Ownership:
+  `lib/project-intent/`. **Verify:** each mode defines planning depth,
+  acceptable shortcuts, hardcoding/duplication stance, reuse expectations,
+  file/module structure expectations, clarification behavior, and preservation
+  requirements.
 - [ ] Define the default mode rule: new projects ask the user for mode, and
   unanswered/unclear mode defaults to scalable foundation; existing projects
   announce the mode being evaluated and default to scalable foundation unless
-  project evidence or user instruction says otherwise. **Verify:** the default
-  is documented in one shared reference and skills point to it instead of
-  restating conflicting rules.
+  project evidence or user instruction says otherwise. Ownership:
+  `lib/project-intent/`. **Verify:** the default is documented in one shared
+  reference and skills point to it instead of restating conflicting rules.
 - [ ] Define "intentional engineering" guardrails for scalable foundation:
   reusable utilities/services/components when justified, small cohesive files,
   clean separation of concerns, clear project conventions, no silent
   hardcoding, and no design pattern/OOP ceremony unless it reduces real
-  complexity. **Verify:** the reference rejects both silent prototype shortcuts
-  and unnecessary overengineering.
+  complexity. Ownership: `lib/project-intent/`. **Verify:** the reference
+  rejects both silent prototype shortcuts and unnecessary overengineering.
 
-## Phase 2: Project Knowledge Profile and Index
+### Project Knowledge Profile and Index
 
 - [ ] Add a Markdown project profile schema for
-  `.agents/mpi-kanban/project-profile.md`. **Verify:** the profile includes
+  `.agents/mpi-kanban/project-profile.md`. Ownership:
+  `lib/project-knowledge/`, `templates/`. **Verify:** the profile includes
   project mode, mode rationale/source, project summary, architecture summary,
   conventions, important commands, files future agents should read first,
   knowledge index path, setup/refresh dates, and open knowledge gaps.
 - [ ] Add a Markdown knowledge index schema for
-  `.agents/mpi-kanban/project-knowledge-index.md`. **Verify:** the index maps
-  task topics to specific docs/rules/memory files so future agents can load
-  only relevant context.
-- [ ] Add templates for the project profile and knowledge index. **Verify:**
-  templates are compact pointer files, not duplicated project encyclopedias.
-- [ ] Document update rules for profile/index maintenance. **Verify:** updates
-  preserve existing user-owned content, ask before modifying existing memory
-  entries, and prefer pointer edits over copying long docs into the profile.
+  `.agents/mpi-kanban/project-knowledge-index.md`. Ownership:
+  `lib/project-knowledge/`, `templates/`. **Verify:** the index maps task
+  topics to specific docs/rules/memory files so future agents can load only
+  relevant context.
+- [ ] Add templates for the project profile and knowledge index. Ownership:
+  `templates/`. **Verify:** templates are compact pointer files, not duplicated
+  project encyclopedias.
+- [ ] Document update rules for profile/index maintenance. Ownership:
+  `lib/project-knowledge/`. **Verify:** updates preserve existing user-owned
+  content, ask before modifying existing memory entries, and prefer pointer
+  edits over copying long docs into the profile.
 
-## Phase 3: Existing Knowledge Adoption Procedures
+### Existing Knowledge Adoption Procedures
 
 - [ ] Add `lib/project-knowledge/adoption.md` for importing existing project
-  knowledge. **Verify:** it covers `AGENTS.md`, `CLAUDE.md`, `.claude/rules/*`,
-  README, architecture docs, contribution docs, existing memory indexes,
-  backlog/process files, and user-specified custom docs.
+  knowledge. Ownership: `lib/project-knowledge/`. **Verify:** it covers
+  `AGENTS.md`, `CLAUDE.md`, `.claude/rules/*`, README, architecture docs,
+  contribution docs, existing memory indexes, backlog/process files, and
+  user-specified custom docs.
 - [ ] Define adoption classifications: usable as-is, small update, index
   pointer, convert to MPI-managed profile/rule/memory, superseded historical
-  reference, or conflict/uncertain. **Verify:** setup and refresh produce an
-  adoption map before writing.
+  reference, or conflict/uncertain. Ownership: `lib/project-knowledge/`.
+  **Verify:** setup and refresh produce an adoption map before writing.
 - [ ] Add `lib/project-knowledge/indexing.md` for context-budget behavior.
-  **Verify:** agents read entrypoint/pointer files first and only load
-  task-specific docs/rules/memory when relevant.
-- [ ] Define conflict handling when existing docs disagree. **Verify:** agents
-  ask the user instead of silently choosing between conflicting project rules.
+  Ownership: `lib/project-knowledge/`. **Verify:** agents read
+  entrypoint/pointer files first and only load task-specific docs/rules/memory
+  when relevant.
+- [ ] Define conflict handling when existing docs disagree. Ownership:
+  `lib/project-knowledge/`. **Verify:** agents ask the user instead of
+  silently choosing between conflicting project rules.
 
-## Phase 4: New Project Setup Skill
+## Parallel Batch: New Project Skills
+
+Batch ownership: `skills/mpi-project-setup/`, `skills/mpi-project-mode/`, and
+`skills/mpi-project-refresh/`.
 
 - [ ] Add `skills/mpi-project-setup/SKILL.md`. **Verify:** plugin metadata,
   README command list, and validation include the new skill.
@@ -121,7 +157,7 @@ Hard constraints:
   docs, memory pointers, and initial backlog/plan pointers as appropriate.
   **Verify:** generated files are concise, pointer-driven, and model-neutral.
 
-## Phase 5: Project Mode Skill
+### Project Mode Skill
 
 - [ ] Add `skills/mpi-project-mode/SKILL.md`. **Verify:** users can review,
   reaffirm, or change the current project mode without rerunning setup.
@@ -132,7 +168,7 @@ Hard constraints:
   technical debt from the prior mode. **Verify:** changing mode does not force
   an immediate rewrite; it updates future work behavior and preservation notes.
 
-## Phase 6: Project Refresh Skill
+### Project Refresh Skill
 
 - [ ] Add `skills/mpi-project-refresh/SKILL.md`. **Verify:** users can
   re-evaluate project knowledge later without starting a new task.
@@ -145,7 +181,11 @@ Hard constraints:
   current mode, notes evidence for or against it, and suggests `mpi-project-mode`
   when a deliberate change is needed.
 
-## Phase 7: Existing Skill Integration
+## Parallel Batch: Existing Skill Integration
+
+Batch ownership: existing workflow skills under `skills/` except
+`skills/mpi-project-setup/`, `skills/mpi-project-mode/`, and
+`skills/mpi-project-refresh/`.
 
 - [ ] Update `mpi-brainstorm` to route new-project ideas into
   `mpi-project-setup` after design approval. **Verify:** brainstorming remains
@@ -169,7 +209,15 @@ Hard constraints:
   conservative cleanup classification. **Verify:** cleanup never deletes active
   project knowledge by default.
 
-## Phase 8: Documentation, Validation, and Future Compatibility
+## Parallel Batch: Documentation, Metadata, and Validation
+
+Batch ownership: `SPEC.md`, `README.md`, `AGENTS.md`, `PLAN.md`,
+`.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `update_live.py`,
+`.gitignore`, `scripts/`, and validation-only contradiction searches.
+
+Sequencing note: this batch may begin in parallel for docs and metadata prep,
+but its final validation and contradiction sweep must run after the other
+parallel batches land. Until then, validation can only check partial state.
 
 - [ ] Update `SPEC.md`, `README.md`, `AGENTS.md`, and `PLAN.md` for the new
   skills and project knowledge contract. **Verify:** public docs describe the
