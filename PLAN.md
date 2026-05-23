@@ -106,3 +106,24 @@ Plan file: `docs/plans/2026-05-20-project-knowledge-architectural-intent-phase-4
 - [x] Add an SVG icon in the bundle as required by the submission schema.
 - [x] Point the Codex plugin interface at the icon using
   `interface.composerIcon`.
+- [x] Extend plugin validation to check the Codex marketplace bundle metadata,
+  icon asset, and `composerIcon` path.
+
+## KiloCode plugin packaging Phase 6
+
+Plan file: `docs/plans/2026-05-23-kilocode-plugin-packaging-phase-6.md`.
+
+- [x] Authoring audit: confirm all 14 skills meet Kilo `name`/`description`
+  schema and map `${CLAUDE_PLUGIN_ROOT}` sibling dependencies.
+- [x] Build `scripts/build_kilo_skills.py` to inline siblings into a portable
+  `skills-kilo/` tree (`skills-kilo/` is gitignored; rebuilt at release time).
+- [x] Audit generated tree: zero residual `${CLAUDE_PLUGIN_ROOT}` refs, no
+  missing/cycle inline markers, reasonable per-skill size.
+- [x] Add `docs/kilocode-install.md`, `templates/kilo.jsonc`, AGENTS.md pointer.
+- [x] Add `docs/kilocode-marketplace-submission.md` runbook.
+- [ ] Submit marketplace PR to `Kilo-Org/kilo-marketplace` (runbook step 4-6).
+- [x] Extend `scripts/validate_plugin.py` with `validate_kilo_assets()` and
+  `validate_kilo_skill_limits()`, additive beside the Codex marketplace bundle
+  validation committed in `eb0362e`.
+- [ ] Append Phase 6 SPEC section and project-profile architecture note.
+- [ ] Release `0.6.0` after all sub-phases complete.
