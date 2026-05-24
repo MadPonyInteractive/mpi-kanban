@@ -5,7 +5,7 @@
   "description": "All-or-nothing MPI workflow skill pack for planning, kanban coordination, handoffs, cleanup, and multi-agent file ownership.",
   "groupings": [
     {
-      "name": "MPI Workflow",
+      "title": "MPI Workflow",
       "description": "Install every skill in this group together. The workflow skills depend on mpi-lib.",
       "skills": [
         "mpi-init",
