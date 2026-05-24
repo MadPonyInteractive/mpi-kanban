@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-05-23
+
 ### Added
 
 - `mpi-lib` support skill carrying shared reference docs for the all-or-nothing
@@ -162,7 +164,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.6.0
 [0.5.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.5.1
 [0.5.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.5.0
 [0.4.3]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.4.3
