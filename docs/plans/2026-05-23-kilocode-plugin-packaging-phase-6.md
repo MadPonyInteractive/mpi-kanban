@@ -197,10 +197,10 @@ Ownership: `SPEC.md`, `PLAN.md`, `.agents/mpi-kanban/project-profile.md`, `.agen
 
 Coordination: Phase 5 may also touch `PLAN.md` validation checklist. Read PLAN.md fresh and append the Phase 6 section, never rewrite Phase 5's lines.
 
-- [ ] Append `## KiloCode packaging Phase 6` block to `PLAN.md` with sub-phase checkboxes.
-- [ ] Add a short `## 14. KiloCode Distribution` (or next free section) to `SPEC.md` covering the three install paths and the marketplace contract.
-- [ ] Update `.agents/mpi-kanban/project-profile.md` "Architecture Summary" with the Kilo install paths and the marketplace bundle dir (if introduced in 6.3).
-- [ ] Update `.agents/mpi-kanban/project-knowledge-index.md` so KiloCode topics map to the new docs.
+- [x] Append `## KiloCode packaging Phase 6` block to `PLAN.md` with sub-phase checkboxes.
+- [x] Add a short `## 14. KiloCode Distribution` (or next free section) to `SPEC.md` covering the three install paths and the marketplace contract.
+- [x] Update `.agents/mpi-kanban/project-profile.md` "Architecture Summary" with the Kilo install paths and the marketplace bundle dir (if introduced in 6.3).
+- [x] Update `.agents/mpi-kanban/project-knowledge-index.md` so KiloCode topics map to the new docs.
 
 **Verify:** SPEC + PLAN + profile + index reference Phase 6 deliverables; no overwrites of Phase 5 lines.
 
@@ -250,12 +250,12 @@ Sub-phases 6.4, 6.5, 6.6, 6.7 stay sequential because they cross repo boundaries
 - 6.3 Submission runbook: `docs/kilocode-marketplace-submission.md`.
 - 6.5 Additive validator coverage: `validate_kilo_assets()` and `validate_kilo_skill_limits()` added to `scripts/validate_plugin.py` (additive beside the committed Codex marketplace bundle check from Phase 5 commit `eb0362e`). Validator green.
 - PLAN.md appended with Phase 6 sub-phase tracking.
+- 6.6 SPEC + profile + knowledge-index sync: SPEC §14 KiloCode Distribution (install paths, generator contract, marketplace contract, validator coverage, non-goals); profile Architecture Summary + Important Commands + Mode Notes updated; knowledge-index `kilocode-packaging` topic added. Validator green.
 
 ## Remaining Work
 
-- 6.4 Open marketplace PR against `Kilo-Org/kilo-marketplace` per runbook (requires user-authorized push to a `kilo-release-0.6.0` branch).
-- 6.6 Add `## 14. KiloCode Distribution` section to `SPEC.md`; update `.agents/mpi-kanban/project-profile.md` architecture summary; update `.agents/mpi-kanban/project-knowledge-index.md` with KiloCode topics.
 - 6.7 Release `0.6.0`: bump manifests, run `/release`, run `/update-live`.
+- 6.4 Open marketplace PR against `Kilo-Org/kilo-marketplace` per runbook (requires user-authorized push to a `kilo-release-0.6.0` branch). Blocked on 6.7 tag.
 
 ## Plan Drift
 

@@ -4,8 +4,8 @@ Read this when you need to find the board, ensure it exists, list entries, or
 find a specific entry. For schema/regexes see `_schema.md`. For mutations see
 `mutate.md`.
 
-`${CLAUDE_PLUGIN_ROOT}` means the installed plugin root in Claude Code. Codex
-plugin users resolve the same relative paths from the Codex plugin root.
+References in this file resolve relative to `<mpi-lib-root>`, the installed
+root of the sibling `mpi-lib` support skill.
 
 ---
 
@@ -24,7 +24,7 @@ plugin users resolve the same relative paths from the Codex plugin root.
 1. Call `findKanban()`.
 2. If found → return path.
 3. If missing:
-   a. `Read` `${CLAUDE_PLUGIN_ROOT}/templates/kanban.md`.
+   a. `Read` `<mpi-lib-root>/templates/kanban.md`.
    b. `Write` contents to `<project-root>/.claude/mpi-kanban/kanban.md`. The
       Write tool will create the `.claude/mpi-kanban/` directory.
    c. Emit one-time setup notice in chat:

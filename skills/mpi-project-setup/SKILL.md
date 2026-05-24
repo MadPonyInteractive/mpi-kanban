@@ -1,9 +1,22 @@
 ---
 name: mpi-project-setup
-description: Establish durable MPI project knowledge. Ask for project mode, inspect existing docs/rules/memory, propose an adoption map, and create or update the project profile, knowledge index, agent entrypoint pointers, rule files, and memory pointers after explicit user approval. Use when the user says "MPI project setup", "set up project knowledge", "adopt this project", "create a project profile", "$mpi-project-setup", or "/mpi-kanban:mpi-project-setup", or right after `mpi-brainstorm` for a brand-new project.
+description: MPI workflow pack - Establish durable MPI project knowledge. Ask for project mode, inspect existing docs/rules/memory, propose an adoption map, and create or update the project profile, knowledge index, agent entrypoint pointers, rule files, and memory pointers after explicit user approval. Use when the user says "MPI project setup", "set up project knowledge", "adopt this project", "create a project profile", "$mpi-project-setup", or "/mpi-project-setup", or right after `mpi-brainstorm` for a brand-new project.
 ---
 
 # mpi-project-setup Skill
+
+## Locating shared references
+
+Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
+
+1. `~/.agents/skills/mpi-lib`
+2. `.agents/skills/mpi-lib`
+3. `~/.claude/skills/mpi-lib`
+4. `.claude/skills/mpi-lib`
+
+Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
+
+`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 
 ## Purpose
 
@@ -15,25 +28,23 @@ This skill does NOT bootstrap the kanban board. The board is `mpi-init`'s
 job. Setup may suggest running `mpi-init` afterward if no board exists, but
 the two skills stay separate.
 
-Invocation: Claude Code users may run `/mpi-kanban:mpi-project-setup`; Codex
-users may run `$mpi-project-setup` or ask naturally. References using
-`${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root.
+Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
 ## Required reading
 
 Read each only when its section is needed:
 
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-intent/modes.md` - mode contracts and
+- `<mpi-lib-root>/project-intent/modes.md` - mode contracts and
   default-mode rule.
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/profile-schema.md` - profile
+- `<mpi-lib-root>/project-knowledge/profile-schema.md` - profile
   shape.
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/index-schema.md` - index
+- `<mpi-lib-root>/project-knowledge/index-schema.md` - index
   shape.
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/adoption.md` - source list,
+- `<mpi-lib-root>/project-knowledge/adoption.md` - source list,
   classification, conflict handling.
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/indexing.md` - context-budget
+- `<mpi-lib-root>/project-knowledge/indexing.md` - context-budget
   rules.
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/updates.md` - approval and
+- `<mpi-lib-root>/project-knowledge/updates.md` - approval and
   preservation rules.
 
 <HARD-GATE>
@@ -55,7 +66,7 @@ State which mode the skill is in: `new project setup` or
 
 ### 2. Ask for project mode
 
-Per `lib/project-intent/modes.md`:
+Per `<mpi-lib-root>/project-intent/modes.md`:
 
 ```text
 What project mode should this be?
@@ -90,7 +101,7 @@ the user to confirm, rather than asking from scratch.
 
 ### 4. Inspect existing knowledge (existing project only)
 
-Per `lib/project-knowledge/adoption.md`, inspect:
+Per `<mpi-lib-root>/project-knowledge/adoption.md`, inspect:
 
 - `AGENTS.md`, `CLAUDE.md`
 - `.claude/rules/*.md`
@@ -108,7 +119,7 @@ classification is uncertain.
 
 ### 5. Build the adoption map
 
-Classify each inspected source per `lib/project-knowledge/adoption.md`:
+Classify each inspected source per `<mpi-lib-root>/project-knowledge/adoption.md`:
 `usable as-is`, `small update`, `index pointer`, `convert to MPI-managed`,
 `superseded historical reference`, `conflict / uncertain`.
 
@@ -174,11 +185,11 @@ out of.
 
 1. Create `.agents/mpi-kanban/` if missing.
 2. Write `.agents/mpi-kanban/project-profile.md` using the
-   `${CLAUDE_PLUGIN_ROOT}/templates/project-profile.md` template as the
+   `templates/project-profile.md` template as the
    base, filled in from the approved draft. Set `setup_date` and
    `last_refresh` to today.
 3. Write `.agents/mpi-kanban/project-knowledge-index.md` from the
-   `${CLAUDE_PLUGIN_ROOT}/templates/project-knowledge-index.md` template.
+   `templates/project-knowledge-index.md` template.
 4. Create or update `AGENTS.md` if approved. Pointer-first: add a short
    `## Project Knowledge` section that links to the profile and index.
    Preserve existing content; do not rewrite the file.
@@ -223,3 +234,6 @@ Output to the user:
 - `mpi-init` to bootstrap the kanban board.
 - `mpi-project-mode` to change mode later.
 - `mpi-project-refresh` when the profile or index drifts.
+
+
+

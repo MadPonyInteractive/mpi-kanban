@@ -1,0 +1,29 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "name": "mpi-kanban",
+  "displayName": "MPI Workflow",
+  "description": "All-or-nothing MPI workflow skill pack for planning, kanban coordination, handoffs, cleanup, and multi-agent file ownership.",
+  "groupings": [
+    {
+      "name": "MPI Workflow",
+      "description": "Install every skill in this group together. The workflow skills depend on mpi-lib.",
+      "skills": [
+        "mpi-init",
+        "mpi-project-setup",
+        "mpi-project-mode",
+        "mpi-project-refresh",
+        "mpi-brainstorm",
+        "mpi-create-plan",
+        "mpi-create-large-plan",
+        "mpi-continue",
+        "mpi-execute-parallel",
+        "mpi-handoff",
+        "mpi-end-session",
+        "mpi-cleanup",
+        "mpi-archive",
+        "mpi-brief-rule",
+        "mpi-lib"
+      ]
+    }
+  ]
+}

@@ -1,9 +1,22 @@
 ---
 name: mpi-project-mode
-description: Review, reaffirm, or change the MPI project mode (prototype, mvp, scalable-foundation) without rerunning setup. Records mode rationale and notes prior-mode shortcuts. Use when the user says "MPI project mode", "change project mode", "switch to scalable-foundation", "we are now MVP", "show me the project mode", "$mpi-project-mode", or "/mpi-kanban:mpi-project-mode".
+description: MPI workflow pack - Review, reaffirm, or change the MPI project mode (prototype, mvp, scalable-foundation) without rerunning setup. Records mode rationale and notes prior-mode shortcuts. Use when the user says "MPI project mode", "change project mode", "switch to scalable-foundation", "we are now MVP", "show me the project mode", "$mpi-project-mode", or "/mpi-project-mode".
 ---
 
 # mpi-project-mode Skill
+
+## Locating shared references
+
+Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
+
+1. `~/.agents/skills/mpi-lib`
+2. `.agents/skills/mpi-lib`
+3. `~/.claude/skills/mpi-lib`
+4. `.claude/skills/mpi-lib`
+
+Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
+
+`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 
 ## Purpose
 
@@ -13,18 +26,16 @@ acceptable shortcuts, reuse expectations, and clarification behavior. Mode
 changes do NOT force a rewrite; they shape future work and record
 migration notes.
 
-Invocation: Claude Code users may run `/mpi-kanban:mpi-project-mode`; Codex
-users may run `$mpi-project-mode` or ask naturally. References using
-`${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root.
+Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
 ## Required reading
 
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-intent/modes.md` - mode contracts and
+- `<mpi-lib-root>/project-intent/modes.md` - mode contracts and
   defaults.
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/profile-schema.md` - profile
+- `<mpi-lib-root>/project-knowledge/profile-schema.md` - profile
   fields the skill edits (`mode`, `mode_rationale`, `mode_source`,
   `## Mode Notes`).
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/updates.md` - approval rules.
+- `<mpi-lib-root>/project-knowledge/updates.md` - approval rules.
 
 ## Pre-condition
 
@@ -33,8 +44,7 @@ The project profile must exist at
 
 ```text
 No project profile found at .agents/mpi-kanban/project-profile.md.
-Run $mpi-project-setup in Codex or /mpi-kanban:mpi-project-setup in
-Claude Code first.
+Run mpi-project-setup first.
 ```
 
 Stop. Do not create the profile from this skill.
@@ -75,7 +85,7 @@ Switch to which mode? (prototype, mvp, scalable-foundation)
 Reason in one line:
 ```
 
-Summarize behavior changes from `lib/project-intent/modes.md` for the new
+Summarize behavior changes from `<mpi-lib-root>/project-intent/modes.md` for the new
 mode in 3-6 bullets so the user sees what shifts. Confirm:
 
 ```text
@@ -134,3 +144,6 @@ drift the user wants to review now. Do not run refresh automatically.
 
 - `mpi-project-setup` to establish the profile.
 - `mpi-project-refresh` to audit profile/index drift.
+
+
+

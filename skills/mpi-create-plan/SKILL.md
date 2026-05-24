@@ -1,19 +1,29 @@
 ---
 name: mpi-create-plan
-description: Create a compact/default MPI plan for normal work. Use when the user says "MPI create plan", "create an MPI plan", "create a plan", "make a plan", "plan this", "$mpi-create-plan", or after brainstorming when the task can be implemented as one coherent flow with final verification.
+description: MPI workflow pack - Create a compact/default MPI plan for normal work. Use when the user says "MPI create plan", "create an MPI plan", "create a plan", "make a plan", "plan this", "$mpi-create-plan", or after brainstorming when the task can be implemented as one coherent flow with final verification.
 ---
 
 # mpi-create-plan Skill
+
+## Locating shared references
+
+Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
+
+1. `~/.agents/skills/mpi-lib`
+2. `.agents/skills/mpi-lib`
+3. `~/.claude/skills/mpi-lib`
+4. `.claude/skills/mpi-lib`
+
+Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
+
+`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 
 ## Purpose
 
 Create a compact plan at `docs/plans/YYYY-MM-DD-<slug>.md` and reflect it on
 the kanban board. This is the default planning path for normal work.
 
-Invocation: Claude Code users may run `/mpi-kanban:mpi-create-plan`; Codex
-users may run `$mpi-create-plan` or ask naturally to create an MPI plan.
-References using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex
-resolves the same files relative to this plugin root.
+Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
 Use `mpi-create-large-plan` instead when the work needs investigation,
 multiple phases, explicit parallel batches, or complex risk management. In
@@ -65,13 +75,12 @@ because several files may change.
    `.agents/mpi-kanban/project-profile.md` and
    `.agents/mpi-kanban/project-knowledge-index.md` when they exist. Follow
    the context-budget rules in
-   `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/indexing.md`: read pointer
+   `<mpi-lib-root>/project-knowledge/indexing.md`: read pointer
    files first, then only the topic-matching docs/rules. Do not scan all
    rules and docs.
 3. If the goal is clearly large or uncertain, or if independent parallel
    implementation looks likely (work splits into disjoint-ownership tasks),
-   recommend `$mpi-create-large-plan` in Codex or
-   `/mpi-kanban:mpi-create-large-plan` in Claude Code instead and wait for
+   recommend `mpi-create-large-plan` instead and wait for
    confirmation.
 4. Write the compact plan file. Include project mode in `## Current State`
    when the profile exists ("Project mode: scalable-foundation"). Pull
@@ -82,8 +91,8 @@ because several files may change.
 
 Lib pointers, read only when needed:
 
-- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` - `findEntry`, `ensureKanban`
-- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/mutate.md` - `moveEntry`, `updateEntry`, `createEntry`
+- `<mpi-lib-root>/kanban-ops/find.md` - `findEntry`, `ensureKanban`
+- `<mpi-lib-root>/kanban-ops/mutate.md` - `moveEntry`, `updateEntry`, `createEntry`
 
 If `mpi-brainstorm` passed a BACKLOG title, match that entry. Otherwise ask:
 
@@ -118,3 +127,6 @@ Next: say "continue this plan" to start implementation.
 - Do not add `## Parallel Batch` syntax to a compact plan.
 - If the work obviously needs phased investigation, or splits into independent
   parallel implementation tasks, redirect to `mpi-create-large-plan`.
+
+
+

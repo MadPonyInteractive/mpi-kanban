@@ -1,9 +1,22 @@
 ---
 name: mpi-continue
-description: Continue active MPI work from the real current state. Use when the user says "continue this MPI plan", "MPI continue", "continue", "resume", "keep going", "pick this back up", "read a handoff and continue", "$mpi-continue", or wants implementation to proceed from an MPI plan or handoff.
+description: MPI workflow pack - Continue active MPI work from the real current state. Use when the user says "continue this MPI plan", "MPI continue", "continue", "resume", "keep going", "pick this back up", "read a handoff and continue", "$mpi-continue", or wants implementation to proceed from an MPI plan or handoff.
 ---
 
 # mpi-continue Skill
+
+## Locating shared references
+
+Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
+
+1. `~/.agents/skills/mpi-lib`
+2. `.agents/skills/mpi-lib`
+3. `~/.claude/skills/mpi-lib`
+4. `.claude/skills/mpi-lib`
+
+Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
+
+`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 
 ## Purpose
 
@@ -14,18 +27,15 @@ workspace state, then proposes the next best action based on reality.
 When shared coordination state exists, `mpi-continue` also reads
 `.agents/mpi-kanban/state/index.json` first and follows its pointers only as
 needed. The shared contract is documented in
-`${CLAUDE_PLUGIN_ROOT}/docs/coordination/README.md`.
+`<mpi-lib-root>/docs/coordination/README.md`.
 Lifecycle operations are documented in
-`${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/lifecycle.md` and status values in
-`${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/statuses.md`.
+`<mpi-lib-root>/coordination-ops/lifecycle.md` and status values in
+`<mpi-lib-root>/coordination-ops/statuses.md`.
 
 Plans are living documents. If implementation has drifted, update or annotate
 the plan instead of forcing the next unchecked item.
 
-Invocation: Claude Code users may run `/mpi-kanban:mpi-continue`; Codex users
-may run `$mpi-continue` or ask naturally to continue the MPI plan. References
-using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex resolves
-the same files relative to this plugin root.
+Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
 ## Pre-conditions
 
@@ -48,12 +58,12 @@ Which MPI plan or handoff should I continue from? Please paste the path.
 
 Lib pointers, read only when needed:
 
-- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` - `findEntry`
-- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/mutate.md` - `moveEntry`
-- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/steps.md` - `addSteps`, `markStep`
-- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/lifecycle.md` - session/task/file claim lifecycle
-- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/statuses.md` - state vocabulary
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/indexing.md` - context-budget rules
+- `<mpi-lib-root>/kanban-ops/find.md` - `findEntry`
+- `<mpi-lib-root>/kanban-ops/mutate.md` - `moveEntry`
+- `<mpi-lib-root>/kanban-ops/steps.md` - `addSteps`, `markStep`
+- `<mpi-lib-root>/coordination-ops/lifecycle.md` - session/task/file claim lifecycle
+- `<mpi-lib-root>/coordination-ops/statuses.md` - state vocabulary
+- `<mpi-lib-root>/project-knowledge/indexing.md` - context-budget rules
 
 1. Read the handoff if present. If it is a legacy `docs/handoffs/` pointer to a
    canonical `.agents/` handoff, load the canonical handoff before continuing.
@@ -63,7 +73,7 @@ Lib pointers, read only when needed:
    Pick the topic block matching the active plan. Load only the listed
    docs/rules; do not rediscover the whole project. If the profile is
    absent, fall back to the existing pre-condition behavior.
-3. Read `lib/coordination-ops/lifecycle.md`. Call `ensureStateRoot()` when
+3. Read `<mpi-lib-root>/coordination-ops/lifecycle.md`. Call `ensureStateRoot()` when
    coordination state is relevant, then read `state/index.json` as the active
    coordination facade.
 4. Register or renew an `implementer` session and create or attach a task
@@ -107,7 +117,7 @@ the default. Instead of a sequential continue brief, tell the user:
 
 ```text
 Next unit is a parallel batch: "<batch title>". Default path is to run it through
-$mpi-execute-parallel in Codex or /mpi-kanban:mpi-execute-parallel in Claude Code.
+`mpi-execute-parallel`.
 Say "go parallel" to route there, or "sequential" to implement it one task at a time here.
 ```
 
@@ -195,7 +205,7 @@ Step verified. Say "continue" to keep going, "handoff" to switch sessions, or "e
 7. If the plan is complete, say:
 
 ```text
-Plan complete. Suggested next step: run $mpi-end-session in Codex or /mpi-kanban:mpi-end-session in Claude Code to preserve docs/rules/memory, commit, and close the kanban entry.
+Plan complete. Suggested next step: run `mpi-end-session` to preserve docs/rules/memory, commit, and close the kanban entry.
 ```
 
 ## If user chooses Option 2
@@ -203,7 +213,7 @@ Plan complete. Suggested next step: run $mpi-end-session in Codex or /mpi-kanban
 Do nothing else. Stay in conversation and append once:
 
 ```text
-Context getting large? Run $mpi-handoff in Codex or /mpi-kanban:mpi-handoff in Claude Code before starting a new session.
+Context getting large? Run `mpi-handoff` before starting a new session.
 ```
 
 ## Hard rules
@@ -213,6 +223,8 @@ Context getting large? Run $mpi-handoff in Codex or /mpi-kanban:mpi-handoff in C
 - Do not commit or push; committing is `mpi-end-session`'s responsibility.
 - Do not force stale plan tasks. Update the plan when reality has changed.
 - Do not spawn implementation workers here. When the next eligible unit is a
-  valid `## Parallel Batch`, default to routing it to `$mpi-execute-parallel` in
-  Codex or `/mpi-kanban:mpi-execute-parallel` in Claude Code; that skill is the
+  valid `## Parallel Batch`, default to routing it to `mpi-execute-parallel`; that skill is the
   only worker-spawning implementation path.
+
+
+

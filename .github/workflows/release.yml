@@ -20,22 +20,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Validate plugin before release
+      - name: Validate skill pack before release
         run: python scripts/validate_plugin.py
-
-      - name: Verify tag matches plugin manifest versions
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          CLAUDE_VERSION=$(python -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
-          CODEX_VERSION=$(python -c "import json; print(json.load(open('.codex-plugin/plugin.json'))['version'])")
-          if [ "$TAG_VERSION" != "$CLAUDE_VERSION" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match Claude plugin version $CLAUDE_VERSION"
-            exit 1
-          fi
-          if [ "$TAG_VERSION" != "$CODEX_VERSION" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match Codex plugin version $CODEX_VERSION"
-            exit 1
-          fi
 
       - name: Extract changelog entry for this version
         id: changelog

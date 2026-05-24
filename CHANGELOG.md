@@ -9,7 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `mpi-lib` support skill carrying shared reference docs for the all-or-nothing
+  Agent Skills pack.
+- `skills.sh.json` pack metadata and `docs/install.md` npx install docs.
+
 ### Changed
+
+- Distribution is now npx-only through skills.sh:
+  `npx skills add MadPonyInteractive/mpi-kanban --all -y -g`.
+- Workflow skills now resolve shared references through the sibling `mpi-lib`
+  skill instead of plugin-root variables.
+
+### Removed
+
+- Removed Claude Code plugin manifest and Codex plugin/marketplace bundle.
+- Removed Kilo-specific generated skill packaging, install docs, marketplace
+  runbook, and template. Existing users should reinstall with:
+  `npx skills add MadPonyInteractive/mpi-kanban --all -y -g`.
 
 ## [0.5.1] - 2026-05-23
 

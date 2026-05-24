@@ -1,31 +1,40 @@
 ---
 name: mpi-handoff
-description: Create an MPI handoff. Preserve current MPI work and generate a structured JSON handoff document so a fresh session can resume with mpi-continue. Use when user says "create an MPI handoff", "handoff", "new session", "context is big", "$mpi-handoff", or "/mpi-kanban:mpi-handoff", or when a plan phase just completed and a new one starts.
+description: MPI workflow pack - Create an MPI handoff. Preserve current MPI work and generate a structured JSON handoff document so a fresh session can resume with mpi-continue. Use when user says "create an MPI handoff", "handoff", "new session", "context is big", "$mpi-handoff", or "/mpi-handoff", or when a plan phase just completed and a new one starts.
 ---
 
 # mpi-handoff Skill
 
+## Locating shared references
+
+Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
+
+1. `~/.agents/skills/mpi-lib`
+2. `.agents/skills/mpi-lib`
+3. `~/.claude/skills/mpi-lib`
+4. `.claude/skills/mpi-lib`
+
+Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
+
+`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 Preserves current MPI work and produces a canonical handoff document at
 `.agents/mpi-kanban/state/handoffs/<uuid>.json` that a fresh session can load
 to resume with `mpi-continue` without re-explanation.
 
 Shared coordination contract reference:
 
-- `${CLAUDE_PLUGIN_ROOT}/docs/coordination/README.md`
-- `${CLAUDE_PLUGIN_ROOT}/docs/coordination/handoff-migration.md`
-- `${CLAUDE_PLUGIN_ROOT}/docs/coordination/schemas.md`
-- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/lifecycle.md`
-- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/statuses.md`
+- `<mpi-lib-root>/docs/coordination/README.md`
+- `<mpi-lib-root>/docs/coordination/handoff-migration.md`
+- `<mpi-lib-root>/docs/coordination/schemas.md`
+- `<mpi-lib-root>/coordination-ops/lifecycle.md`
+- `<mpi-lib-root>/coordination-ops/statuses.md`
 
-Invocation: Claude Code users may run `/mpi-kanban:mpi-handoff`; Codex users
-may run `$mpi-handoff` or ask naturally to create an MPI handoff. References
-using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex resolves
-the same files relative to this plugin root.
+Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
 ## When to invoke
 
-- User says "handoff", "new session", "start fresh", "context is big", or runs
-  `$mpi-handoff` in Codex or `/mpi-kanban:mpi-handoff` in Claude Code.
+- User says "handoff", "new session", "start fresh", "context is big", or
+  invokes `mpi-handoff`.
 - Context usage is high and work is mid-flight.
 - A plan phase just completed and a new phase starts next.
 
@@ -55,12 +64,12 @@ If `.agents/mpi-kanban/state/index.json` exists, read it next. Use it as a
 small pointer facade to identify active sessions, tasks, file claims, or prior
 handoffs relevant to this handoff.
 
-Read `lib/coordination-ops/lifecycle.md`. If coordination state is active,
+Read `<mpi-lib-root>/coordination-ops/lifecycle.md`. If coordination state is active,
 renew or identify the current session and task before writing the handoff.
 
 ### Step 3 - Look up the active kanban entry
 
-Read `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` for `findKanban` and
+Read `<mpi-lib-root>/kanban-ops/find.md` for `findKanban` and
 `findEntry`. Then:
 
 1. Call `findKanban()`. If the file does not exist, set `kanban_entry` to
@@ -133,7 +142,7 @@ Use this exact JSON structure:
   },
   "next_action": {
     "description": "<exact instruction for fresh session>",
-    "command": "<optional skill or command to run first, e.g. $mpi-continue or /mpi-kanban:mpi-continue>"
+    "command": "<optional skill or command to run first, e.g. mpi-continue>"
   },
   "context": {
     "key_decisions": [
@@ -191,7 +200,7 @@ Active kanban entry: "<title>"   (or "none" if kanban_entry is null)
 
 To resume in a new session, paste this:
 ---
-Read .agents/mpi-kanban/state/handoffs/<uuid>.json and use $mpi-continue in Codex or /mpi-kanban:mpi-continue in Claude Code to continue from where we left off.
+Read .agents/mpi-kanban/state/handoffs/<uuid>.json and use mpi-continue to continue from where we left off.
 The next action is: <next_action.description>
 ---
 ```
@@ -211,3 +220,6 @@ The next action is: <next_action.description>
 - `project_knowledge` = pointer to profile/index and the relevant topic
   blocks the fresh session should load first. Fields are `null` when no
   profile/index exists.
+
+
+

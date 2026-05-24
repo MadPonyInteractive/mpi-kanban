@@ -1,9 +1,22 @@
 ---
 name: mpi-project-refresh
-description: Audit and propose updates when repository reality drifts from the MPI project profile, knowledge index, rules, memory pointers, important commands, architecture summary, or conventions. Also performs a lightweight mode reassessment. Use when the user says "MPI project refresh", "refresh project knowledge", "audit project profile", "re-evaluate project knowledge", "the profile is stale", "$mpi-project-refresh", or "/mpi-kanban:mpi-project-refresh".
+description: MPI workflow pack - Audit and propose updates when repository reality drifts from the MPI project profile, knowledge index, rules, memory pointers, important commands, architecture summary, or conventions. Also performs a lightweight mode reassessment. Use when the user says "MPI project refresh", "refresh project knowledge", "audit project profile", "re-evaluate project knowledge", "the profile is stale", "$mpi-project-refresh", or "/mpi-project-refresh".
 ---
 
 # mpi-project-refresh Skill
+
+## Locating shared references
+
+Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
+
+1. `~/.agents/skills/mpi-lib`
+2. `.agents/skills/mpi-lib`
+3. `~/.claude/skills/mpi-lib`
+4. `.claude/skills/mpi-lib`
+
+Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
+
+`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 
 ## Purpose
 
@@ -14,19 +27,17 @@ a lightweight mode reassessment.
 Refresh is on-demand. `mpi-end-session` runs the lightweight version for
 session-touched files only; this skill runs the full audit.
 
-Invocation: Claude Code users may run `/mpi-kanban:mpi-project-refresh`;
-Codex users may run `$mpi-project-refresh` or ask naturally. References
-using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root.
+Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
 ## Required reading
 
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/updates.md` - approval,
+- `<mpi-lib-root>/project-knowledge/updates.md` - approval,
   preservation, drift detection rules.
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/adoption.md` - classification
+- `<mpi-lib-root>/project-knowledge/adoption.md` - classification
   vocabulary for any newly discovered sources.
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-knowledge/indexing.md` - context-budget
+- `<mpi-lib-root>/project-knowledge/indexing.md` - context-budget
   rules.
-- `${CLAUDE_PLUGIN_ROOT}/lib/project-intent/modes.md` - mode contracts for
+- `<mpi-lib-root>/project-intent/modes.md` - mode contracts for
   the reassessment step.
 
 <HARD-GATE>
@@ -40,8 +51,7 @@ rule, or memory entry before the user approves the refresh proposal.
 the user:
 
 ```text
-No project profile found. Run $mpi-project-setup in Codex or
-/mpi-kanban:mpi-project-setup in Claude Code first.
+No project profile found. Run `mpi-project-setup` first.
 ```
 
 Stop. Do not bootstrap the profile here.
@@ -60,7 +70,7 @@ files still exist and whether their topics still match the project.
 
 ### 2. Drift detection
 
-Per `lib/project-knowledge/updates.md`:
+Per `<mpi-lib-root>/project-knowledge/updates.md`:
 
 - **Profile claims vs repo:**
   - Listed components: do the named directories/files still exist?
@@ -118,7 +128,7 @@ Single message containing:
      `.claude/rules/testing.md` - ask user which is canonical."
 3. Mode reassessment line (current mode + evidence + recommendation or
    "no change recommended").
-4. Newly inspected sources (from `lib/project-knowledge/adoption.md`) with
+4. Newly inspected sources (from `<mpi-lib-root>/project-knowledge/adoption.md`) with
    classification, if any.
 
 End with:
@@ -143,7 +153,7 @@ After approval, in order:
 2. Update `.agents/mpi-kanban/project-knowledge-index.md` per approved
    findings. Bump `last_refresh` to today.
 3. Apply approved rule file creations or edits per file. ASK before touching
-   any `.claude/rules/*.md` per `lib/project-knowledge/updates.md`. New rule
+   any `.claude/rules/*.md` per `<mpi-lib-root>/project-knowledge/updates.md`. New rule
    files are appropriate when refresh finds reusable project-specific
    conventions that should be briefable to future agents or workers.
 4. Apply approved memory pointer edits. Use `AskUserQuestion` before
@@ -179,3 +189,6 @@ Refresh applied.
 - `mpi-project-setup` to establish missing artifacts.
 - `mpi-project-mode` to change mode.
 - `mpi-end-session` runs the lightweight refresh for session-touched files.
+
+
+

@@ -1,15 +1,28 @@
 ---
 name: mpi-execute-parallel
-description: Execute an explicit parallel batch from an MPI large plan using worker sub-agents. Use only when a plan contains a `## Parallel Batch` section with task ownership, or when the user says "MPI execute parallel", "run a parallel batch", "$mpi-execute-parallel", or asks to run a parallel batch.
+description: MPI workflow pack - Execute an explicit parallel batch from an MPI large plan using worker sub-agents. Use only when a plan contains a `## Parallel Batch` section with task ownership, or when the user says "MPI execute parallel", "run a parallel batch", "$mpi-execute-parallel", or asks to run a parallel batch.
 ---
 
 # mpi-execute-parallel Skill
+
+## Locating shared references
+
+Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
+
+1. `~/.agents/skills/mpi-lib`
+2. `.agents/skills/mpi-lib`
+3. `~/.claude/skills/mpi-lib`
+4. `.claude/skills/mpi-lib`
+
+Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
+
+`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 
 ## Purpose
 
 Run a parallel implementation batch from an MPI large plan. This skill only
 applies to explicit `## Parallel Batch` sections, and for eligible batches it is
-the default execution path — `mpi-continue` routes valid batches here rather
+the default execution path â€” `mpi-continue` routes valid batches here rather
 than implementing them sequentially. "Only explicit batches" is a safety scope,
 not a discouragement: when a batch passes the eligibility gate below, running it
 in parallel is the expected default.
@@ -19,13 +32,10 @@ and updates the plan/kanban. Workers implement only their assigned task.
 
 Shared coordination lifecycle references:
 
-- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/lifecycle.md`
-- `${CLAUDE_PLUGIN_ROOT}/lib/coordination-ops/statuses.md`
+- `<mpi-lib-root>/coordination-ops/lifecycle.md`
+- `<mpi-lib-root>/coordination-ops/statuses.md`
 
-Invocation: Claude Code users may run `/mpi-kanban:mpi-execute-parallel`;
-Codex users may run `$mpi-execute-parallel` or ask naturally to run an MPI
-parallel batch. References using `${CLAUDE_PLUGIN_ROOT}` mean the installed
-plugin root; Codex resolves the same files relative to this plugin root.
+Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
 ## Eligibility gate
 
@@ -95,3 +105,6 @@ finish:
 - Never treat file-claim completion as commit permission. Commit ownership
   belongs to `mpi-end-session` or an explicit integrator.
 - No commits or pushes.
+
+
+

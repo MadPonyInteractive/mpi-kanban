@@ -1,17 +1,26 @@
 ---
 name: mpi-init
-description: Initialize MPI kanban or import a freeform to-do / backlog / ideas markdown file into the board. Use ONLY when the user explicitly asks to "MPI init", "set up the kanban", "initialize kanban", "import backlog", "convert this file to kanban", "build the kanban from <file>", "$mpi-init", or hands over markdown to-dos. Do NOT use for a single new idea, creating a plan, or normal kanban mutation.
+description: MPI workflow pack - Initialize MPI kanban or import a freeform to-do / backlog / ideas markdown file into the board. Use ONLY when the user explicitly asks to "MPI init", "set up the kanban", "initialize kanban", "import backlog", "convert this file to kanban", "build the kanban from <file>", "$mpi-init", or hands over markdown to-dos. Do NOT use for a single new idea, creating a plan, or normal kanban mutation.
 ---
 
 # mpi-init Skill
 
+## Locating shared references
+
+Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
+
+1. `~/.agents/skills/mpi-lib`
+2. `.agents/skills/mpi-lib`
+3. `~/.claude/skills/mpi-lib`
+4. `.claude/skills/mpi-lib`
+
+Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
+
+`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 Turn a freeform to-do / backlog / ideas markdown file into properly-structured
 BACKLOG and COMPLETED entries on `.claude/mpi-kanban/kanban.md`.
 
-Invocation: Claude Code users may run `/mpi-kanban:mpi-init`; Codex users may
-run `$mpi-init` or ask naturally to initialize MPI kanban. References using
-`${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex resolves the same
-files relative to this plugin root.
+Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
 This is the on-ramp skill. It exists so a user can hand over any informal
 to-do file ("backlog.md", "todo.md", "ideas.md", a section of a README) and
@@ -19,11 +28,11 @@ get a working kanban without the agent guessing the plugin internals.
 
 <HARD-GATE>
 Only ask for confirmation when importing into an EXISTING `.claude/mpi-kanban/kanban.md`
-(risk of overwriting user data) — show the parsed entry list, get approval, then write.
+(risk of overwriting user data) â€” show the parsed entry list, get approval, then write.
 
 Fresh-board creation (no `kanban.md` yet) and empty-template bootstrap: write
 directly, no confirmation. Same for the source-file relocation step (moving the
-freeform to-do file into `.claude/mpi-kanban/`) — just do it.
+freeform to-do file into `.claude/mpi-kanban/`) â€” just do it.
 </HARD-GATE>
 
 ## Inputs
@@ -33,16 +42,16 @@ freeform to-do file into `.claude/mpi-kanban/`) — just do it.
   file. Common candidates: `backlog.md`, `todo.md`, `TODO.md`, `ideas.md`,
   `notes.md`, a `## Backlog` section inside `README.md` or `CLAUDE.md`.
 - If the user gives no file at all but asks to "set up the kanban", create
-  the empty board from the template and stop — there is nothing to import.
+  the empty board from the template and stop â€” there is nothing to import.
 
 ## Checklist
 
 Lib pointers (read each only when its recipe is needed in the steps below):
 
-- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/_schema.md` — entry shape (read before
+- `<mpi-lib-root>/kanban-ops/_schema.md` â€” entry shape (read before
   building entries if you need a schema reminder)
-- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` — `ensureKanban`
-- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/mutate.md` — `createEntry`
+- `<mpi-lib-root>/kanban-ops/find.md` â€” `ensureKanban`
+- `<mpi-lib-root>/kanban-ops/mutate.md` â€” `createEntry`
 
 Steps:
 
@@ -50,7 +59,7 @@ Steps:
    the right path. Do not guess.
 2. **Parse the source** per "Parsing rules" below into a list of entry
    candidates: `{title, tags, priority, body, done}`.
-3. **Check if `kanban.md` already exists.** Read `lib/kanban-ops/find.md` for
+3. **Check if `kanban.md` already exists.** Read `<mpi-lib-root>/kanban-ops/find.md` for
    `ensureKanban`.
    - **Does NOT exist (fresh board):** call `ensureKanban()` to create from
      template, then go to step 5. No preview, no approval.
@@ -59,7 +68,7 @@ Steps:
      these N entries to the existing kanban?" Wait for approval. On approval,
      continue to step 5.
 4. (folded into step 3)
-5. **Write entries** — read `lib/kanban-ops/mutate.md` for `createEntry`. Call
+5. **Write entries** â€” read `<mpi-lib-root>/kanban-ops/mutate.md` for `createEntry`. Call
    `createEntry("BACKLOG", e)` or `createEntry("COMPLETED", e)` per `done`
    flag. Preserve source order within each column (top of column = first
    entry from the source).
@@ -71,7 +80,7 @@ Steps:
 The source file is freeform. The skill must be permissive but never invent
 content the source did not contain.
 
-### Sections → tags
+### Sections â†’ tags
 
 H2 headings in the source map to a default tag for the items underneath:
 
@@ -81,7 +90,7 @@ H2 headings in the source map to a default tag for the items underneath:
 | `FEATURES`, `FEATURE`                   | `[feature]`|
 | `IDEAS`, `IDEA`                         | `[Idea]`    |
 | `PLANS`, `PLAN`                         | `[PLAN]`    |
-| `TASKS`, `TODO`, `TODOS`, `TO-DO`       | `[feature]` (default — bump to `[bug]` if the line says `bug:` / `fix:`) |
+| `TASKS`, `TODO`, `TODOS`, `TO-DO`       | `[feature]` (default â€” bump to `[bug]` if the line says `bug:` / `fix:`) |
 | `DECISIONS`, `NOTES`                    | `[Idea]`    |
 | Anything else / no heading              | `[Idea]`    |
 
@@ -89,16 +98,16 @@ If a line begins with a `kind: title` prefix (e.g. `bug:`, `issue:`,
 `feature:`, `refactor:`), that prefix overrides the section default and is
 stripped from the title.
 
-### Items → entries
+### Items â†’ entries
 
 Recognized item shapes (any of these counts as one entry):
 
 - `[ ] text` or `[x] text`
 - `- [ ] text` or `- [x] text`
-- `* text` or `- text` (no checkbox — treat as not-done)
+- `* text` or `- text` (no checkbox â€” treat as not-done)
 - A standalone non-empty line under a section that isn't itself a heading
 
-`[x]` (lowercase or uppercase) → entry goes to `COMPLETED`. Otherwise → `BACKLOG`.
+`[x]` (lowercase or uppercase) â†’ entry goes to `COMPLETED`. Otherwise â†’ `BACKLOG`.
 
 ### Title
 
@@ -120,7 +129,7 @@ Default `medium`. Bump to `high` if the source line contains `urgent`,
 `critical`, `p0`, `blocker`, `asap`. Drop to `low` if it contains `someday`,
 `maybe`, `nice-to-have`, `low-pri`, `lowpri`.
 
-Do NOT prompt the user per-entry for priority — that defeats the bulk-import
+Do NOT prompt the user per-entry for priority â€” that defeats the bulk-import
 purpose. The user can edit priorities on the board afterward.
 
 ### defaultExpanded
@@ -159,8 +168,11 @@ for this project"):
 - When importing into an EXISTING `kanban.md`, get user approval on the parsed
   entry list before writing. Fresh-board creation, empty-template bootstrap,
   and source-file relocation: write directly without asking.
-- Never invent metadata fields beyond the schema in `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/_schema.md`.
+- Never invent metadata fields beyond the schema in `<mpi-lib-root>/kanban-ops/_schema.md`.
 - Never delete an existing entry. If the kanban already has entries with
   matching titles, surface the conflict and ask whether to skip, suffix, or
   abort.
 - Preserve source order within each target column.
+
+
+

@@ -1,17 +1,11 @@
-# Local Claude Code state and per-project plugin settings
+# Local Claude Code state and per-project settings
 .claude/
 .claude/*.local.md
 .claude/*.local.json
 
-# Project-local agent state and skill installs (transient build helpers)
+# Project-local agent state and skill installs
 .agents/*
-!.agents/plugins/
-.agents/plugins/*
-!.agents/plugins/marketplace.json
 skills-lock.json
-
-# Generated KiloCode-portable skill tree (rebuilt by scripts/build_kilo_skills.py)
-skills-kilo/
 
 # OS noise
 Thumbs.db
@@ -24,6 +18,3 @@ __pycache__/
 Mpi-Kanban.code-workspace
 .vscode/
 .idea/
-
-# User-specific files
-update_live.py

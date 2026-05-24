@@ -1,22 +1,4 @@
-"""Validate the Mpi-Kanban dual Claude/Codex plugin layout before release.
-
-Checks (fail-fast):
-  - .claude-plugin/plugin.json: required fields, kebab-case name
-  - .claude-plugin/marketplace.json: required fields, plugin entry present
-  - .codex-plugin/plugin.json: required fields, shared skill path, interface
-  - Claude and Codex manifests stay synchronized for public identity fields
-  - plugin.json name matches the entry in marketplace.json
-  - Each skills/*/ contains a SKILL.md with valid YAML frontmatter
-  - SKILL.md `name` field matches its parent directory name (kebab-case)
-  - SKILL.md `description` field is non-empty
-  - No symlinks anywhere under the repo (breaks install on Windows)
-  - Kilo target adapter assets (docs/kilocode-install.md, templates/kilo.jsonc,
-    scripts/build_kilo_skills.py) exist and parse
-  - SKILL.md name <=64 chars, description <=1024 chars (Kilo schema; harmless
-    for Claude/Codex)
-  - .agents/plugins/marketplace.json: public Codex marketplace source is valid
-    and points mpi-kanban at the repository root
-"""
+"""Validate the Mpi-Kanban universal Agent Skills pack before release."""
 from __future__ import annotations
 
 import json
@@ -26,6 +8,21 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+NAME_MAX = 64
+DESCRIPTION_MAX = 1024
+
+REMOVED_PATHS = (
+    ".claude-plugin",
+    ".codex-plugin",
+    ".agents/plugins",
+    "plugins/MadPonyInteractive/mpi-kanban",
+    "scripts/build_kilo_skills.py",
+    "scripts/register_codex_plugin.py",
+    "docs/kilocode-install.md",
+    "docs/kilocode-marketplace-submission.md",
+    "templates/kilo.jsonc",
+    "update_live.py",
+)
 
 errors: list[str] = []
 
@@ -34,182 +31,46 @@ def fail(msg: str) -> None:
     errors.append(msg)
 
 
-def parse_frontmatter(text: str) -> dict[str, str] | None:
+def parse_frontmatter(text: str) -> dict[str, object] | None:
+    text = text.lstrip("\ufeff")
     if not text.startswith("---\n"):
         return None
     end = text.find("\n---", 4)
     if end == -1:
         return None
     block = text[4:end]
-    data: dict[str, str] = {}
+    data: dict[str, object] = {}
+    current_parent: str | None = None
     for line in block.splitlines():
-        if not line.strip() or ":" not in line:
+        if not line.strip():
+            continue
+        if line.startswith(" ") and current_parent:
+            key, _, value = line.strip().partition(":")
+            parent = data.setdefault(current_parent, {})
+            if isinstance(parent, dict):
+                parent[key.strip()] = value.strip().strip('"')
+            continue
+        if ":" not in line:
             continue
         key, _, value = line.partition(":")
-        data[key.strip()] = value.strip()
+        current_parent = key.strip()
+        value = value.strip()
+        if value:
+            data[current_parent] = value.strip('"')
     return data
 
 
-IDENTITY_FIELDS = ("name", "version", "description", "author", "repository", "license", "keywords")
-CODEX_BUNDLE_DIR = ROOT / "plugins" / "MadPonyInteractive" / "mpi-kanban"
-CODEX_BUNDLE_JSON = CODEX_BUNDLE_DIR / "plugins.json"
-CODEX_BUNDLE_ICON = CODEX_BUNDLE_DIR / "icon.svg"
-
-KILO_INSTALL_DOC = ROOT / "docs" / "kilocode-install.md"
-KILO_SUBMISSION_DOC = ROOT / "docs" / "kilocode-marketplace-submission.md"
-KILO_TEMPLATE = ROOT / "templates" / "kilo.jsonc"
-KILO_GENERATOR = ROOT / "scripts" / "build_kilo_skills.py"
-KILO_NAME_MAX = 64
-KILO_DESC_MAX = 1024
-PUBLIC_CODEX_MARKETPLACE = ROOT / ".agents" / "plugins" / "marketplace.json"
-
-
-def validate_claude_plugin_json() -> dict:
-    path = ROOT / ".claude-plugin" / "plugin.json"
-    if not path.exists():
-        fail(f"missing: {path.relative_to(ROOT)}")
-        return {}
-    data = json.loads(path.read_text(encoding="utf-8"))
-    for field in ("name", "version", "description"):
-        if not data.get(field):
-            fail(f"plugin.json missing required field: {field}")
-    name = data.get("name", "")
-    if name and not KEBAB.match(name):
-        fail(f"plugin.json name '{name}' is not kebab-case")
-    return data
-
-
-def validate_codex_plugin_json() -> dict:
-    path = ROOT / ".codex-plugin" / "plugin.json"
-    if not path.exists():
-        fail(f"missing: {path.relative_to(ROOT)}")
-        return {}
-    data = json.loads(path.read_text(encoding="utf-8"))
-    for field in ("name", "version", "description", "skills", "interface"):
-        if not data.get(field):
-            fail(f".codex-plugin/plugin.json missing required field: {field}")
-    name = data.get("name", "")
-    if name and not KEBAB.match(name):
-        fail(f".codex-plugin/plugin.json name '{name}' is not kebab-case")
-    if data.get("skills") != "./skills/":
-        fail(".codex-plugin/plugin.json skills must point to ./skills/")
-    interface = data.get("interface", {})
-    if not isinstance(interface, dict):
-        fail(".codex-plugin/plugin.json interface must be an object")
-    else:
-        for field in ("displayName", "shortDescription", "developerName", "category"):
-            if not interface.get(field):
-                fail(f".codex-plugin/plugin.json interface missing field: {field}")
-        prompts = interface.get("defaultPrompt", [])
-        if prompts and (not isinstance(prompts, list) or len(prompts) > 3):
-            fail(".codex-plugin/plugin.json interface.defaultPrompt must be a list of at most 3 prompts")
-    return data
-
-
-def validate_manifest_sync(claude_data: dict, codex_data: dict) -> None:
-    if not claude_data or not codex_data:
-        return
-    for field in IDENTITY_FIELDS:
-        if claude_data.get(field) != codex_data.get(field):
-            fail(f"manifest identity drift on field: {field}")
-
-
-def validate_codex_marketplace_bundle(codex_data: dict) -> None:
-    if not codex_data:
-        return
-    if not CODEX_BUNDLE_DIR.is_dir():
-        fail(f"missing Codex marketplace bundle directory: {CODEX_BUNDLE_DIR.relative_to(ROOT)}")
-        return
-    if not CODEX_BUNDLE_JSON.exists():
-        fail(f"missing: {CODEX_BUNDLE_JSON.relative_to(ROOT)}")
-        return
-    if not CODEX_BUNDLE_ICON.exists():
-        fail(f"missing: {CODEX_BUNDLE_ICON.relative_to(ROOT)}")
-
-    data = json.loads(CODEX_BUNDLE_JSON.read_text(encoding="utf-8"))
-    for field in ("name", "version", "description", "author", "repository", "license", "keywords", "interface"):
-        if not data.get(field):
-            fail(f"Codex marketplace bundle missing required field: {field}")
-
-    for field in (*IDENTITY_FIELDS, "homepage"):
-        if data.get(field) != codex_data.get(field):
-            fail(f"Codex marketplace bundle identity drift on field: {field}")
-
-    bundle_interface = data.get("interface", {})
-    codex_interface = codex_data.get("interface", {})
-    if bundle_interface != codex_interface:
-        fail("Codex marketplace bundle interface drift from .codex-plugin/plugin.json")
-
-    composer_icon = bundle_interface.get("composerIcon")
-    if composer_icon != "plugins/MadPonyInteractive/mpi-kanban/icon.svg":
-        fail("Codex marketplace bundle interface.composerIcon must point at plugins/MadPonyInteractive/mpi-kanban/icon.svg")
-    if CODEX_BUNDLE_ICON.exists():
-        icon_text = CODEX_BUNDLE_ICON.read_text(encoding="utf-8").lstrip()
-        if not icon_text.startswith("<svg"):
-            fail("Codex marketplace bundle icon must be an SVG file")
-
-
-def validate_marketplace_json(plugin_name: str) -> None:
-    path = ROOT / ".claude-plugin" / "marketplace.json"
-    if not path.exists():
-        fail(f"missing: {path.relative_to(ROOT)}")
-        return
-    data = json.loads(path.read_text(encoding="utf-8"))
-    for field in ("name", "owner", "plugins"):
-        if not data.get(field):
-            fail(f"marketplace.json missing required field: {field}")
-    market_name = data.get("name", "")
-    if market_name and not KEBAB.match(market_name):
-        fail(f"marketplace.json name '{market_name}' is not kebab-case")
-    entries = data.get("plugins", [])
-    if not any(entry.get("name") == plugin_name for entry in entries):
-        fail(
-            f"marketplace.json does not list plugin '{plugin_name}' "
-            f"(found: {[e.get('name') for e in entries]})"
-        )
-
-
-def validate_public_codex_marketplace(plugin_name: str) -> None:
-    if not PUBLIC_CODEX_MARKETPLACE.exists():
-        fail(f"missing public Codex marketplace manifest: {PUBLIC_CODEX_MARKETPLACE.relative_to(ROOT)}")
-        return
-    data = json.loads(PUBLIC_CODEX_MARKETPLACE.read_text(encoding="utf-8"))
-    if data.get("name") != "mad-pony-interactive":
-        fail(".agents/plugins/marketplace.json name must be mad-pony-interactive")
-    interface = data.get("interface")
-    if not isinstance(interface, dict) or not interface.get("displayName"):
-        fail(".agents/plugins/marketplace.json must include interface.displayName")
-    entries = data.get("plugins")
-    if not isinstance(entries, list):
-        fail(".agents/plugins/marketplace.json plugins must be a list")
-        return
-    match = next((entry for entry in entries if entry.get("name") == plugin_name), None)
-    if match is None:
-        fail(f".agents/plugins/marketplace.json does not list plugin '{plugin_name}'")
-        return
-    source = match.get("source")
-    if source != {"source": "local", "path": "."}:
-        fail(".agents/plugins/marketplace.json mpi-kanban source must be local path '.'")
-    policy = match.get("policy")
-    if not isinstance(policy, dict):
-        fail(".agents/plugins/marketplace.json mpi-kanban policy must be an object")
-    else:
-        if policy.get("installation") != "AVAILABLE":
-            fail(".agents/plugins/marketplace.json policy.installation must be AVAILABLE")
-        if policy.get("authentication") != "ON_INSTALL":
-            fail(".agents/plugins/marketplace.json policy.authentication must be ON_INSTALL")
-    if not match.get("category"):
-        fail(".agents/plugins/marketplace.json mpi-kanban category is required")
-
-
-def validate_skills() -> None:
-    skills_dir = ROOT / "skills"
-    if not skills_dir.is_dir():
+def skill_dirs() -> list[Path]:
+    skills = ROOT / "skills"
+    if not skills.is_dir():
         fail("missing skills/ directory")
-        return
-    for skill_dir in sorted(skills_dir.iterdir()):
-        if not skill_dir.is_dir():
-            continue
+        return []
+    return sorted(path for path in skills.iterdir() if path.is_dir())
+
+
+def validate_skills() -> set[str]:
+    names: set[str] = set()
+    for skill_dir in skill_dirs():
         skill_md = skill_dir / "SKILL.md"
         if not skill_md.exists():
             fail(f"{skill_dir.name}: missing SKILL.md")
@@ -219,65 +80,110 @@ def validate_skills() -> None:
         if front is None:
             fail(f"{skill_dir.name}/SKILL.md: invalid or missing YAML frontmatter")
             continue
-        name = front.get("name", "")
+
+        name = str(front.get("name", ""))
+        description = str(front.get("description", ""))
+        names.add(name)
+
         if name != skill_dir.name:
-            fail(
-                f"{skill_dir.name}/SKILL.md: frontmatter name '{name}' "
-                f"does not match folder name"
-            )
-        if name and not KEBAB.match(name):
+            fail(f"{skill_dir.name}/SKILL.md: frontmatter name '{name}' does not match folder name")
+        if not KEBAB.match(name):
             fail(f"{skill_dir.name}/SKILL.md: name '{name}' is not kebab-case")
-        if not front.get("description"):
+        if len(name) > NAME_MAX:
+            fail(f"{skill_dir.name}/SKILL.md: name exceeds {NAME_MAX} characters")
+        if not description:
             fail(f"{skill_dir.name}/SKILL.md: empty description")
+        if len(description) > DESCRIPTION_MAX:
+            fail(f"{skill_dir.name}/SKILL.md: description exceeds {DESCRIPTION_MAX} characters")
+
+        if skill_dir.name != "mpi-lib" and not description.startswith("MPI workflow pack - "):
+            fail(f"{skill_dir.name}/SKILL.md: description must start with 'MPI workflow pack - '")
+
+    return names
 
 
-def validate_kilo_assets() -> None:
-    """Additive Kilo target adapter checks.
-
-    Verifies that the Phase 6 install surface is present and the kilo.jsonc
-    template parses as JSON after stripping comments. Does not regenerate
-    `skills-kilo/` (gitignored, rebuilt at release time by the maintainer).
-    """
-    for path in (KILO_INSTALL_DOC, KILO_SUBMISSION_DOC, KILO_TEMPLATE, KILO_GENERATOR):
-        if not path.exists():
-            fail(f"missing Kilo adapter asset: {path.relative_to(ROOT)}")
-
-    if KILO_TEMPLATE.exists():
-        text = KILO_TEMPLATE.read_text(encoding="utf-8")
-        stripped = re.sub(r"//.*", "", text)
-        stripped = re.sub(r"/\*.*?\*/", "", stripped, flags=re.S)
-        stripped = re.sub(r",(\s*[}\]])", r"\1", stripped)
-        try:
-            data = json.loads(stripped)
-        except json.JSONDecodeError as exc:
-            fail(f"templates/kilo.jsonc does not parse as JSONC: {exc}")
-        else:
-            skills_block = data.get("skills")
-            if not isinstance(skills_block, dict) or not skills_block.get("paths"):
-                fail("templates/kilo.jsonc must define skills.paths")
-
-
-def validate_kilo_skill_limits() -> None:
-    """Additive Kilo-schema checks against the canonical skill tree.
-
-    Kilo enforces name <=64 chars and description <=1024 chars on SKILL.md
-    frontmatter. The limits are harmless for Claude/Codex; checking them on
-    `skills/` keeps the canonical source Kilo-portable.
-    """
-    skills_dir = ROOT / "skills"
-    if not skills_dir.is_dir():
+def validate_mpi_lib_present() -> None:
+    mpi_lib = ROOT / "skills" / "mpi-lib"
+    if not (mpi_lib / "SKILL.md").exists():
+        fail("missing skills/mpi-lib/SKILL.md")
         return
-    for skill_dir in sorted(skills_dir.iterdir()):
-        skill_md = skill_dir / "SKILL.md"
-        if not skill_md.is_file():
+
+    required = (
+        "coordination-ops/lifecycle.md",
+        "coordination-ops/statuses.md",
+        "kanban-ops/find.md",
+        "project-knowledge/indexing.md",
+        "docs/coordination/README.md",
+        "templates/kanban.md",
+    )
+    for rel in required:
+        if not (mpi_lib / rel).exists():
+            fail(f"mpi-lib missing required reference: {rel}")
+
+    for skill_dir in skill_dirs():
+        if skill_dir.name == "mpi-lib":
             continue
-        front = parse_frontmatter(skill_md.read_text(encoding="utf-8")) or {}
-        name = front.get("name", "")
-        desc = front.get("description", "")
-        if len(name) > KILO_NAME_MAX:
-            fail(f"{skill_dir.name}/SKILL.md: name exceeds {KILO_NAME_MAX} chars (Kilo)")
-        if len(desc) > KILO_DESC_MAX:
-            fail(f"{skill_dir.name}/SKILL.md: description exceeds {KILO_DESC_MAX} chars (Kilo)")
+        text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        if "## Locating shared references" not in text or "<mpi-lib-root>" not in text:
+            fail(f"{skill_dir.name}/SKILL.md: missing mpi-lib discovery block")
+
+
+def validate_no_stale_runtime_refs() -> None:
+    patterns = (
+        "$" + "{CLAUDE_PLUGIN_ROOT}",
+        "/" + "mpi-kanban:",
+        "Codex" + " users",
+        "Claude Code" + " users",
+        "plugin" + " root",
+    )
+    active_roots = [ROOT / "skills"]
+    active_files = [
+        ROOT / "README.md",
+        ROOT / "AGENTS.md",
+        ROOT / "docs" / "install.md",
+    ]
+    paths = active_files[:]
+    for active_root in active_roots:
+        if active_root.exists():
+            paths.extend(path for path in active_root.rglob("*") if path.is_file())
+    for path in paths:
+        if not path.exists() or path.suffix.lower() not in {".md", ".json", ".py", ".yml", ".yaml"}:
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for pattern in patterns:
+            if pattern in text:
+                fail(f"stale runtime reference '{pattern}' in {path.relative_to(ROOT)}")
+
+
+def validate_skills_sh_json(skill_names: set[str]) -> None:
+    path = ROOT / "skills.sh.json"
+    if not path.exists():
+        fail("missing skills.sh.json")
+        return
+    data = json.loads(path.read_text(encoding="utf-8"))
+    groups = data.get("groupings")
+    if not isinstance(groups, list) or not groups:
+        fail("skills.sh.json must define non-empty groupings")
+        return
+    listed: set[str] = set()
+    for group in groups:
+        skills = group.get("skills") if isinstance(group, dict) else None
+        if not isinstance(skills, list) or not skills:
+            fail("skills.sh.json groupings[*].skills must be non-empty lists")
+            continue
+        listed.update(str(skill) for skill in skills)
+    missing = skill_names - listed
+    extra = listed - skill_names
+    if missing:
+        fail(f"skills.sh.json missing skills: {sorted(missing)}")
+    if extra:
+        fail(f"skills.sh.json lists unknown skills: {sorted(extra)}")
+
+
+def validate_removed_surfaces() -> None:
+    for rel in REMOVED_PATHS:
+        if (ROOT / rel).exists():
+            fail(f"removed packaging surface still exists: {rel}")
 
 
 def check_no_symlinks() -> None:
@@ -287,23 +193,19 @@ def check_no_symlinks() -> None:
 
 
 def main() -> int:
-    plugin_data = validate_claude_plugin_json()
-    codex_data = validate_codex_plugin_json()
-    validate_manifest_sync(plugin_data, codex_data)
-    validate_codex_marketplace_bundle(codex_data)
-    validate_marketplace_json(plugin_data.get("name", ""))
-    validate_public_codex_marketplace(plugin_data.get("name", ""))
-    validate_skills()
-    validate_kilo_assets()
-    validate_kilo_skill_limits()
+    skill_names = validate_skills()
+    validate_mpi_lib_present()
+    validate_no_stale_runtime_refs()
+    validate_skills_sh_json(skill_names)
+    validate_removed_surfaces()
     check_no_symlinks()
 
     if errors:
-        print("Plugin validation FAILED:", file=sys.stderr)
+        print("Skill pack validation FAILED:", file=sys.stderr)
         for err in errors:
             print(f"  - {err}", file=sys.stderr)
         return 1
-    print("Plugin validation passed.")
+    print("Skill pack validation passed.")
     return 0
 
 

@@ -9,7 +9,7 @@ Related references:
 - `docs/coordination/schemas.md`
 - `docs/coordination/roles.md`
 - `docs/coordination/uuid-helper.md`
-- `lib/coordination-ops/statuses.md`
+- `coordination-ops/statuses.md`
 
 ## State Root
 

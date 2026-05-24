@@ -43,7 +43,7 @@ critical_snapshot_anchor: critical-rules-snapshot
 | Frontmatter field | Purpose |
 |---|---|
 | `rules_dir` | Folder where rule files live, relative to project root. |
-| `rules` | List of `{name, file}` entries `mpi-brief-rule` exposes. `name` is the user-facing handle (`/mpi-kanban:mpi-brief-rule <name>`); resolved path is `<rules_dir>/<file>`. |
+| `rules` | List of `{name, file}` entries `mpi-brief-rule` exposes. `name` is the user-facing handle (`mpi-brief-rule <name>`); resolved path is `<rules_dir>/<file>`. |
 | `bundles` | Optional list of `{name, rules}` entries. `rules` is an ordered list of configured rule names to return together for sub-agent dispatch. |
 | `critical_snapshot_file` | File holding the universal "Critical Rules Snapshot" all sub-agents must receive. |
 | `critical_snapshot_anchor` | Heading id within `critical_snapshot_file` where the snapshot lives. |

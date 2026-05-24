@@ -1,19 +1,28 @@
 ---
 name: mpi-brainstorm
-description: MPI brainstorm workflow. Collaboratively explore an idea and design a solution through dialogue before planning. Use when the user says "MPI brainstorm", "I have an idea", "let's think through this", "brainstorm with me", "help me figure out how to approach X", "$mpi-brainstorm", or wants to explore options before implementation.
+description: MPI workflow pack - MPI brainstorm workflow. Collaboratively explore an idea and design a solution through dialogue before planning. Use when the user says "MPI brainstorm", "I have an idea", "let's think through this", "brainstorm with me", "help me figure out how to approach X", "$mpi-brainstorm", or wants to explore options before implementation.
 ---
 
 # mpi-brainstorm Skill
+
+## Locating shared references
 
+Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
+
+1. `~/.agents/skills/mpi-lib`
+2. `.agents/skills/mpi-lib`
+3. `~/.claude/skills/mpi-lib`
+4. `.claude/skills/mpi-lib`
+
+Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
+
+`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 Help turn ideas into fully formed designs through natural collaborative
 dialogue.
 
-Invocation: Claude Code users may run `/mpi-kanban:mpi-brainstorm`; Codex
-users may run `$mpi-brainstorm` or ask naturally to brainstorm. References
-using `${CLAUDE_PLUGIN_ROOT}` mean the installed plugin root; Codex resolves
-the same files relative to this plugin root.
+Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
-Start by understanding the current project context only when needed — only
+Start by understanding the current project context only when needed â€” only
 docs/rules relevant to the topic, or what the user explicitly calls out. Do
 not exhaustively scan everything.
 
@@ -21,7 +30,7 @@ not exhaustively scan everything.
 Do NOT invoke any implementation skill, write any code, scaffold any project,
 or take any implementation action until you have presented a design AND the
 user has approved it. The entire value of brainstorming is catching design
-mistakes before they become code — rushing to implementation defeats the
+mistakes before they become code â€” rushing to implementation defeats the
 purpose.
 </HARD-GATE>
 
@@ -29,14 +38,14 @@ purpose.
 
 1. **Explore context only if needed.** Check files, docs, or rules only when
    the topic directly involves them. If nothing is obviously relevant, skip.
-2. **Ask clarifying questions** — one at a time. Understand purpose,
+2. **Ask clarifying questions** â€” one at a time. Understand purpose,
    constraints, success criteria.
 3. **Propose 2-3 approaches** with trade-offs and your recommendation.
 4. **Present design in sections** scaled to complexity. After each section ask
    a specific question (e.g. "Does this approach work for you?") and wait for
    a response before continuing.
 5. **Capture the idea on the kanban board.** See "After design approved" below.
-6. **Ask: want a plan?** "Do you want to create a plan for this?" → if yes,
+6. **Ask: want a plan?** "Do you want to create a plan for this?" â†’ if yes,
    invoke `mpi-create-plan` for normal work or `mpi-create-large-plan` for
    complex/adaptive work, passing the BACKLOG entry title forward in the
    prompt context. Session ends.
@@ -54,31 +63,31 @@ context lean.
 
 ## Key principles
 
-- **One question at a time** — don't overwhelm.
-- **Multiple choice preferred** — easier to answer than open-ended.
-- **YAGNI ruthlessly** — remove unnecessary features.
-- **Explore alternatives** — propose 2-3 approaches before settling.
-- **Incremental validation** — present one section, get approval, continue.
+- **One question at a time** â€” don't overwhelm.
+- **Multiple choice preferred** â€” easier to answer than open-ended.
+- **YAGNI ruthlessly** â€” remove unnecessary features.
+- **Explore alternatives** â€” propose 2-3 approaches before settling.
+- **Incremental validation** â€” present one section, get approval, continue.
 
 ## After design approved (BEFORE asking "Want a plan?")
 
 Lib pointers (read each only when its recipe is actually needed):
 
-- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/find.md` — `ensureKanban`, `findEntry`
-- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/mutate.md` — `createEntry`
-- `${CLAUDE_PLUGIN_ROOT}/lib/kanban-ops/_schema.md` — entry shape (only if you
+- `<mpi-lib-root>/kanban-ops/find.md` â€” `ensureKanban`, `findEntry`
+- `<mpi-lib-root>/kanban-ops/mutate.md` â€” `createEntry`
+- `<mpi-lib-root>/kanban-ops/_schema.md` â€” entry shape (only if you
   need a schema reminder before building the entry)
 
 Steps:
 
-1. Read `lib/kanban-ops/find.md` for `ensureKanban`. Call `ensureKanban()`. If
+1. Read `<mpi-lib-root>/kanban-ops/find.md` for `ensureKanban`. Call `ensureKanban()`. If
    the file did not exist, the recipe creates it from the template and emits
    the one-time setup notice (kanban link + extension marketplace link).
    Continue regardless.
 
 2. Ask the user ONCE for the priority of this idea:
    ```
-   Priority for the kanban entry? (high / medium / low — default medium)
+   Priority for the kanban entry? (high / medium / low â€” default medium)
    ```
    Default to `medium` if the user gives no answer.
 
@@ -86,20 +95,20 @@ Steps:
    - **Title:** 2-4 word slug from the idea (e.g. "Video history support",
      "Refactor mount adapter").
    - **Tags:** infer ONE from the idea content:
-     - `[bug]` — fixing broken behavior.
-     - `[feature]` — new user-facing capability.
-     - `[refactor]` — internal restructure with no behavior change.
-     - `[Idea]` — exploratory or speculative; default if unclear.
+     - `[bug]` â€” fixing broken behavior.
+     - `[feature]` â€” new user-facing capability.
+     - `[refactor]` â€” internal restructure with no behavior change.
+     - `[Idea]` â€” exploratory or speculative; default if unclear.
    - **priority:** the value the user gave (or `medium`).
    - **defaultExpanded:** `true`.
    - **body:** 2-3 line summary of the idea.
    - **No `steps`. No `Plan file:` ref.**
 
-4. Read `lib/kanban-ops/mutate.md` for `createEntry`. Call
+4. Read `<mpi-lib-root>/kanban-ops/mutate.md` for `createEntry`. Call
    `createEntry("BACKLOG", entry)`. If `findEntry(e => e.title === <title>)`
    already returns a hit, ask the user for a distinguishing suffix and retry.
 
-5. Confirm to the user: `Captured on board: "<title>" → BACKLOG. [kanban.md](.claude/mpi-kanban/kanban.md)`.
+5. Confirm to the user: `Captured on board: "<title>" â†’ BACKLOG. [kanban.md](.claude/mpi-kanban/kanban.md)`.
 
 ## New-project routing
 
@@ -109,8 +118,7 @@ no source tree, no `AGENTS.md`/`CLAUDE.md`, or the user explicitly said
 captured:
 
 ```text
-This looks like a new project. Run $mpi-project-setup in Codex or
-/mpi-kanban:mpi-project-setup in Claude Code to establish project mode and
+This looks like a new project. Run `mpi-project-setup` to establish project mode and
 knowledge before planning?
 ```
 
@@ -122,7 +130,7 @@ project knowledge before planning, or proceed directly to a plan.
 After the BACKLOG entry is captured:
 
 1. Ask: **"Do you want to create a plan for this?"**
-2. If **yes** → choose the plan skill:
+2. If **yes** â†’ choose the plan skill:
    - Use `mpi-create-plan` by default for compact, normal work.
    - Use `mpi-create-large-plan` when the work is complex, uncertain,
      multi-phase, likely to benefit from parallel investigation, or splittable
@@ -130,17 +138,18 @@ After the BACKLOG entry is captured:
      eligibility alone is enough reason to choose the large-plan path, since
      compact plans cannot carry `## Parallel Batch` sections.
    Include in the prompt context: the BACKLOG entry title (skills don't pass
-   arguments natively — pass it as prose, e.g. "Create a plan for the BACKLOG
+   arguments natively â€” pass it as prose, e.g. "Create a plan for the BACKLOG
    entry titled \"<title>\""). The plan skill will move the entry to PLANNING.
-3. If **no** → session ends. Entry stays in BACKLOG until someone runs
-   `$mpi-create-plan` / `$mpi-create-large-plan` in Codex or
-   `/mpi-kanban:mpi-create-plan` / `/mpi-kanban:mpi-create-large-plan` in
-   Claude Code against it later.
+3. If **no** â†’ session ends. Entry stays in BACKLOG until someone runs
+   ``mpi-create-plan` / `mpi-create-large-plan` against it later.
 
 **No auto-invocation past this point.** The user is always in control.
 
 ## Hard rules
 
 - No design or code work before the user approves the design.
-- The BACKLOG entry is created by THIS skill — not by the user, not by the
+- The BACKLOG entry is created by THIS skill â€” not by the user, not by the
   next skill in the chain.
+
+
+

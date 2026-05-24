@@ -138,6 +138,10 @@ OpenCode, and future systems as target adapters around that source.
 
 Plan file: `docs/plans/2026-05-23-kilocode-plugin-packaging-phase-6.md`.
 
+Superseded by Phase 7 before release. The Kilo-specific generator,
+marketplace docs, and template were removed in favor of the npx-only
+skills.sh distribution path.
+
 - [x] Authoring audit: confirm all 14 skills meet Kilo `name`/`description`
   schema and map `${CLAUDE_PLUGIN_ROOT}` sibling dependencies.
 - [x] Build `scripts/build_kilo_skills.py` to inline siblings into a portable
@@ -152,3 +156,22 @@ Plan file: `docs/plans/2026-05-23-kilocode-plugin-packaging-phase-6.md`.
   validation committed in `eb0362e`.
 - [ ] Append Phase 6 SPEC section and project-profile architecture note.
 - [ ] Release `0.6.0` after all sub-phases complete.
+
+## Cross-agent skills distribution Phase 7
+
+Plan file: `docs/plans/2026-05-23-cross-agent-skills-distribution-phase-7.md`.
+
+- [x] Confirm hard-drop release strategy: npx-only, all-or-nothing.
+- [x] Add `skills/mpi-lib/` support skill with shared reference docs.
+- [x] Rewrite workflow skills to resolve shared docs through `mpi-lib`.
+- [x] Move runtime templates into skill folders.
+- [x] Add `skills.sh.json`.
+- [x] Replace Kilo-specific install docs with `docs/install.md`.
+- [x] Remove Claude/Codex plugin manifests, Codex marketplace bundle, Kilo
+  generator/docs/template, and live-copy bridge.
+- [x] Rewrite README, AGENTS, CLAUDE, SPEC, project profile, and knowledge
+  index for npx-only distribution.
+- [x] Rewrite validator for the universal skill pack.
+- [x] Run validator and contradiction sweeps.
+- [ ] Smoke test npx install and one workflow skill in Claude, Kilo, and Codex.
+- [ ] Release `0.6.0`.

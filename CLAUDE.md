@@ -1,22 +1,28 @@
-# Mpi-Kanban — Claude Code Plugin
+# Mpi-Kanban Agent Skills Pack
 
-A dual Claude Code/Codex plugin that bundles the MPI workflow skills
-(`brainstorm`, `create-plan`, `create-large-plan`, `continue`,
-`execute-parallel`, `end-session`, `cleanup`, `archive`, `handoff`,
-`brief-rule`) and drives a per-project Kanban board (`kanban.md`) rendered by
-the `MadPonyInteractive.mpi-kanban` VS Code extension fork.
+Mpi-Kanban is distributed as an all-or-nothing Agent Skills pack through
+skills.sh / `npx skills`.
 
-## Companion VS Code extension
-
-The paired VS Code extension lives next to this plugin at:
-
+```text
+npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 ```
+
+Claude Code and Codex plugin manifests are intentionally removed. Do not
+restore `.claude-plugin/`, `.codex-plugin/`, Codex marketplace bundles, or
+Kilo-specific generated skill trees unless the user explicitly reverses the
+Phase 7 distribution decision.
+
+## Companion VS Code Extension
+
+The paired VS Code extension lives next to this repository:
+
+```text
 C:\AI\Mpi\Plugins\mpi-kanban-vscode
 ```
 
 It is published from:
 
-```
+```text
 https://github.com/MadPonyInteractive/mpi-kanban-vscode
 ```
 
@@ -25,112 +31,46 @@ be `MadPonyInteractive.mpi-kanban`. It is a fork of
 `holooooo.markdown-kanban`; keep the original MIT copyright in the extension
 `LICENSE` and keep fork attribution in the extension `NOTICE`.
 
-The fork intentionally watches only the workspace MPI board at
-`.claude/mpi-kanban/kanban.md`. Do not reintroduce generic Markdown file
-switching unless the MPI workflow spec changes.
+The fork intentionally watches only `.claude/mpi-kanban/kanban.md`.
 
-Machine-readable Claude/Codex coordination state is separate from the board and
-lives under `.agents/mpi-kanban/state/`. Do not add agent coordination details
-as new board columns or metadata fields.
+## Source of Truth
 
-Shared lifecycle operation references live under:
+- [SPEC.md](./SPEC.md) - design source of truth.
+- [PLAN.md](./PLAN.md) - phased implementation state.
+- [README.md](./README.md) and [docs/install.md](./docs/install.md) -
+  user-facing installation and usage.
+- [skills/mpi-lib/](./skills/mpi-lib/) - shared references consumed by the
+  workflow skills.
 
-- `lib/coordination-ops/statuses.md` for session, task, file-claim, and handoff
-  status vocabulary.
-- `lib/coordination-ops/lifecycle.md` for index, session, task, file-claim,
-  handoff, close, cleanup, and kanban summary-tag operations.
+If SPEC and PLAN disagree, ask the user before choosing.
 
-Agents coordinate through `.agents/mpi-kanban/state/` first. Kanban tags are
-only coarse user-facing summaries for the existing VS Code extension. A file
-claim with status `claimed` is an active write lock; completed or released file
-ownership does not grant commit ownership. The closing or integrating session
-must reread current coordination state and Git state before committing.
+## Hard Constraints
 
-The extension can be published before this agent plugin becomes universal for
-Claude Code and Codex because the extension depends only on the stable kanban
-file contract.
+- Do not add kanban columns or metadata fields beyond the SPEC board contract;
+  the VS Code extension expects the fixed board schema.
+- Skills are pure Markdown. Shared reference docs live in `skills/mpi-lib/`.
+- Do not use `${CLAUDE_PLUGIN_ROOT}`, Claude `!` injection, Codex plugin
+  manifests, or plugin-scoped install assumptions in workflow skills.
+- The pack is all-or-nothing. Every consuming skill must fail clearly when
+  `mpi-lib` is missing and tell the user to reinstall with `npx skills add
+  MadPonyInteractive/mpi-kanban --all -y -g`.
 
-## Source of truth
+## Maintenance
 
-- [.codex-plugin/plugin.json](./.codex-plugin/plugin.json) — native Codex plugin manifest.
-- [.claude-plugin/plugin.json](./.claude-plugin/plugin.json) — native Claude Code plugin manifest.
-- [SPEC.md](./SPEC.md) — full design spec. Read in full before changing behavior.
-- [PLAN.md](./PLAN.md) — phased build to-do list.
+- Run `python scripts/validate_plugin.py` before release.
+- Release by updating `CHANGELOG.md`, tagging `v<version>`, and pushing the
+  tag. `.github/workflows/release.yml` creates the GitHub Release.
+- Use `npx skills add MadPonyInteractive/mpi-kanban --all -y -g` for local
+  smoke testing after push, or the supported local-path `npx skills` flow when
+  testing a checkout.
 
-If SPEC and PLAN disagree, ask the user — do not silently choose.
+## Working Directory
 
-Also read [docs/coordination/README.md](./docs/coordination/README.md) before
-changing shared Claude/Codex coordination behavior.
+This repository lives at:
 
-## Authoring references (installed as project-scope skills)
-
-Two reference skills are unpacked at [.agents/skills/](.agents/skills/) and
-must be consulted while building this plugin. They are gitignored — they are
-build-time helpers, not part of the shipped plugin.
-
-- **Plugin Structure** — canonical Claude Code plugin layout. Key rules:
-  - Claude's `plugin.json` lives at `.claude-plugin/plugin.json` (NOT plugin root).
-  - Codex's `plugin.json` lives at `.codex-plugin/plugin.json`.
-  - `name` field is kebab-case (`mpi-kanban`).
-  - `skills/`, `hooks/` sit at plugin root. (No `commands/` — skills auto-trigger from description; direct invoke via `/mpi-kanban:mpi-X`.)
-  - Use `${CLAUDE_PLUGIN_ROOT}` for any intra-plugin path reference.
-- **Plugin Settings** — `.claude/<plugin>.local.md` pattern (frontmatter + body)
-  for per-project plugin state. Relevant if the build agent decides to use it
-  for `mpi-brief-rule`'s config instead of the SPEC's `config.json` approach.
-
-## Migration source
-
-The existing user-scope skills being migrated into this plugin live at:
-
-```
-C:\Users\Fabio\.claude\skills\mpi-*
+```text
+C:\AI\Mpi\Plugins\Mpi-Kanban
 ```
 
-The user has already backed these up. They will be removed before integration
-testing (Phase 10) so they don't conflict with the plugin's bundled versions.
-
-## Hard constraints
-
-- Do NOT add columns or metadata fields beyond SPEC §4.4 — the VS Code
-  extension breaks on unknown fields.
-- Skills are pure markdown; `lib/*.md` are reference docs, not executable code
-  (see SPEC §7.4 trade-off — JS layer deferred).
-
-## Maintenance commands
-
-Two project-scope slash commands live at `.claude/commands/` (gitignored — they
-exist only in the maintainer's working copy):
-
-- `/update-live` — runs `update_live.py`, then tells the user whether a
-  `/plugin install ...` reinstall is required (skill set changed) or a Claude
-  Code restart is enough (only file contents changed).
-- `/release <version>` — bumps `.claude-plugin/plugin.json`, rewrites
-  `CHANGELOG.md`, commits, tags `v<version>`, pushes both branch and tag. The
-  `.github/workflows/release.yml` workflow then creates the GitHub Release.
-
-Prefer these over running the underlying steps by hand — they enforce the
-pre-flight checks (validator, clean tree, branch) and keep the CHANGELOG in
-sync with the tag.
-
-## Live copy maintenance
-
-`update_live.py` copies this development checkout into the filesystem location
-where agents load the plugin. When adding, moving, or renaming plugin behavior,
-agent support files, build helpers, local state, tests, or generated artifacts,
-update either `update_live.py` or `.gitignore` as needed so the live copy remains
-correct.
-
-The live copy must include every file required for Codex and Claude agents to run
-the plugin, including `.codex-plugin/plugin.json`, and it must exclude ignored
-development-only content, including the `.git/` directory itself.
-`update_live.py` mirrors the checkout into the Claude plugin cache, mirrors a
-home-local Codex checkout at `~/plugins/mpi-kanban`, updates
-`~/.agents/plugins/marketplace.json`, and runs
-`codex plugin add mpi-kanban@mad-pony-interactive` so Codex installs the local
-plugin build into `~/.codex/plugins/cache/...`.
-
-## Working directory
-
-This plugin lives at `C:\AI\Mpi\Plugins\Mpi-Kanban`. Do NOT commit anything
-to other projects (e.g. CubricStudio) from this build — CubricStudio is the
-integration-test target only (PLAN Phase 10).
+Do not commit anything to other projects from this build. CubricStudio and
+other workspaces are integration-test targets only.
