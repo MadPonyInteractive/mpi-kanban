@@ -29,6 +29,16 @@ unsupported.
 
 More detail: [docs/install.md](docs/install.md).
 
+## Update
+
+Update the installed pack with the same command:
+
+```text
+npx skills add MadPonyInteractive/mpi-kanban --all -y -g
+```
+
+Restart your agent sessions after updating so they reload the installed skills.
+
 ## Use
 
 Natural language is the intended interface:
@@ -119,6 +129,11 @@ surfaces are removed. Reinstall through skills.sh:
 ```text
 npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 ```
+
+For existing projects that used older MPI locations, run `mpi-project-setup`
+after updating. It detects legacy `.claude/mpi-kanban/` board files and
+proposes migrating them into `.agents/mpi-kanban/` without silently
+overwriting current files or deleting the legacy directory.
 
 If a workflow skill cannot find `mpi-lib`, reinstall with the full command
 above.
