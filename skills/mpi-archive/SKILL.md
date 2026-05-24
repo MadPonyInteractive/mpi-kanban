@@ -17,8 +17,8 @@ Shared reference docs live in the sibling skill `mpi-lib`. At first use, find th
 Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
 
 `npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
-Archive entries out of `.claude/mpi-kanban/kanban.md` into
-`.claude/mpi-kanban/archived.md` or the next incrementing archive file.
+Archive entries out of `.agents/mpi-kanban/kanban.md` into
+`.agents/mpi-kanban/archived.md` or the next incrementing archive file.
 
 This skill removes entries from the active board only after preserving their
 full entry blocks in an archive file.
@@ -57,7 +57,7 @@ Steps:
 4. Final response includes:
    - Number of entries archived.
    - Archive file used.
-   - Clickable links to `[kanban.md](.claude/mpi-kanban/kanban.md)` and the
+   - Clickable links to `[kanban.md](.agents/mpi-kanban/kanban.md)` and the
      archive file.
 
 ## Hard rules
@@ -69,6 +69,7 @@ Steps:
 - Do not edit archived entry contents; preserve each block verbatim.
 - Do not archive to a file with more than 200 lines. Use the next incrementing
   archive filename instead.
+
 
 
 

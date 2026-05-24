@@ -17,15 +17,16 @@ pointer rather than scanning the repo end-to-end.
 ### <topic name>
 
 - **Read first:** `<pointer>`
-- **Rules:** `<.claude/rules/...>` or remove this line
+- **Rules:** `<.agents/rules/...>` or remove this line
 - **Memory:** `<memory pointer>` or `none`
 - **Notes:** <one short line, optional>
 
 ## Cross-cutting
 
 - `README.md`
-- `CLAUDE.md` or `AGENTS.md` when present
+- `AGENTS.md` or `CLAUDE.md` when present
 
 ## Topic Gaps
 
 - None recorded yet.
+

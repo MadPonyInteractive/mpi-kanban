@@ -58,8 +58,9 @@ proposal are safe; writes require explicit approval.
 ### 1. Detect new vs existing project
 
 A project is "existing" if at least one of these is present: `README.md`
-with content, `src/`, `AGENTS.md`, `CLAUDE.md`, `.claude/rules/`, `docs/`,
-or any source-code directory the user names. Otherwise treat as new.
+with content, `src/`, `AGENTS.md`, `CLAUDE.md`, `.agents/rules/`, `docs/`,
+`.claude/mpi-kanban/`, or any source-code directory the user names.
+Otherwise treat as new.
 
 State which mode the skill is in: `new project setup` or
 `existing project setup`. Ask the user to confirm if uncertain.
@@ -104,7 +105,7 @@ the user to confirm, rather than asking from scratch.
 Per `<mpi-lib-root>/project-knowledge/adoption.md`, inspect:
 
 - `AGENTS.md`, `CLAUDE.md`
-- `.claude/rules/*.md`
+- `.agents/rules/*.md`
 - `README.md`
 - `docs/` (architecture, project, conventions, contributing)
 - `CONTRIBUTING.md`
@@ -117,19 +118,30 @@ Stay within the source budget. Do not read every file in the repo. Read
 each candidate enough to classify it; do not load full content unless the
 classification is uncertain.
 
+Also check for legacy board/workflow state:
+
+- `.claude/mpi-kanban/kanban.md`
+- `.claude/mpi-kanban/archived*.md`
+- `.claude/mpi-kanban/` files created by earlier MPI releases
+
+If legacy files exist, propose migrating them to `.agents/mpi-kanban/`.
+Never delete the legacy directory without explicit user approval. If the
+target file already exists, classify the conflict and ask which copy is
+canonical.
+
 ### 5. Build the adoption map
 
 Classify each inspected source per `<mpi-lib-root>/project-knowledge/adoption.md`:
 `usable as-is`, `small update`, `index pointer`, `convert to MPI-managed`,
 `superseded historical reference`, `conflict / uncertain`.
 
-When no `.claude/rules/*.md` files exist, do not treat that as "rules out of
+When no `.agents/rules/*.md` files exist, do not treat that as "rules out of
 scope." Decide whether any discovered project-specific conventions are better
 stored as:
 
 - short bullets in `.agents/mpi-kanban/project-profile.md`;
 - pointers to existing docs; or
-- a proposed new `.claude/rules/<topic>.md` file when the convention is
+- a proposed new `.agents/rules/<topic>.md` file when the convention is
   reusable, important for sub-agents, or too detailed for the profile.
 
 If no rule file is warranted, state why ("no reusable project-specific
@@ -151,11 +163,14 @@ The proposal is a single message containing:
    the profile and index. Default to creating `AGENTS.md` only if it does
    not exist OR if existing entrypoints are silent about MPI. Keep
    entrypoint edits to short pointer additions.
-6. Any rule file changes proposed, including new `.claude/rules/*.md` files or
+6. Any legacy board migration proposed from `.claude/mpi-kanban/` to
+   `.agents/mpi-kanban/`, listing each file and whether it is a move, skip,
+   or conflict requiring a decision.
+7. Any rule file changes proposed, including new `.agents/rules/*.md` files or
    edits to existing rules (per file, one-line summary and purpose).
-7. Any memory pointers proposed (existing Claude memory preferred; new
+8. Any memory pointers proposed (existing project/user memory preferred; new
    memory entries called out explicitly).
-8. Any deferred items the user should know about.
+9. Any deferred items the user should know about.
 
 End with:
 
@@ -193,11 +208,21 @@ out of.
 4. Create or update `AGENTS.md` if approved. Pointer-first: add a short
    `## Project Knowledge` section that links to the profile and index.
    Preserve existing content; do not rewrite the file.
-5. Apply approved rule file creations or edits per file. Each file should be
+5. Apply approved legacy board migration:
+   - Create `.agents/mpi-kanban/` if missing.
+   - Move `.claude/mpi-kanban/kanban.md` to
+     `.agents/mpi-kanban/kanban.md` only when the target does not exist or
+     the user chose the legacy copy as canonical.
+   - Move `.claude/mpi-kanban/archived*.md` and other legacy MPI board files
+     to the same relative names under `.agents/mpi-kanban/` when targets do
+     not conflict.
+   - Preserve `.claude/mpi-kanban/` if any file remains, if the user did not
+     approve deletion, or if the directory contains unknown files.
+6. Apply approved rule file creations or edits per file. Each file should be
    concise and include a `## Sub-Agent Briefing` section when it is intended
    for `mpi-brief-rule` or parallel worker briefings.
-6. Apply approved memory pointer entries.
-7. Confirm: state which files were written, link them, and suggest the next
+7. Apply approved memory pointer entries.
+8. Confirm: state which files were written, link them, and suggest the next
    useful step. If no kanban exists, suggest `mpi-init`. If brainstorm just
    ran, suggest `mpi-create-plan` or `mpi-create-large-plan`.
 
@@ -217,10 +242,13 @@ Output to the user:
 - Default mode is `scalable-foundation` when unclear.
 - Pointer-first: prefer pointing at existing docs/rules over copying
   content into profile/index.
-- Creating `.claude/rules/*.md` is allowed during setup when the approved
+- Creating `.agents/rules/*.md` is allowed during setup when the approved
   proposal identifies reusable project-specific conventions that do not already
   have a good home.
-- Never create or edit `.claude/rules/*.md` without explicit per-file approval.
+- Never create or edit `.agents/rules/*.md` without explicit per-file approval.
+- Never overwrite `.agents/mpi-kanban/kanban.md` with a legacy
+  `.claude/mpi-kanban/kanban.md` file without explicit conflict approval.
+- Never delete `.claude/mpi-kanban/` automatically after migration.
 - Never overwrite an existing profile or index without showing diff and
   getting approval.
 - Memory writes use `AskUserQuestion` before removing or modifying existing
@@ -234,6 +262,7 @@ Output to the user:
 - `mpi-init` to bootstrap the kanban board.
 - `mpi-project-mode` to change mode later.
 - `mpi-project-refresh` when the profile or index drifts.
+
 
 
 

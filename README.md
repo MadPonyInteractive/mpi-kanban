@@ -59,7 +59,7 @@ extension renders it as an interactive board:
 
 ![Mpi-Kanban board in VS Code](./imgs/board.png)
 
-Without the extension, `.claude/mpi-kanban/kanban.md` still works as Markdown.
+Without the extension, `.agents/mpi-kanban/kanban.md` still works as Markdown.
 
 ## Workflow
 
@@ -107,7 +107,7 @@ truth.
 
 ## Per-Project Config
 
-For rule briefings and worker bundles, create `.claude/mpi-kanban.local.md`
+For rule briefings and worker bundles, create `.agents/mpi-kanban.local.md`
 using the template at
 `skills/mpi-brief-rule/templates/mpi-kanban.local.md`.
 
@@ -136,3 +136,5 @@ above.
 ## License
 
 MIT - see [LICENSE](LICENSE).
+
+

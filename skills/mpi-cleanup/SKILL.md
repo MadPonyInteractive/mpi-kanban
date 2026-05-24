@@ -21,7 +21,7 @@ Cache that root path for the rest of this session. All references below resolve 
 ## Purpose
 
 Conservatively clean workflow artifacts so `docs/plans/`, legacy
-`docs/handoffs/`, `.claude/mpi-kanban/`, and eventually
+`docs/handoffs/`, `.agents/mpi-kanban/`, and eventually
 `.agents/mpi-kanban/state/` do not become stale junk drawers.
 
 This skill proposes cleanup first and waits for approval before editing or
@@ -42,8 +42,8 @@ Scan:
 - `.agents/mpi-kanban/state/handoffs/*.json`
 - `.agents/mpi-kanban/project-profile.md`
 - `.agents/mpi-kanban/project-knowledge-index.md`
-- `.claude/mpi-kanban/archived*.md`
-- `.claude/mpi-kanban/kanban.md`
+- `.agents/mpi-kanban/archived*.md`
+- `.agents/mpi-kanban/kanban.md`
 
 Classify artifacts:
 
@@ -109,6 +109,7 @@ Report:
 - files archived,
 - files deleted,
 - files left for manual review.
+
 
 
 

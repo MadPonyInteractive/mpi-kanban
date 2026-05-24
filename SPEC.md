@@ -14,7 +14,7 @@ The workflow is:
 brainstorm -> create-plan/create-large-plan -> continue -> handoff/continue -> end-session -> cleanup
 ```
 
-The human board lives at `.claude/mpi-kanban/kanban.md`. Machine-readable
+The human board lives at `.agents/mpi-kanban/kanban.md`. Machine-readable
 coordination state lives separately under `.agents/mpi-kanban/state/`.
 
 ## 2. Distribution
@@ -84,8 +84,19 @@ Codex plugin roots, or any runtime-specific plugin packaging feature.
 The board lives at:
 
 ```text
+<project-root>/.agents/mpi-kanban/kanban.md
+```
+
+Legacy projects may still contain:
+
+```text
 <project-root>/.claude/mpi-kanban/kanban.md
 ```
+
+`mpi-project-setup` is responsible for proposing migration of legacy board
+files from `.claude/mpi-kanban/` to `.agents/mpi-kanban/`. It must list the
+files to move, preserve unknown files, and ask before overwriting an existing
+target or deleting the legacy directory.
 
 Fixed columns:
 
@@ -232,7 +243,7 @@ session to `mpi-continue`.
 Project config lives at:
 
 ```text
-<project-root>/.claude/mpi-kanban.local.md
+<project-root>/.agents/mpi-kanban.local.md
 ```
 
 It may define `rules:` and optional `bundles:`. `mpi-brief-rule <name>` returns
@@ -277,4 +288,8 @@ Validation must check:
 - Kanban schema remains unchanged.
 - Coordination state remains under `.agents/mpi-kanban/state/`.
 - Project profile/index remain under `.agents/mpi-kanban/`.
+- `mpi-project-setup` can migrate legacy `.claude/mpi-kanban/` board files to
+  `.agents/mpi-kanban/` with explicit approval and no silent overwrites.
 - Validator passes.
+
+

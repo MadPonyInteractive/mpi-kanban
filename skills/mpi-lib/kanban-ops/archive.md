@@ -11,9 +11,9 @@ also read `errors.md`.
 Archive files live beside the board:
 
 ```text
-<project-root>/.claude/mpi-kanban/archived.md
-<project-root>/.claude/mpi-kanban/archived-2.md
-<project-root>/.claude/mpi-kanban/archived-3.md
+<project-root>/.agents/mpi-kanban/archived.md
+<project-root>/.agents/mpi-kanban/archived-2.md
+<project-root>/.agents/mpi-kanban/archived-3.md
 ```
 
 Use `archived.md` first. If it exists and is over 200 lines, choose the first
@@ -26,7 +26,7 @@ verbatim entry blocks grouped by archive batch.
 
 ## `selectArchiveFile()`
 
-1. Resolve archive directory: `<project-root>/.claude/mpi-kanban/`.
+1. Resolve archive directory: `<project-root>/.agents/mpi-kanban/`.
 2. Check `archived.md`.
 3. If `archived.md` does not exist, use it.
 4. If it exists and has 200 lines or fewer, use it.
@@ -54,7 +54,7 @@ Procedure:
 
 1. Read `find.md` for `findKanban()`.
 2. Call `findKanban()`. If the board is missing, abort with:
-   `Error: No kanban.md found at .claude/mpi-kanban/kanban.md. Nothing to archive.`
+   `Error: No kanban.md found at .agents/mpi-kanban/kanban.md. Nothing to archive.`
    Do not call `ensureKanban()` for archive requests.
 3. Read `_schema.md` for the column and entry block shape.
 4. Collect matching entry blocks:
@@ -70,7 +70,7 @@ Procedure:
    ```markdown
    ## Archived YYYY-MM-DD
 
-   Source: .claude/mpi-kanban/kanban.md
+   Source: .agents/mpi-kanban/kanban.md
 
    ### Entry Title
 
@@ -89,8 +89,8 @@ Procedure:
 10. Verify `kanban.md` still contains the four locked H2 headings and no
     archived title remains in its original location.
 11. Report the result with clickable links:
-    - `[kanban.md](.claude/mpi-kanban/kanban.md)`
-    - `[archived.md](.claude/mpi-kanban/<archive-file>)`
+    - `[kanban.md](.agents/mpi-kanban/kanban.md)`
+    - `[archived.md](.agents/mpi-kanban/<archive-file>)`
 
 ---
 
@@ -99,7 +99,8 @@ Procedure:
 - Never archive by fuzzy title match. If the title is not exact, list likely
   candidates and ask the user to choose.
 - Never delete an entry block before it has been written to an archive file.
-- Never create archive files outside `.claude/mpi-kanban/`.
+- Never create archive files outside `.agents/mpi-kanban/`.
 - Never modify entry metadata while archiving. Preserve the block verbatim.
 - Do not call `ensureKanban()` for archive operations. Archiving a missing
   board is a no-op with an error report, not a bootstrap event.
+

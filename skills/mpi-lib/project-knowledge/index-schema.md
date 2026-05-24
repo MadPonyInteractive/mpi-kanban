@@ -43,7 +43,7 @@ Each topic block uses this shape:
 ### <topic name>
 
 - **Read first:** `<pointer>`, `<pointer>`
-- **Rules:** `.claude/rules/<file>.md` (optional)
+- **Rules:** `.agents/rules/<file>.md` (optional)
 - **Memory:** `<memory pointer or "none">`
 - **Notes:** one short line of context (optional)
 ```
@@ -54,7 +54,7 @@ Example:
 ### Auth and sessions
 
 - **Read first:** `docs/architecture/auth.md`, `src/auth/README.md`
-- **Rules:** `.claude/rules/auth.md`
+- **Rules:** `.agents/rules/auth.md`
 - **Memory:** `~/.claude/memory/domain/auth-providers.md`
 - **Notes:** session storage is mid-migration; see profile `## Open Gaps`.
 ```
@@ -64,8 +64,8 @@ Example:
 Files that always belong in context, regardless of topic. Usually short.
 
 ```markdown
-- `CLAUDE.md`, `AGENTS.md`
-- `.claude/rules/*.md` when listed by topic
+- `AGENTS.md`, `CLAUDE.md`
+- `.agents/rules/*.md` when listed by topic
 ```
 
 ### `## Topic Gaps`
@@ -81,12 +81,13 @@ Topics the index knows are missing or incomplete. Pairs with the profile's
 
 - Index entries point at existing files. Do not invent docs that are not on
   disk.
-- Prefer existing rule files in `.claude/rules/` and existing docs over
+- Prefer existing rule files in `.agents/rules/` and existing docs over
   proposing new MPI-specific files.
-- Memory pointers reference Claude memory files (`~/.claude/memory/...`) or
-  project memory under the project's memory directory. Never duplicate
-  memory content into the index.
+- Memory pointers reference existing user or project memory files when the
+  agent environment provides them. Never duplicate memory content into the
+  index.
 - `mpi-project-refresh` rewrites topics when files move or get renamed and
   proposes new topics when work introduces a new subsystem.
 - `mpi-end-session` proposes index edits when implementation introduced or
   renamed a topic-worthy file.
+

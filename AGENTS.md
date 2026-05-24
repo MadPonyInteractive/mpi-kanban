@@ -44,14 +44,14 @@ The paired VS Code extension lives next to this repository:
 - GitHub: `https://github.com/MadPonyInteractive/mpi-kanban-vscode`
 - Marketplace ID: `MadPonyInteractive.mpi-kanban`
 
-The extension watches `.claude/mpi-kanban/kanban.md`. Do not change the board
+The extension watches `.agents/mpi-kanban/kanban.md`. Do not change the board
 path or schema unless the extension contract also changes.
 
 ## Coordination State
 
 The human-visible board remains:
 
-- `.claude/mpi-kanban/kanban.md`
+- `.agents/mpi-kanban/kanban.md`
 
 The canonical machine-readable coordination state lives under:
 
@@ -80,3 +80,4 @@ deep-loading rules, docs, or memory. Mode contracts and update rules live under
 For normal Codex work outside this repository, treat this plugin directory as
 read-only reference material. Edit this repository only when the user asks to
 modify Mpi-Kanban itself.
+

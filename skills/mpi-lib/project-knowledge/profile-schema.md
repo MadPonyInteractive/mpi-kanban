@@ -53,7 +53,7 @@ convention is enforced or documented if applicable.
 
 ```markdown
 - New API routes go under `src/api/routes/` and register in `routes/index.py`.
-- Tests live next to source as `*_test.py`. See `.claude/rules/testing.md`.
+- Tests live next to source as `*_test.py`. See `.agents/rules/testing.md`.
 ```
 
 If there are no project-specific conventions yet, write a single line:
@@ -77,7 +77,7 @@ Files a fresh agent should read before touching code. Pointer-only.
 ```markdown
 - `README.md`
 - `docs/architecture/overview.md`
-- `.claude/rules/components.md`
+- `.agents/rules/components.md`
 ```
 
 ### `## Open Gaps`
@@ -115,3 +115,4 @@ rather than rewriting prior notes.
   appends a `## Mode Notes` bullet.
 - Profile edits prefer pointers to existing docs/rules over copying content.
 - Profile edits preserve sections the user has clearly customized.
+

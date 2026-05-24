@@ -1,4 +1,4 @@
-# kanban-ops/find — locate the board and its entries
+# kanban-ops/find â€” locate the board and its entries
 
 Read this when you need to find the board, ensure it exists, list entries, or
 find a specific entry. For schema/regexes see `_schema.md`. For mutations see
@@ -11,10 +11,10 @@ root of the sibling `mpi-lib` support skill.
 
 ## `findKanban()`
 
-1. Resolve path: `<project-root>/.claude/mpi-kanban/kanban.md`.
+1. Resolve path: `<project-root>/.agents/mpi-kanban/kanban.md`.
 2. Try `Read`.
-3. If found → return path + contents.
-4. If missing → return `null`. Caller decides: bootstrap (`ensureKanban`) or
+3. If found â†’ return path + contents.
+4. If missing â†’ return `null`. Caller decides: bootstrap (`ensureKanban`) or
    surface a setup notice.
 
 ---
@@ -22,18 +22,18 @@ root of the sibling `mpi-lib` support skill.
 ## `ensureKanban()`
 
 1. Call `findKanban()`.
-2. If found → return path.
+2. If found â†’ return path.
 3. If missing:
    a. `Read` `<mpi-lib-root>/templates/kanban.md`.
-   b. `Write` contents to `<project-root>/.claude/mpi-kanban/kanban.md`. The
-      Write tool will create the `.claude/mpi-kanban/` directory.
+   b. `Write` contents to `<project-root>/.agents/mpi-kanban/kanban.md`. The
+      Write tool will create the `.agents/mpi-kanban/` directory.
    c. Emit one-time setup notice in chat:
-      - Clickable link: `[kanban.md](.claude/mpi-kanban/kanban.md)`
+      - Clickable link: `[kanban.md](.agents/mpi-kanban/kanban.md)`
       - Extension link: `https://github.com/MadPonyInteractive/mpi-kanban-vscode`
       - One-line note: "Install the extension to see this file as an interactive board."
 4. Return path.
 
-**Skip `ensureKanban` for `mpi-brief-rule`** — that skill is board-independent.
+**Skip `ensureKanban` for `mpi-brief-rule`** â€” that skill is board-independent.
 
 ---
 
@@ -42,7 +42,7 @@ root of the sibling `mpi-lib` support skill.
 Return the clickable markdown link to print in chat whenever referencing the board:
 
 ```
-[kanban.md](.claude/mpi-kanban/kanban.md)
+[kanban.md](.agents/mpi-kanban/kanban.md)
 ```
 
 ---
@@ -63,11 +63,12 @@ Return the clickable markdown link to print in chat whenever referencing the boa
 1. For each column in order: `BACKLOG`, `PLANNING`, `IMPLEMENTING`, `COMPLETED`.
 2. Run `listEntries(column)`.
 3. Return first entry matching `predicate`, plus its column.
-4. None match → return `null`.
+4. None match â†’ return `null`.
 
 Common predicates:
 
-- `entry.title === <title>` — `mpi-create-plan` / `mpi-create-large-plan`
+- `entry.title === <title>` â€” `mpi-create-plan` / `mpi-create-large-plan`
   matching an existing BACKLOG entry by title.
-- Body contains `Plan file: <path>` — `mpi-continue`, `mpi-end-session`,
+- Body contains `Plan file: <path>` â€” `mpi-continue`, `mpi-end-session`,
   `mpi-handoff`, and `mpi-cleanup` locating the entry tied to the active plan.
+

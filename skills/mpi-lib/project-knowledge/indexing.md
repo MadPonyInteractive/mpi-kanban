@@ -43,3 +43,4 @@ fix later.
   topic.
 - When a sub-agent investigation is needed, brief the sub-agent with the
   profile mode and the relevant topic block, not the whole project.
+

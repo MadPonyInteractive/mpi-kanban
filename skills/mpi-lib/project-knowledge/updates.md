@@ -14,11 +14,11 @@ All writes require explicit user approval, except where called out below.
 - **Edits to an existing profile or index:** the proposal shows current
   content vs proposed content per section. The skill writes only after the
   user approves each section change.
-- **Rule files (`.claude/rules/*.md`):** setup and refresh may propose new
+- **Rule files (`.agents/rules/*.md`):** setup and refresh may propose new
   rule files or edits to existing rule files when reusable project-specific
   conventions need a dedicated home. ASK per file. Cardinal rule, same as
   `mpi-end-session`. Never create or edit a rule without explicit approval.
-- **Edits to memory:** prefer pointing at existing Claude memory. Only
+- **Edits to memory:** prefer pointing at existing project/user memory. Only
   propose new or changed memory entries when the user agrees the knowledge
   belongs in memory and not in the profile/index/rules. Use
   `AskUserQuestion` before removing or modifying existing memory entries.
@@ -69,3 +69,4 @@ Report drift findings in a single proposal. Do not auto-fix.
   is stale.
 - `mpi-end-session` always runs the lightweight pass for the current
   session's touched files. It surfaces nothing when nothing has drifted.
+

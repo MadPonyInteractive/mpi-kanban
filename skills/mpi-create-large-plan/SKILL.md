@@ -146,7 +146,7 @@ If no entry matches:
 Confirm:
 
 ```text
-Kanban: "<title>" -> PLANNING. [kanban.md](.claude/mpi-kanban/kanban.md)
+Kanban: "<title>" -> PLANNING. [kanban.md](.agents/mpi-kanban/kanban.md)
 Next: say "continue this plan" to start, or "create a handoff" if you want a fresh session first.
 ```
 
@@ -160,6 +160,7 @@ Next: say "continue this plan" to start, or "create a handoff" if you want a fre
 ## Related invocations
 
 - Related skills: `mpi-create-plan`, `mpi-continue`, `mpi-execute-parallel`.
+
 
 
 

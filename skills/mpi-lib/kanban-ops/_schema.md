@@ -1,4 +1,4 @@
-# kanban-ops/_schema — board file schema
+# kanban-ops/_schema â€” board file schema
 
 Reference for any skill touching `kanban.md`. Read this first when you do not
 already know the column/entry/metadata layout.
@@ -8,12 +8,12 @@ already know the column/entry/metadata layout.
 ## File location
 
 ```
-<project-root>/.claude/mpi-kanban/kanban.md
+<project-root>/.agents/mpi-kanban/kanban.md
 ```
 
-NOT at project root. NOT inside `.claude/` directly. Always inside the
-`.claude/mpi-kanban/` subfolder. The board file is separate from per-project
-plugin config (`.claude/mpi-kanban.local.md`) so `.claude/*.local.md`
+NOT at project root. NOT inside `.claude/`. Always inside the
+`.agents/mpi-kanban/` subfolder. The board file is separate from per-project
+plugin config (`.agents/mpi-kanban.local.md`) so `.agents/*.local.md`
 gitignores can cover config without ignoring the board.
 
 ---
@@ -56,7 +56,7 @@ column. An empty column is just the H2 header, a blank line, and the next H2.
 
 Notes on shape:
 
-- Title is an H3 (`### `). Title text is the entry's identity — duplicates
+- Title is an H3 (`### `). Title text is the entry's identity â€” duplicates
   within the same `kanban.md` are an error.
 - Metadata bullets: 2-space-indented, single-dash, immediately under title.
 - Body fence: 4-space-indented ```` ```md ```` block. Belongs with the entry
@@ -95,3 +95,4 @@ Notes on shape:
 | Body fence open | ` ^    ` ```md` | 4-space indent + ```` ```md ````. |
 | Body fence close | ` ^    ` ``` ` | 4-space indent + ```` ``` ````. |
 | Plan-file ref (in body) | `^Plan [Ff]ile:\s*(.+)$` | Multiline, body content only. |
+

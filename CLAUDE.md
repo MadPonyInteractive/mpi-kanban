@@ -31,7 +31,7 @@ be `MadPonyInteractive.mpi-kanban`. It is a fork of
 `holooooo.markdown-kanban`; keep the original MIT copyright in the extension
 `LICENSE` and keep fork attribution in the extension `NOTICE`.
 
-The fork intentionally watches only `.claude/mpi-kanban/kanban.md`.
+The fork intentionally watches only `.agents/mpi-kanban/kanban.md`.
 
 ## Source of Truth
 
@@ -74,3 +74,4 @@ C:\AI\Mpi\Plugins\Mpi-Kanban
 
 Do not commit anything to other projects from this build. CubricStudio and
 other workspaces are integration-test targets only.
+

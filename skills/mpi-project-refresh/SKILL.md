@@ -93,6 +93,8 @@ Per `<mpi-lib-root>/project-knowledge/updates.md`:
     they did before.
   - Rule files referenced by the index still exist.
   - Memory pointers still resolve.
+  - Legacy `.claude/mpi-kanban/` board files are absent, or have a proposed
+    migration path to `.agents/mpi-kanban/`.
 
 Cap inspection to a sane budget. Sample, do not enumerate every file. If
 the repo is too large for a full audit, say so and narrow scope with the
@@ -125,7 +127,9 @@ Single message containing:
    - "New subsystem at `src/workers/` has no topic block - propose new
      topic 'Workers'."
    - "Convention drift: `tests/` location not consistent with rule
-     `.claude/rules/testing.md` - ask user which is canonical."
+     `.agents/rules/testing.md` - ask user which is canonical."
+   - "Legacy board path `.claude/mpi-kanban/kanban.md` still exists -
+     propose migration to `.agents/mpi-kanban/kanban.md`."
 3. Mode reassessment line (current mode + evidence + recommendation or
    "no change recommended").
 4. Newly inspected sources (from `<mpi-lib-root>/project-knowledge/adoption.md`) with
@@ -153,12 +157,15 @@ After approval, in order:
 2. Update `.agents/mpi-kanban/project-knowledge-index.md` per approved
    findings. Bump `last_refresh` to today.
 3. Apply approved rule file creations or edits per file. ASK before touching
-   any `.claude/rules/*.md` per `<mpi-lib-root>/project-knowledge/updates.md`. New rule
+   any `.agents/rules/*.md` per `<mpi-lib-root>/project-knowledge/updates.md`. New rule
    files are appropriate when refresh finds reusable project-specific
    conventions that should be briefable to future agents or workers.
-4. Apply approved memory pointer edits. Use `AskUserQuestion` before
+4. Apply approved legacy board migrations from `.claude/mpi-kanban/` to
+   `.agents/mpi-kanban/`, with the same no-overwrite rule as
+   `mpi-project-setup`.
+5. Apply approved memory pointer edits. Use `AskUserQuestion` before
    removing or modifying existing memory entries.
-5. Apply approved `AGENTS.md` or `CLAUDE.md` pointer edits. Preserve
+6. Apply approved `AGENTS.md` or `CLAUDE.md` pointer edits. Preserve
    existing content; pointer-first additions only.
 
 ### 7. Final report
@@ -189,6 +196,7 @@ Refresh applied.
 - `mpi-project-setup` to establish missing artifacts.
 - `mpi-project-mode` to change mode.
 - `mpi-end-session` runs the lightweight refresh for session-touched files.
+
 
 
 

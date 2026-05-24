@@ -22,7 +22,7 @@ dialogue.
 
 Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
-Start by understanding the current project context only when needed â€” only
+Start by understanding the current project context only when needed Ã¢â‚¬â€ only
 docs/rules relevant to the topic, or what the user explicitly calls out. Do
 not exhaustively scan everything.
 
@@ -30,7 +30,7 @@ not exhaustively scan everything.
 Do NOT invoke any implementation skill, write any code, scaffold any project,
 or take any implementation action until you have presented a design AND the
 user has approved it. The entire value of brainstorming is catching design
-mistakes before they become code â€” rushing to implementation defeats the
+mistakes before they become code Ã¢â‚¬â€ rushing to implementation defeats the
 purpose.
 </HARD-GATE>
 
@@ -38,14 +38,14 @@ purpose.
 
 1. **Explore context only if needed.** Check files, docs, or rules only when
    the topic directly involves them. If nothing is obviously relevant, skip.
-2. **Ask clarifying questions** â€” one at a time. Understand purpose,
+2. **Ask clarifying questions** Ã¢â‚¬â€ one at a time. Understand purpose,
    constraints, success criteria.
 3. **Propose 2-3 approaches** with trade-offs and your recommendation.
 4. **Present design in sections** scaled to complexity. After each section ask
    a specific question (e.g. "Does this approach work for you?") and wait for
    a response before continuing.
 5. **Capture the idea on the kanban board.** See "After design approved" below.
-6. **Ask: want a plan?** "Do you want to create a plan for this?" â†’ if yes,
+6. **Ask: want a plan?** "Do you want to create a plan for this?" Ã¢â€ â€™ if yes,
    invoke `mpi-create-plan` for normal work or `mpi-create-large-plan` for
    complex/adaptive work, passing the BACKLOG entry title forward in the
    prompt context. Session ends.
@@ -63,19 +63,19 @@ context lean.
 
 ## Key principles
 
-- **One question at a time** â€” don't overwhelm.
-- **Multiple choice preferred** â€” easier to answer than open-ended.
-- **YAGNI ruthlessly** â€” remove unnecessary features.
-- **Explore alternatives** â€” propose 2-3 approaches before settling.
-- **Incremental validation** â€” present one section, get approval, continue.
+- **One question at a time** Ã¢â‚¬â€ don't overwhelm.
+- **Multiple choice preferred** Ã¢â‚¬â€ easier to answer than open-ended.
+- **YAGNI ruthlessly** Ã¢â‚¬â€ remove unnecessary features.
+- **Explore alternatives** Ã¢â‚¬â€ propose 2-3 approaches before settling.
+- **Incremental validation** Ã¢â‚¬â€ present one section, get approval, continue.
 
 ## After design approved (BEFORE asking "Want a plan?")
 
 Lib pointers (read each only when its recipe is actually needed):
 
-- `<mpi-lib-root>/kanban-ops/find.md` â€” `ensureKanban`, `findEntry`
-- `<mpi-lib-root>/kanban-ops/mutate.md` â€” `createEntry`
-- `<mpi-lib-root>/kanban-ops/_schema.md` â€” entry shape (only if you
+- `<mpi-lib-root>/kanban-ops/find.md` Ã¢â‚¬â€ `ensureKanban`, `findEntry`
+- `<mpi-lib-root>/kanban-ops/mutate.md` Ã¢â‚¬â€ `createEntry`
+- `<mpi-lib-root>/kanban-ops/_schema.md` Ã¢â‚¬â€ entry shape (only if you
   need a schema reminder before building the entry)
 
 Steps:
@@ -87,7 +87,7 @@ Steps:
 
 2. Ask the user ONCE for the priority of this idea:
    ```
-   Priority for the kanban entry? (high / medium / low â€” default medium)
+   Priority for the kanban entry? (high / medium / low Ã¢â‚¬â€ default medium)
    ```
    Default to `medium` if the user gives no answer.
 
@@ -95,10 +95,10 @@ Steps:
    - **Title:** 2-4 word slug from the idea (e.g. "Video history support",
      "Refactor mount adapter").
    - **Tags:** infer ONE from the idea content:
-     - `[bug]` â€” fixing broken behavior.
-     - `[feature]` â€” new user-facing capability.
-     - `[refactor]` â€” internal restructure with no behavior change.
-     - `[Idea]` â€” exploratory or speculative; default if unclear.
+     - `[bug]` Ã¢â‚¬â€ fixing broken behavior.
+     - `[feature]` Ã¢â‚¬â€ new user-facing capability.
+     - `[refactor]` Ã¢â‚¬â€ internal restructure with no behavior change.
+     - `[Idea]` Ã¢â‚¬â€ exploratory or speculative; default if unclear.
    - **priority:** the value the user gave (or `medium`).
    - **defaultExpanded:** `true`.
    - **body:** 2-3 line summary of the idea.
@@ -108,7 +108,7 @@ Steps:
    `createEntry("BACKLOG", entry)`. If `findEntry(e => e.title === <title>)`
    already returns a hit, ask the user for a distinguishing suffix and retry.
 
-5. Confirm to the user: `Captured on board: "<title>" â†’ BACKLOG. [kanban.md](.claude/mpi-kanban/kanban.md)`.
+5. Confirm to the user: `Captured on board: "<title>" Ã¢â€ â€™ BACKLOG. [kanban.md](.agents/mpi-kanban/kanban.md)`.
 
 ## New-project routing
 
@@ -130,7 +130,7 @@ project knowledge before planning, or proceed directly to a plan.
 After the BACKLOG entry is captured:
 
 1. Ask: **"Do you want to create a plan for this?"**
-2. If **yes** â†’ choose the plan skill:
+2. If **yes** Ã¢â€ â€™ choose the plan skill:
    - Use `mpi-create-plan` by default for compact, normal work.
    - Use `mpi-create-large-plan` when the work is complex, uncertain,
      multi-phase, likely to benefit from parallel investigation, or splittable
@@ -138,9 +138,9 @@ After the BACKLOG entry is captured:
      eligibility alone is enough reason to choose the large-plan path, since
      compact plans cannot carry `## Parallel Batch` sections.
    Include in the prompt context: the BACKLOG entry title (skills don't pass
-   arguments natively â€” pass it as prose, e.g. "Create a plan for the BACKLOG
+   arguments natively Ã¢â‚¬â€ pass it as prose, e.g. "Create a plan for the BACKLOG
    entry titled \"<title>\""). The plan skill will move the entry to PLANNING.
-3. If **no** â†’ session ends. Entry stays in BACKLOG until someone runs
+3. If **no** Ã¢â€ â€™ session ends. Entry stays in BACKLOG until someone runs
    ``mpi-create-plan` / `mpi-create-large-plan` against it later.
 
 **No auto-invocation past this point.** The user is always in control.
@@ -148,8 +148,9 @@ After the BACKLOG entry is captured:
 ## Hard rules
 
 - No design or code work before the user approves the design.
-- The BACKLOG entry is created by THIS skill â€” not by the user, not by the
+- The BACKLOG entry is created by THIS skill Ã¢â‚¬â€ not by the user, not by the
   next skill in the chain.
+
 
 
 

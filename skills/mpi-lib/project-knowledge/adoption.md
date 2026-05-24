@@ -11,10 +11,11 @@ Look at the project root and the conventional locations, in this order:
 
 - `AGENTS.md`
 - `CLAUDE.md`
-- `.claude/rules/*.md`
+- `.agents/rules/*.md`
 - `README.md`
 - `docs/` (especially `docs/architecture/`, `docs/PROJECT.md`,
   `docs/conventions.md`, `docs/contributing.md`)
+- legacy MPI board/workflow files under `.claude/mpi-kanban/`
 - `CONTRIBUTING.md`, `CONTRIBUTING.rst`
 - existing memory: project memory directory and any `MEMORY.md`
 - backlog/process files (`backlog.md`, `TODO.md`, `ROADMAP.md`,
@@ -55,12 +56,14 @@ The map is shown to the user for approval. Shape:
   surface.
 - `docs/architecture/overview.md` -> **small update**. Diagram references
   `src/v1/` which moved to `src/api/`. Propose one-line fix.
-- `.claude/rules/components.md` -> **usable as-is**. Knowledge index topic
+- `.agents/rules/components.md` -> **usable as-is**. Knowledge index topic
   "Components" will point here.
 - `docs/old-arch.md` -> **superseded historical reference**. Move into
   `docs/archive/` or leave with a top-of-file note.
 - `TODO.md` -> **index pointer**. Stays where it is; index lists it under
   backlog.
+- `.claude/mpi-kanban/kanban.md` -> **small update**. Propose migration to
+  `.agents/mpi-kanban/kanban.md`.
 - `CONTRIBUTING.md` and `README.md` disagree on the dev server command ->
   **conflict / uncertain**. Ask the user.
 ```
@@ -92,3 +95,4 @@ Setup and refresh must prefer:
 The reason: parallel MPI files that duplicate existing project docs cause
 drift. The project profile and knowledge index are pointers first,
 canonical content last.
+

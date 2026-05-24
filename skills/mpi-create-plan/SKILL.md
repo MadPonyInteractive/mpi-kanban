@@ -116,7 +116,7 @@ If no entry matches:
 Confirm:
 
 ```text
-Kanban: "<title>" -> PLANNING. [kanban.md](.claude/mpi-kanban/kanban.md)
+Kanban: "<title>" -> PLANNING. [kanban.md](.agents/mpi-kanban/kanban.md)
 Next: say "continue this plan" to start implementation.
 ```
 
@@ -127,6 +127,7 @@ Next: say "continue this plan" to start implementation.
 - Do not add `## Parallel Batch` syntax to a compact plan.
 - If the work obviously needs phased investigation, or splits into independent
   parallel implementation tasks, redirect to `mpi-create-large-plan`.
+
 
 
 

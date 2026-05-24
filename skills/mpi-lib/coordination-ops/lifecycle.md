@@ -27,7 +27,7 @@ Related references:
    {
      "schema": "mpi-kanban/state-index/v1",
      "updated_at": "<ISO-8601 timestamp>",
-     "board": ".claude/mpi-kanban/kanban.md",
+     "board": ".agents/mpi-kanban/kanban.md",
      "heartbeat_timeout_minutes": 120,
      "active_sessions": [],
      "active_tasks": [],
@@ -185,3 +185,4 @@ Suggested summary tags:
 - `handoff-ready`
 
 Update tags sparingly because the kanban board is a single shared file.
+

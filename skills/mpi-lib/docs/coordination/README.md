@@ -1,13 +1,13 @@
 # Shared Agent Coordination Contract
 
-Phase 1 defines the shared coordination contract for Claude and Codex agents.
+This document defines the shared coordination contract for agents.
 Phase 2 adds shared lifecycle procedures for sessions, tasks, file claims,
 handoffs, stale claims, and cleanup behavior.
 
 The human board remains:
 
 ```text
-.claude/mpi-kanban/kanban.md
+.agents/mpi-kanban/kanban.md
 ```
 
 The canonical machine-readable coordination state lives under:
@@ -36,3 +36,4 @@ Lifecycle references:
 
 - [../../coordination-ops/statuses.md](../../coordination-ops/statuses.md) - shared status vocabulary.
 - [../../coordination-ops/lifecycle.md](../../coordination-ops/lifecycle.md) - session, task, file-claim, handoff, and close operations.
+

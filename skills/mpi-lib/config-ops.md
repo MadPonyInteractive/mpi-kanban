@@ -1,4 +1,4 @@
-# config-ops — operations on `.claude/mpi-kanban.local.md`
+# config-ops â€” operations on `.agents/mpi-kanban.local.md`
 
 Reference doc loaded by skills that need to read the per-project plugin
 config. `mpi-brief-rule` consumes this directly; worker-dispatch skills use it
@@ -9,11 +9,11 @@ through `mpi-brief-rule`.
 ## File location
 
 ```
-<project-root>/.claude/mpi-kanban.local.md
+<project-root>/.agents/mpi-kanban.local.md
 ```
 
 The `.local.md` suffix lets the user gitignore it via the standard
-`.claude/*.local.md` pattern. The file is ALWAYS user-managed — never
+`.agents/*.local.md` pattern. The file is ALWAYS user-managed â€” never
 auto-create it (config is project-specific; the user must opt in).
 
 ---
@@ -22,7 +22,7 @@ auto-create it (config is project-specific; the user must opt in).
 
 ```markdown
 ---
-rules_dir: .claude/rules
+rules_dir: .agents/rules
 rules:
   - name: components
     file: components.md
@@ -31,7 +31,7 @@ rules:
 bundles:
   - name: frontend-worker
     rules: [components, events]
-critical_snapshot_file: CLAUDE.md
+critical_snapshot_file: AGENTS.md
 critical_snapshot_anchor: critical-rules-snapshot
 ---
 
@@ -54,10 +54,10 @@ critical_snapshot_anchor: critical-rules-snapshot
 
 ### `loadConfig()`
 
-1. Resolve path: `<project-root>/.claude/mpi-kanban.local.md`.
+1. Resolve path: `<project-root>/.agents/mpi-kanban.local.md`.
 2. Try to `Read` it.
-3. If missing → return `null`. The caller emits the bootstrap notice (below).
-4. If found → parse the YAML frontmatter and return a config object:
+3. If missing â†’ return `null`. The caller emits the bootstrap notice (below).
+4. If found â†’ parse the YAML frontmatter and return a config object:
 
    ```
    {
@@ -100,7 +100,7 @@ FRONTMATTER=$(sed -n '/^---$/,/^---$/{ /^---$/d; p; }' "$FILE")
 RULES_DIR=$(echo "$FRONTMATTER" | grep '^rules_dir:' | sed 's/rules_dir: *//')
 ```
 
-(No hook in v0.1.0 needs this — included for forward reference.)
+(No hook in v0.1.0 needs this â€” included for forward reference.)
 
 ### `getRuleList(config)`
 
@@ -115,13 +115,13 @@ empty or missing, return `[]`.
 ### `resolveRulePath(config, ruleName)`
 
 1. Find the entry in `config.rules` where `name === ruleName`.
-2. If none → return `null`. The caller lists available rule names.
+2. If none â†’ return `null`. The caller lists available rule names.
 3. Otherwise return `<project-root>/<config.rules_dir>/<entry.file>`.
 
 ### `resolveBundle(config, bundleName)`
 
 1. Find the entry in `config.bundles` where `name === bundleName`.
-2. If none → return `null`.
+2. If none â†’ return `null`.
 3. Otherwise return the ordered list of rule names in the bundle.
 4. The caller resolves each rule through `resolveRulePath(config, ruleName)`.
    If any rule is missing, report the broken bundle and stop.
@@ -132,10 +132,10 @@ empty or missing, return `[]`.
 2. `Read` it.
 3. Find the heading whose anchor matches `config.critical_snapshot_anchor`.
    Anchor matching is "lowercase the heading text, replace non-alphanumerics
-   with hyphens" — the standard Markdown anchor convention.
+   with hyphens" â€” the standard Markdown anchor convention.
 4. Return the content from that heading up to (but not including) the next
    heading at the same level or above.
-5. If the file or anchor is missing → return `null` and surface a clear
+5. If the file or anchor is missing â†’ return `null` and surface a clear
    message to the user (they have a config but the snapshot file is broken).
 
 ---
@@ -148,11 +148,11 @@ verbatim (substituting the project-relative path):
 ```
 No mpi-kanban config found.
 
-To enable rule briefings, create [.claude/mpi-kanban.local.md](.claude/mpi-kanban.local.md)
+To enable rule briefings, create [.agents/mpi-kanban.local.md](.agents/mpi-kanban.local.md)
 with this shape:
 
 ---
-rules_dir: .claude/rules
+rules_dir: .agents/rules
 rules:
   - name: components
     file: components.md
@@ -161,14 +161,15 @@ rules:
 bundles:
   - name: frontend-worker
     rules: [components, events]
-critical_snapshot_file: CLAUDE.md
+critical_snapshot_file: AGENTS.md
 critical_snapshot_anchor: critical-rules-snapshot
 ---
 
 Add the rules and optional bundles you want sub-agents to receive briefings for.
 
-Reminder: `.local.md` files are user-local. Add `.claude/*.local.md` to your
+Reminder: `.local.md` files are user-local. Add `.agents/*.local.md` to your
 `.gitignore` if it is not already covered.
 ```
 
-After printing the notice, stop — do not auto-create the file.
+After printing the notice, stop â€” do not auto-create the file.
+

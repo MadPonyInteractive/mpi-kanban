@@ -18,7 +18,7 @@ Cache that root path for the rest of this session. All references below resolve 
 
 `npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 Extract and return the `## Sub-Agent Briefing` section from configured project
-rules, or from a configured bundle of rules. Used as a D4 (Agent â†’ Sub-Agent)
+rules, or from a configured bundle of rules. Used as a D4 (Agent Ã¢â€ â€™ Sub-Agent)
 dispatch mechanism so sub-agents receive rule briefings without manual
 copy-paste.
 
@@ -28,19 +28,19 @@ copy-paste.
 mpi-brief-rule <rule_name>
 ```
 
-`<rule_name>` is one of the names listed in `.claude/mpi-kanban.local.md`
+`<rule_name>` is one of the names listed in `.agents/mpi-kanban.local.md`
 under the `rules:` frontmatter list, or a name under optional `bundles:`.
-The list is project-specific â€” the plugin ships no hardcoded rules.
+The list is project-specific Ã¢â‚¬â€ the plugin ships no hardcoded rules.
 
 ## Process
 
 All recipes (`loadConfig`, `resolveRulePath`, `resolveBundle`, `getRuleList`,
 `getBundleList`, `loadCriticalSnapshot`, bootstrap notice) live in
 `<mpi-lib-root>/config-ops.md`. Read it once when you actually
-need the first recipe â€” not before. Resolve the file from `<mpi-lib-root>`.
+need the first recipe Ã¢â‚¬â€ not before. Resolve the file from `<mpi-lib-root>`.
 
 1. **Load config.** Call `loadConfig()`.
-   - If `null` (file missing) â†’ emit the bootstrap notice from
+   - If `null` (file missing) Ã¢â€ â€™ emit the bootstrap notice from
      `<mpi-lib-root>/config-ops.md` ("No mpi-kanban config found..."), and stop. Do NOT
      auto-create the config.
 
@@ -49,7 +49,7 @@ need the first recipe â€” not before. Resolve the file from `<mpi-lib-root>
      bundle, call `resolveBundle(config, rule_name)`, resolve each rule in
      order, and return all briefings with headings.
    - Otherwise call `resolveRulePath(config, rule_name)`.
-   - If `null` (rule not in config) â†’ list the available rule names from
+   - If `null` (rule not in config) Ã¢â€ â€™ list the available rule names from
      `getRuleList(config)` and available bundle names, then stop. Example output:
      ```
      Rule "<rule_name>" is not configured.
@@ -58,19 +58,19 @@ need the first recipe â€” not before. Resolve the file from `<mpi-lib-root>
      ```
 
 3. **Read the rule file.** `Read` the resolved path.
-   - If the file is missing on disk (config points at a non-existent file) â†’
+   - If the file is missing on disk (config points at a non-existent file) Ã¢â€ â€™
      report the broken path and stop.
 
 4. **Extract the briefing.** Find the `## Sub-Agent Briefing` heading. Return
    everything from that heading up to (but not including) the next `## `
-   heading at the same level (or end of file). Return verbatim â€” no
+   heading at the same level (or end of file). Return verbatim Ã¢â‚¬â€ no
    modification, no summarization.
 
 5. **Fallback to critical snapshot.** If the rule file has no
    `## Sub-Agent Briefing` section, call `loadCriticalSnapshot(config)` and
    return that instead. Prefix the output with one line:
    ```
-   Rule "<rule_name>" has no Sub-Agent Briefing â€” using critical snapshot from <critical_snapshot_file>:
+   Rule "<rule_name>" has no Sub-Agent Briefing Ã¢â‚¬â€ using critical snapshot from <critical_snapshot_file>:
    ```
    - If the critical snapshot also can't be resolved, report both failures
      clearly and stop.
@@ -78,16 +78,17 @@ need the first recipe â€” not before. Resolve the file from `<mpi-lib-root>
 ## Hard rules
 
 - Read-only and non-destructive. Never edit a rule file.
-- Briefing text is returned verbatim â€” no paraphrasing, no summarization.
+- Briefing text is returned verbatim Ã¢â‚¬â€ no paraphrasing, no summarization.
 - Rule and bundle lists are config-driven. The plugin must NOT carry a
   hardcoded list of rule names.
 - Board-independent: do NOT auto-create `kanban.md` when this skill runs.
 
 ## Notes
 
-- This skill is invoked BY a main agent when dispatching sub-agents â€” and is
+- This skill is invoked BY a main agent when dispatching sub-agents Ã¢â‚¬â€ and is
   user-invocable for testing through the installed Agent Skills invocation.
 - Briefing sections may contain markdown formatting; pass it through unchanged.
+
 
 
 
