@@ -69,6 +69,9 @@ extension renders it as an interactive board:
 
 ![Mpi-Kanban board in VS Code](./imgs/board.png)
 
+To open the board, press `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS) and run
+**Mpi-Kanban: Open Mpi-Kanban Board**.
+
 Without the extension, `.agents/mpi-kanban/kanban.md` still works as Markdown.
 
 ## Workflow
