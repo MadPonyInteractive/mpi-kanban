@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-05-24
+
+### Changed
+
+- Documentation updates and project migration housekeeping.
+
 ## [0.6.0] - 2026-05-23
 
 ### Added
@@ -164,7 +170,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.6.1
 [0.6.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.6.0
 [0.5.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.5.1
 [0.5.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.5.0
