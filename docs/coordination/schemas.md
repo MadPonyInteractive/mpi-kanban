@@ -9,7 +9,7 @@ JSON Schemas. Add fields only when they support agent coordination directly.
 {
   "schema": "mpi-kanban/state-index/v1",
   "updated_at": "2026-05-17T12:00:00Z",
-  "board": ".claude/mpi-kanban/kanban.md",
+  "board": ".agents/mpi-kanban/kanban.md",
   "heartbeat_timeout_minutes": 120,
   "active_sessions": [
     ".agents/mpi-kanban/state/sessions/018f6e8a-7b9f-4f0b-85f3-6a11f6de2b1a.json"

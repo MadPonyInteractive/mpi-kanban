@@ -7,7 +7,7 @@ handoffs, stale claims, and cleanup behavior.
 The human board remains:
 
 ```text
-.claude/mpi-kanban/kanban.md
+.agents/mpi-kanban/kanban.md
 ```
 
 The canonical machine-readable coordination state lives under:

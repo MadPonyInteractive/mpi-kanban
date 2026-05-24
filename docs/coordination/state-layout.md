@@ -32,7 +32,7 @@ inspect next.
 The Markdown board remains human-visible state only:
 
 ```text
-.claude/mpi-kanban/kanban.md
+.agents/mpi-kanban/kanban.md
 ```
 
 The board must keep the locked columns and metadata fields required by the VS
