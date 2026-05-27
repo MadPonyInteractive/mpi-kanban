@@ -47,7 +47,8 @@ Scan:
 
 Classify artifacts:
 
-- **Active:** referenced by a PLANNING or IMPLEMENTING kanban entry.
+- **Active:** referenced by a PLANNING, IMPLEMENTING, or VALIDATING kanban
+  entry.
 - **Completed:** referenced by a COMPLETED kanban entry.
 - **Orphaned:** not referenced by any kanban entry or handoff.
 - **Superseded handoff:** older handoff for the same active plan when a newer

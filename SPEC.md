@@ -46,6 +46,8 @@ Old users must reinstall through the npx command above.
 - `mpi-continue` - resume/implement from the active plan, handoff, kanban
   entry, and current repo state.
 - `mpi-execute-parallel` - execute explicit safe `## Parallel Batch` sections.
+- `mpi-nimbalyst-sync` - coordinate Nimbalyst detection, source-of-truth mode,
+  dry-run import/export boundaries, and tracker mappings.
 - `mpi-handoff` - preserve current state in canonical JSON.
 - `mpi-end-session` - sync docs/rules/memory, commit when appropriate, and
   close the active kanban entry when complete.
@@ -104,6 +106,7 @@ Fixed columns:
 ## BACKLOG
 ## PLANNING
 ## IMPLEMENTING
+## VALIDATING
 ## COMPLETED
 ```
 
@@ -116,13 +119,16 @@ Entry metadata fields are locked for VS Code extension compatibility:
 - `defaultExpanded`
 - `steps`
 
-For PLANNING and IMPLEMENTING entries, the body fence must contain:
+For PLANNING, IMPLEMENTING, and VALIDATING entries, the body fence must contain:
 
 ```text
 Plan file: docs/plans/YYYY-MM-DD-<slug>.md
 ```
 
-Skills must not add columns or metadata fields.
+Skills must not add columns outside this locked contract or add metadata
+fields. Legacy four-column boards that omit `VALIDATING` may be read, but any
+workflow that needs to mutate lifecycle state must ask before inserting
+`## VALIDATING` between `## IMPLEMENTING` and `## COMPLETED`.
 
 ## 6. Coordination State
 
@@ -147,6 +153,29 @@ grant commit ownership; the closing or integrating session must reread current
 state and Git state before committing.
 
 Lifecycle references live in `skills/mpi-lib/coordination-ops/`.
+
+### 6.1 Interop Mode State
+
+Durable source-of-truth mode state lives at:
+
+```text
+<project-root>/.agents/mpi-kanban/state/interop.json
+```
+
+When the file is absent, skills must treat the project as `file` mode.
+
+Supported `source_of_truth` values:
+
+- `file` - default portable mode. MPI workflow skills mutate
+  `.agents/mpi-kanban/kanban.md` and coordination state directly.
+- `nimbalyst` - Nimbalyst sessions and trackers are canonical. MPI workflow
+  skills must not live-update both Nimbalyst and `.agents/mpi-kanban/kanban.md`
+  during normal work. Markdown import/export happens only through explicit sync
+  boundaries.
+
+The interop state records last environment detection, last sync/export times,
+and ID mappings between MPI entries and Nimbalyst trackers. Skills must not add
+Nimbalyst IDs or sync metadata to kanban entry fields.
 
 ## 7. Project Knowledge
 
@@ -195,8 +224,8 @@ matches the written plan.
 
 `mpi-continue` is the normal implementation skill. It:
 
-1. Finds active work from a handoff, plan path, IMPLEMENTING entry, or PLANNING
-   entry.
+1. Finds active work from a handoff, plan path, IMPLEMENTING entry, VALIDATING
+   entry, or PLANNING entry.
 2. Reads project profile/index when present.
 3. Reads coordination state when present.
 4. Locates the kanban entry by `Plan file:`.
@@ -206,6 +235,7 @@ matches the written plan.
 8. Updates/annotates plan drift when needed.
 9. Presents a continue brief before implementation.
 10. Presents a post-implementation verification gate before marking work done.
+11. Moves fully implemented work to VALIDATING instead of COMPLETED.
 
 `mpi-continue` does not commit or push.
 
@@ -261,7 +291,7 @@ It never deletes active files and never deletes archives by default.
 
 ## 14. Cross-Agent Skill Distribution
 
-Mpi-Kanban is a 15-skill pack distributed through skills.sh. The install
+Mpi-Kanban is a 16-skill pack distributed through skills.sh. The install
 command always uses `--all`; missing `mpi-lib` is a user installation error.
 
 The pack intentionally accepts a non-standard shared support skill to avoid
@@ -276,16 +306,18 @@ Validation must check:
 - skill names/descriptions satisfy Agent Skills limits;
 - `skills/mpi-lib/SKILL.md` exists;
 - consuming skills include the `mpi-lib` discovery block;
+- interop mode state and references are present;
 - no `${CLAUDE_PLUGIN_ROOT}` references remain;
 - `skills.sh.json` lists real skills.
 
 ## 15. Acceptance Criteria
 
 - `npx skills add MadPonyInteractive/mpi-kanban --all -y -g` installs the pack.
-- `npx skills add MadPonyInteractive/mpi-kanban -l` lists all 15 skills.
+- `npx skills add MadPonyInteractive/mpi-kanban -l` lists all 16 skills.
 - Claude, Codex, and Kilo can invoke one workflow skill after npx install.
 - Workflow skills resolve `mpi-lib` and read shared references successfully.
-- Kanban schema remains unchanged.
+- Kanban schema uses the five locked columns in order:
+  BACKLOG, PLANNING, IMPLEMENTING, VALIDATING, COMPLETED.
 - Coordination state remains under `.agents/mpi-kanban/state/`.
 - Project profile/index remain under `.agents/mpi-kanban/`.
 - `mpi-project-setup` can migrate legacy `.claude/mpi-kanban/` board files to

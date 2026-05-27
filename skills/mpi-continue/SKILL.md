@@ -45,8 +45,9 @@ Find the active work from the first available source:
    `.agents/mpi-kanban/state/handoffs/<uuid>.json` or legacy
    `docs/handoffs/*.json`.
 2. Plan path mentioned by the user or visible in context.
-3. IMPLEMENTING kanban entry with a `Plan file:` body line.
-4. PLANNING kanban entry with a `Plan file:` body line.
+3. VALIDATING kanban entry with a `Plan file:` body line.
+4. IMPLEMENTING kanban entry with a `Plan file:` body line.
+5. PLANNING kanban entry with a `Plan file:` body line.
 
 If none is visible, ask:
 
@@ -63,6 +64,7 @@ Lib pointers, read only when needed:
 - `<mpi-lib-root>/kanban-ops/steps.md` - `addSteps`, `markStep`
 - `<mpi-lib-root>/coordination-ops/lifecycle.md` - session/task/file claim lifecycle
 - `<mpi-lib-root>/coordination-ops/statuses.md` - state vocabulary
+- `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode gate
 - `<mpi-lib-root>/project-knowledge/indexing.md` - context-budget rules
 
 1. Read the handoff if present. If it is a legacy `docs/handoffs/` pointer to a
@@ -76,16 +78,25 @@ Lib pointers, read only when needed:
 3. Read `<mpi-lib-root>/coordination-ops/lifecycle.md`. Call `ensureStateRoot()` when
    coordination state is relevant, then read `state/index.json` as the active
    coordination facade.
-4. Register or renew an `implementer` session and create or attach a task
+4. Read `.agents/mpi-kanban/state/interop.json` when present. If it is missing,
+   assume `file` mode. Include the mode in the Continue Brief. If
+   `source_of_truth` is `nimbalyst`, do not move kanban entries, add steps, or
+   update board state. Defer live work-state changes to Nimbalyst
+   tracker/session instructions, or ask the user to run `mpi-nimbalyst-sync`
+   for an explicit snapshot boundary.
+5. Register or renew an `implementer` session and create or attach a task
    record for the active kanban entry and plan.
-5. Read the active plan.
-6. Locate the kanban entry whose body contains `Plan file: <planPath>`.
-7. If the entry is in PLANNING, move it to IMPLEMENTING and add stable steps:
+6. Read the active plan.
+7. Locate the kanban entry whose body contains `Plan file: <planPath>`.
+   If the board has the legacy four-column shape, ask before inserting
+   `## VALIDATING` between `## IMPLEMENTING` and `## COMPLETED`.
+8. If the entry is in PLANNING and interop mode is `file`, move it to
+   IMPLEMENTING and add stable steps:
    - Compact plan: one step, `Implementation`.
    - Large/adaptive plan: phase-level steps when phases exist; otherwise use
      lifecycle steps: `Orient current state`, `Implement active work`,
      `Verify behavior`, `Preserve knowledge`, `Close session`.
-8. Inspect current workspace state with small commands (`git status`,
+9. Inspect current workspace state with small commands (`git status`,
    targeted file reads/searches). Do not run large diffs unless needed.
 
 ## Orient and detect drift
@@ -134,6 +145,7 @@ Before implementation, output a brief and stop:
 
 **Source:** <plan path and handoff path if any>
 **Project mode:** <profile mode, or "no profile">
+**Interop mode:** <file | nimbalyst | absent>
 **Current state:** <1-3 bullets>
 **Conventions in play:** <1-3 bullets from matched topic block, or "none">
 **Plan drift:** <none or summary of plan edits made/proposed>
@@ -188,14 +200,20 @@ Stop and wait.
    - Move or mark completed work under `## Completed`.
    - Update `## Current State`.
    - Keep `## Remaining Work` accurate.
+   - Keep `## Completed` for plan-level work already finished; this is
+     separate from the kanban `COMPLETED` column.
 3. Complete or release file claims using the lifecycle operation:
    `complete`, `needs_review`, `needs_verification`, `needs_integration`,
    `verified`, or `released` as appropriate.
 4. Update the task record to the appropriate status. Remember that released
    file ownership is not commit ownership; preserve pending-change provenance
    until review/integration/session close resolves it.
-5. Flip the relevant kanban step when a lifecycle/phase boundary is complete.
-   Update kanban tags only as a coarse user-facing summary and only when useful.
+5. In `file` mode, flip the relevant kanban step when a lifecycle/phase
+   boundary is complete. If every implementation step is now done, move the
+   kanban entry from IMPLEMENTING to VALIDATING. Do not move it directly to
+   COMPLETED. Update kanban tags only as a coarse user-facing summary and only
+   when useful. In `nimbalyst` mode, do not mutate `kanban.md`; tell the user
+   which Nimbalyst tracker/session state should be updated instead.
 6. If meaningful work remains, say:
 
 ```text
@@ -205,7 +223,7 @@ Step verified. Say "continue" to keep going, "handoff" to switch sessions, or "e
 7. If the plan is complete, say:
 
 ```text
-Plan complete. Suggested next step: run `mpi-end-session` to preserve docs/rules/memory, commit, and close the kanban entry.
+Plan complete. Suggested next step: run `mpi-end-session` to preserve docs/rules/memory, commit, and move the kanban entry to VALIDATING or, after explicit validation approval, COMPLETED.
 ```
 
 ## If user chooses Option 2

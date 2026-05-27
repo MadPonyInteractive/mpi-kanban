@@ -4,11 +4,11 @@
 
 Project mode: scalable-foundation.
 
-MPI Kanban currently has a locked four-column board contract:
-`BACKLOG`, `PLANNING`, `IMPLEMENTING`, and `COMPLETED`. The contract is
-declared in `SPEC.md`, shared kanban references under `skills/mpi-lib/`, board
-templates, workflow skills, validation tooling, and the companion VS Code
-extension at `C:\AI\Mpi\Plugins\mpi-kanban-vscode`.
+MPI Kanban now has a locked five-column board contract:
+`BACKLOG`, `PLANNING`, `IMPLEMENTING`, `VALIDATING`, and `COMPLETED`. The
+contract is declared in `SPEC.md`, shared kanban references under
+`skills/mpi-lib/`, board templates, workflow skills, validation tooling, and
+the companion VS Code extension at `C:\AI\Mpi\Plugins\mpi-kanban-vscode`.
 
 Nimbalyst already has a native session kanban with phases:
 `backlog`, `planning`, `implementing`, `validating`, and `complete`.
@@ -19,8 +19,8 @@ normal work.
 
 The companion VS Code extension release `v0.1.7` has been pushed with
 backward-compatible `VALIDATING` documentation, parser regression coverage, and
-the MPI logo editor shortcut. Existing four-column boards remain valid until
-the skill pack changes introduce the new lifecycle.
+the MPI logo editor shortcut. Existing four-column boards remain readable and
+get a deliberate migration prompt before lifecycle mutation.
 
 Reference repository: `https://github.com/nimbalyst/nimbalyst`
 
@@ -28,21 +28,23 @@ Reference repository: `https://github.com/nimbalyst/nimbalyst`
 
 - [x] Prepared and pushed `mpi-kanban-vscode` release `v0.1.7` for
   backward-compatible `VALIDATING` support and the MPI logo editor shortcut.
+- [x] Added `VALIDATING` to the MPI board contract, templates, references,
+  workflow wording, validator checks, and this repository's active board.
 
 ## Remaining Work
 
 ## Phase 1: Add VALIDATING To MPI Kanban
 
-- [ ] Define `## VALIDATING` as a first-class board column between
+- [x] Define `## VALIDATING` as a first-class board column between
   `IMPLEMENTING` and `COMPLETED` in the MPI board contract. **Verify:** `SPEC.md`
   and shared schema docs show exactly five columns in the order
   `BACKLOG -> PLANNING -> IMPLEMENTING -> VALIDATING -> COMPLETED`.
-- [ ] Update board templates and parser/reference docs so new boards bootstrap
+- [x] Update board templates and parser/reference docs so new boards bootstrap
   with `VALIDATING`, while existing four-column boards get a deliberate
   migration path. **Verify:** templates under `skills/mpi-lib/` and
   `skills/mpi-init/` contain `## VALIDATING`, and kanban ops docs describe how
   legacy boards are handled.
-- [ ] Update workflow semantics so completed implementation moves to
+- [x] Update workflow semantics so completed implementation moves to
   `VALIDATING`, and only explicit user approval promotes work to `COMPLETED`.
   **Verify:** `mpi-continue`, `mpi-end-session`, and shared step/plan references
   describe the new validation gate consistently.
@@ -53,64 +55,66 @@ Reference repository: `https://github.com/nimbalyst/nimbalyst`
 
 ## Phase 2: Define Source-Of-Truth Modes
 
-- [ ] Add a small durable interop/mode state contract under
+- [x] Add a small durable interop/mode state contract under
   `.agents/mpi-kanban/state/interop.json`. **Verify:** the contract records the
   active source of truth, last detected environment, last sync/export time, and
   ID mappings without adding metadata fields to board entries.
-- [ ] Define `file` mode as the default portable mode where agents mutate
+- [x] Define `file` mode as the default portable mode where agents mutate
   `.agents/mpi-kanban/kanban.md`. **Verify:** non-Nimbalyst environments keep
   the existing workflow behavior, aside from the new `VALIDATING` lifecycle.
-- [ ] Define `nimbalyst` mode as the mode where Nimbalyst sessions/trackers are
+- [x] Define `nimbalyst` mode as the mode where Nimbalyst sessions/trackers are
   canonical and the Markdown board is only imported/exported on explicit
   boundaries. **Verify:** the skill instructions clearly tell agents not to
   update both systems during normal Nimbalyst work.
 
 ## Parallel Batch: Nimbalyst Interop Skill Design
 
-- [ ] Create the `mpi-nimbalyst-sync` skill contract and command vocabulary.
+- [x] Create the `mpi-nimbalyst-sync` skill contract and command vocabulary.
   Ownership: `skills/mpi-nimbalyst-sync/`, `skills.sh.json`, `README.md`.
   Briefings: kanban-board-contract, skill-runtime-references. **Verify:** the
   skill is listed by validation and explains detect/import/export/mode-switch
   flows without implementation ambiguity.
-- [ ] Design environment detection for Nimbalyst availability through MCP tool
+- [x] Design environment detection for Nimbalyst availability through MCP tool
   presence and session phase support. Ownership: `skills/mpi-nimbalyst-sync/`.
   Briefings: skill-runtime-references. **Verify:** the design distinguishes
   Nimbalyst from generic agent environments and has a safe fallback to file
   mode.
-- [ ] Define the Nimbalyst tracker schema and mapping fields for MPI entries.
+- [x] Define the Nimbalyst tracker schema and mapping fields for MPI entries.
   Ownership: `skills/mpi-nimbalyst-sync/`, `docs/`. Briefings:
   kanban-board-contract. **Verify:** mappings cover title, column/phase,
   priority, tags, plan file, board path, tracker ID, and session references.
 
+## Plan Drift
+
+- 2026-05-27: The Nimbalyst Interop Skill Design batch was not eligible for
+  parallel execution because all three tasks claimed `skills/mpi-nimbalyst-sync/`.
+  It was implemented sequentially as one scoped design slice instead.
+
 ## Phase 3: Import And Export Flows
 
-- [ ] Implement file-mode to Nimbalyst import with a dry run first. **Verify:**
+- [x] Implement file-mode to Nimbalyst import with a dry run first. **Verify:**
   a board with BACKLOG, PLANNING, IMPLEMENTING, VALIDATING, and COMPLETED
   entries can be converted into Nimbalyst tracker items without mutating the
   source board unless the user approves.
-- [ ] Implement Nimbalyst to file-mode export/snapshot. **Verify:** Nimbalyst
+- [x] Implement Nimbalyst to file-mode export/snapshot. **Verify:** Nimbalyst
   trackers/sessions can produce a schema-valid `.agents/mpi-kanban/kanban.md`
   with stable plan file references and no unsupported metadata fields.
-- [ ] Add conflict detection for changed items on both sides since the last
+- [x] Add conflict detection for changed items on both sides since the last
   sync boundary. **Verify:** conflicts produce a clear refusal/proposal instead
   of silent overwrites.
 
 ## Phase 4: Workflow Integration
 
-- [ ] Update planning/continue/end-session skills to consult interop mode before
+- [x] Update planning/continue/end-session skills to consult interop mode before
   mutating work state. **Verify:** in `nimbalyst` mode, workflow skills defer to
   Nimbalyst tracker/session instructions; in `file` mode, they mutate the MPI
   board.
-- [ ] Add mode-switch prompts for entering or leaving Nimbalyst. **Verify:** the
+- [x] Add mode-switch prompts for entering or leaving Nimbalyst. **Verify:** the
   user is prompted when the detected environment differs from the last active
   source-of-truth mode.
-- [ ] Document the expected user experience for VS Code, generic agents, and
+- [x] Document the expected user experience for VS Code, generic agents, and
   Nimbalyst. **Verify:** README/install docs explain which system agents update
   in each mode.
-
-## Plan Drift
-
-- None yet.
 
 ## Verification
 

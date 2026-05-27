@@ -123,6 +123,18 @@ Lib pointers, read only when needed:
 
 - `<mpi-lib-root>/kanban-ops/find.md` - `findEntry`, `ensureKanban`
 - `<mpi-lib-root>/kanban-ops/mutate.md` - `moveEntry`, `updateEntry`, `createEntry`
+- `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode gate
+
+Before mutating `kanban.md`, read `.agents/mpi-kanban/state/interop.json` when
+it exists. If `source_of_truth` is `nimbalyst`, do not move or create MPI board
+entries. Report:
+
+```text
+Interop mode is nimbalyst, so Nimbalyst trackers/sessions are canonical. I created the plan file, but I will not update .agents/mpi-kanban/kanban.md. Update the Nimbalyst tracker/session, or run mpi-nimbalyst-sync for an explicit snapshot boundary.
+```
+
+If the file is missing or `source_of_truth` is `file`, continue with the normal
+kanban update below.
 
 If `mpi-brainstorm` passed a BACKLOG title, match that entry. Otherwise ask:
 

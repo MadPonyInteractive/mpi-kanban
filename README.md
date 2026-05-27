@@ -12,8 +12,8 @@ and ship together.
 Skills: `mpi-init`, `mpi-project-setup`, `mpi-project-mode`,
 `mpi-project-refresh`, `mpi-brainstorm`, `mpi-create-plan`,
 `mpi-create-large-plan`, `mpi-continue`, `mpi-execute-parallel`,
-`mpi-handoff`, `mpi-end-session`, `mpi-cleanup`, `mpi-archive`,
-`mpi-brief-rule`, and the support skill `mpi-lib`.
+`mpi-nimbalyst-sync`, `mpi-handoff`, `mpi-end-session`, `mpi-cleanup`,
+`mpi-archive`, `mpi-brief-rule`, and the support skill `mpi-lib`.
 
 ## Install
 
@@ -89,11 +89,17 @@ brainstorm -> create-plan/create-large-plan -> continue -> handoff/continue -> e
 - `mpi-continue` resumes from the current plan, handoff, board state, and repo
   state; it claims files before editing.
 - `mpi-execute-parallel` executes explicit safe parallel batches.
+- `mpi-nimbalyst-sync` coordinates source-of-truth mode, detection, dry-run
+  import/export boundaries, and tracker mappings for Nimbalyst interop.
 - `mpi-handoff` writes canonical handoff JSON under
   `.agents/mpi-kanban/state/handoffs/`.
-- `mpi-end-session` preserves knowledge, commits when appropriate, and closes
-  board state.
+- `mpi-end-session` preserves knowledge, commits when appropriate, and moves
+  implemented work into validation or closes explicitly validated work.
 - `mpi-cleanup` proposes conservative cleanup for old workflow artifacts.
+
+Board lifecycle is `BACKLOG -> PLANNING -> IMPLEMENTING -> VALIDATING ->
+COMPLETED`. `COMPLETED` is reserved for work the user has explicitly accepted
+after validation.
 
 ## Project Knowledge
 
@@ -117,6 +123,19 @@ Agents coordinate through `.agents/mpi-kanban/state/`:
 
 Kanban tags are display summaries only. The coordination state is the source of
 truth.
+
+For Nimbalyst interop, source-of-truth mode lives in
+`.agents/mpi-kanban/state/interop.json`. Default `file` mode keeps normal MPI
+board updates. In `nimbalyst` mode, Nimbalyst trackers/sessions are canonical
+and MPI board snapshots happen only at explicit sync boundaries.
+
+Expected behavior by environment:
+
+- VS Code and generic agents: stay in `file` mode; MPI updates
+  `.agents/mpi-kanban/kanban.md` and the extension renders it.
+- Nimbalyst: switch to `nimbalyst` mode only after explicit approval; update
+  Nimbalyst trackers/sessions during normal work, and use `mpi-nimbalyst-sync`
+  for import/export snapshots.
 
 ## Per-Project Config
 
@@ -154,5 +173,3 @@ above.
 ## License
 
 MIT - see [LICENSE](LICENSE).
-
-

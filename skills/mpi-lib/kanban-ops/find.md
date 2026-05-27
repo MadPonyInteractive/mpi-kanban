@@ -33,6 +33,11 @@ root of the sibling `mpi-lib` support skill.
       - One-line note: "Install the extension to see this file as an interactive board."
 4. Return path.
 
+If a found board has the legacy four-column shape without `## VALIDATING`,
+return the path without silently rewriting it. Skills that need to mutate board
+lifecycle state must ask the user before inserting `## VALIDATING` between
+`## IMPLEMENTING` and `## COMPLETED`.
+
 **Skip `ensureKanban` for `mpi-brief-rule`** â€” that skill is board-independent.
 
 ---
@@ -50,7 +55,7 @@ Return the clickable markdown link to print in chat whenever referencing the boa
 ## `listEntries(column)`
 
 1. Read the file.
-2. Locate the H2 heading matching `column` (one of the four).
+2. Locate the H2 heading matching `column` (one of the five).
 3. Collect every `### ` block until the next H2 (or end of file).
 4. For each block: parse title, metadata bullets, body fence (if present),
    steps (if present).
@@ -60,7 +65,8 @@ Return the clickable markdown link to print in chat whenever referencing the boa
 
 ## `findEntry(predicate)`
 
-1. For each column in order: `BACKLOG`, `PLANNING`, `IMPLEMENTING`, `COMPLETED`.
+1. For each column in order: `BACKLOG`, `PLANNING`, `IMPLEMENTING`,
+   `VALIDATING`, `COMPLETED`.
 2. Run `listEntries(column)`.
 3. Return first entry matching `predicate`, plus its column.
 4. None match â†’ return `null`.

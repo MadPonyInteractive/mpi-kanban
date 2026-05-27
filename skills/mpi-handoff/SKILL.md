@@ -74,7 +74,7 @@ Read `<mpi-lib-root>/kanban-ops/find.md` for `findKanban` and
 
 1. Call `findKanban()`. If the file does not exist, set `kanban_entry` to
    `null` and continue.
-2. Otherwise call `findEntry(e => e.column === "IMPLEMENTING" && e.body matches "Plan file: <activePlan>")`.
+2. Otherwise call `findEntry(e => (e.column === "IMPLEMENTING" || e.column === "VALIDATING") && e.body matches "Plan file: <activePlan>")`.
 3. If a match is found, `kanban_entry = entry.title`. Otherwise, `null`.
 
 ### Step 4 - Preservation pass
@@ -128,7 +128,7 @@ Use this exact JSON structure:
     "completed": ["<done item 1>", "<done item 2>"],
     "pending": ["<next item 1>", "<next item 2>"]
   },
-  "kanban_entry": "<title of active IMPLEMENTING entry, or null>",
+  "kanban_entry": "<title of active IMPLEMENTING or VALIDATING entry, or null>",
   "allowed_actions": [
     "<actions the next agent may take, e.g. read, continue, verify>"
   ],
@@ -212,8 +212,8 @@ The next action is: <next_action.description>
 - The final chat output MUST include the copy/paste resume block every time.
 - New canonical handoffs MUST be written under `.agents/mpi-kanban/state/handoffs/`.
 - `docs/handoffs/` is legacy compatibility, not canonical state.
-- `kanban_entry` is required in the JSON; use `null` if no IMPLEMENTING entry
-  matches the active plan.
+- `kanban_entry` is required in the JSON; use `null` if no IMPLEMENTING or
+  VALIDATING entry matches the active plan.
 - `allowed_actions` is required in the JSON.
 - `files_to_read_first` = files the fresh agent must read before touching code.
 - `rules_active` = rule files relevant to the pending work.

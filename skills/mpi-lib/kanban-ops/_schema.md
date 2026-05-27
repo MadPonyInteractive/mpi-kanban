@@ -27,11 +27,18 @@ gitignores can cover config without ignoring the board.
 
 ## IMPLEMENTING
 
+## VALIDATING
+
 ## COMPLETED
 ```
 
-Four H2 headings, exact spelling, exact order. Never add, rename, or remove a
+Five H2 headings, exact spelling, exact order. Never add, rename, or remove a
 column. An empty column is just the H2 header, a blank line, and the next H2.
+
+Legacy four-column boards that omit `## VALIDATING` are readable, but any skill
+that needs to mutate board lifecycle state must pause and ask before inserting
+`## VALIDATING` between `## IMPLEMENTING` and `## COMPLETED`. Fresh boards use
+the five-column template directly.
 
 ---
 
@@ -62,9 +69,9 @@ Notes on shape:
 - Body fence: 4-space-indented ```` ```md ```` block. Belongs with the entry
   (cut/paste during a move includes it).
 - `steps` is a nested checklist (4-space-indented under `- steps:`). Only
-  IMPLEMENTING entries should carry it.
-- For PLANNING and IMPLEMENTING entries, the body fence MUST contain a line
-  matching `Plan file: <path>` (case-insensitive on `file`).
+  IMPLEMENTING and VALIDATING entries should carry it.
+- For PLANNING, IMPLEMENTING, and VALIDATING entries, the body fence MUST
+  contain a line matching `Plan file: <path>` (case-insensitive on `file`).
 
 ---
 
@@ -77,7 +84,7 @@ Notes on shape:
 | `priority` | enum | Yes | `high` \| `medium` \| `low` |
 | `workload` | enum | No | `Easy` \| `Medium` \| `Hard` |
 | `defaultExpanded` | bool | Yes | `true` \| `false` |
-| `steps` | nested checklist | IMPLEMENTING only | `- [ ] text` / `- [x] text` |
+| `steps` | nested checklist | IMPLEMENTING/VALIDATING only | `- [ ] text` / `- [x] text` |
 
 **Never invent new fields.** The VS Code extension breaks on unknown fields.
 
@@ -87,7 +94,7 @@ Notes on shape:
 
 | Element | Regex | Notes |
 |---|---|---|
-| Column heading | `^## (BACKLOG\|PLANNING\|IMPLEMENTING\|COMPLETED)\s*$` | Multiline. |
+| Column heading | `^## (BACKLOG\|PLANNING\|IMPLEMENTING\|VALIDATING\|COMPLETED)\s*$` | Multiline. |
 | Entry heading | `^### (.+?)\s*$` | Capture group 1 = title. |
 | Metadata bullet | `^  - (\w+):\s*(.*)$` | Capture: field name, raw value. |
 | Steps line | `^  - steps:\s*$` | Followed by 6-space-indented `- [ ]` / `- [x]` lines. |

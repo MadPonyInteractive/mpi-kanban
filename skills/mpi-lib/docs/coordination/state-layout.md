@@ -35,9 +35,9 @@ The Markdown board remains human-visible state only:
 .agents/mpi-kanban/kanban.md
 ```
 
-The board must keep the locked columns and metadata fields required by the VS
-Code extension. Agent-only coordination details belong in `.agents/`, not in
-new board columns or metadata fields.
+The board must keep the locked five-column lifecycle and metadata fields
+required by the VS Code extension. Agent-only coordination details belong in
+`.agents/`, not in extra board columns or metadata fields.
 
 ## Active Records
 

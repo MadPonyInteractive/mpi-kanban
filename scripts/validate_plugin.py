@@ -111,6 +111,7 @@ def validate_mpi_lib_present() -> None:
     required = (
         "coordination-ops/lifecycle.md",
         "coordination-ops/statuses.md",
+        "interop-ops/modes.md",
         "kanban-ops/find.md",
         "project-knowledge/indexing.md",
         "docs/coordination/README.md",
@@ -126,6 +127,53 @@ def validate_mpi_lib_present() -> None:
         text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
         if "## Locating shared references" not in text or "<mpi-lib-root>" not in text:
             fail(f"{skill_dir.name}/SKILL.md: missing mpi-lib discovery block")
+
+
+def validate_kanban_templates() -> None:
+    expected = [
+        "## BACKLOG",
+        "## PLANNING",
+        "## IMPLEMENTING",
+        "## VALIDATING",
+        "## COMPLETED",
+    ]
+    template_paths = [
+        ROOT / "skills" / "mpi-lib" / "templates" / "kanban.md",
+        ROOT / "skills" / "mpi-init" / "templates" / "kanban.md",
+    ]
+    for path in template_paths:
+        if not path.exists():
+            fail(f"missing kanban template: {path.relative_to(ROOT)}")
+            continue
+        headings = [
+            line.strip()
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.startswith("## ")
+        ]
+        if headings != expected:
+            fail(
+                f"{path.relative_to(ROOT)} must use columns in order: "
+                + " -> ".join(expected)
+            )
+
+
+def validate_interop_state() -> None:
+    path = ROOT / ".agents" / "mpi-kanban" / "state" / "interop.json"
+    if not path.exists():
+        fail("missing .agents/mpi-kanban/state/interop.json")
+        return
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("schema") != "mpi-kanban/interop/v1":
+        fail("interop.json must use schema mpi-kanban/interop/v1")
+    if data.get("source_of_truth") not in {"file", "nimbalyst"}:
+        fail("interop.json source_of_truth must be file or nimbalyst")
+    detected = data.get("last_detected_environment")
+    if not isinstance(detected, dict):
+        fail("interop.json last_detected_environment must be an object")
+    elif detected.get("kind") not in {"generic", "nimbalyst", "unknown"}:
+        fail("interop.json last_detected_environment.kind must be generic, nimbalyst, or unknown")
+    if not isinstance(data.get("id_mappings"), list):
+        fail("interop.json id_mappings must be a list")
 
 
 def validate_no_stale_runtime_refs() -> None:
@@ -195,6 +243,8 @@ def check_no_symlinks() -> None:
 def main() -> int:
     skill_names = validate_skills()
     validate_mpi_lib_present()
+    validate_kanban_templates()
+    validate_interop_state()
     validate_no_stale_runtime_refs()
     validate_skills_sh_json(skill_names)
     validate_removed_surfaces()

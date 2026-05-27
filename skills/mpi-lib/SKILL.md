@@ -21,6 +21,7 @@ path as `<mpi-lib-root>`, and read individual reference files only when needed.
   status vocabulary.
 - `docs/coordination/` - coordination state layout, schemas, roles, UUID
   helper, and handoff migration references.
+- `interop-ops/` - source-of-truth mode and Nimbalyst interop state guidance.
 - `kanban-ops/` - board schema, entry lookup, mutation, archive, and errors.
 - `plan-ops/` - plan shape, reading, derivation, and mutation guidance.
 - `project-intent/` - project mode contracts.

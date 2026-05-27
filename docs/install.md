@@ -60,3 +60,16 @@ npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 
 If a workflow skill reports that it cannot find `mpi-lib`, reinstall with the
 full command above.
+
+## Nimbalyst Interop
+
+Nimbalyst interop uses `.agents/mpi-kanban/state/interop.json` to decide which
+system is canonical:
+
+- `file` mode: MPI updates `.agents/mpi-kanban/kanban.md`.
+- `nimbalyst` mode: Nimbalyst trackers/sessions are canonical and MPI board
+  updates happen only through explicit `mpi-nimbalyst-sync` import/export
+  snapshots.
+
+Use `mpi-nimbalyst-sync detect` before switching modes. The skill prompts before
+changing source of truth.

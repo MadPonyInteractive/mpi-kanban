@@ -3,10 +3,10 @@ This file is rendered as an interactive board by the "Mpi-Kanban" VS Code extens
 https://github.com/MadPonyInteractive/mpi-kanban-vscode
 
 Install the extension to see this file as a board. Without it, the file still works as
-plain Markdown — the MPI skills will read and edit it either way.
+plain Markdown - the MPI skills will read and edit it either way.
 
-Do NOT add, rename, or remove the four H2 columns below. Do NOT introduce metadata fields
-beyond the locked schema in the plugin SPEC §4.4 — the extension will break on unknown fields.
+Do NOT add, rename, or remove the five H2 columns below. Do NOT introduce metadata fields
+beyond the locked schema in the plugin SPEC - the extension will break on unknown fields.
 -->
 
 ## BACKLOG
@@ -14,5 +14,7 @@ beyond the locked schema in the plugin SPEC §4.4 — the extension will break o
 ## PLANNING
 
 ## IMPLEMENTING
+
+## VALIDATING
 
 ## COMPLETED

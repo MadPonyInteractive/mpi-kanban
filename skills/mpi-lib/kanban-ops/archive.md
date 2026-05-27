@@ -86,7 +86,7 @@ Procedure:
      archive batches.
 9. Remove each archived block from `kanban.md` only after the archive write
    succeeds. Remove the exact verbatim block captured in step 4.
-10. Verify `kanban.md` still contains the four locked H2 headings and no
+10. Verify `kanban.md` still contains the five locked H2 headings and no
     archived title remains in its original location.
 11. Report the result with clickable links:
     - `[kanban.md](.agents/mpi-kanban/kanban.md)`

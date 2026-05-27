@@ -1,6 +1,6 @@
 ---
 name: mpi-end-session
-description: MPI workflow pack - MPI end session workflow. Close session, sync rules/docs, commit touched files, and move the kanban entry to COMPLETED if all steps are done. Use when user says "MPI end session", "end session", "wrap up", "commit and close", "$mpi-end-session", or "/mpi-end-session".
+description: MPI workflow pack - MPI end session workflow. Close session, sync rules/docs, commit touched files, move implemented work to VALIDATING, and close explicitly validated work. Use when user says "MPI end session", "end session", "wrap up", "commit and close", "$mpi-end-session", or "/mpi-end-session".
 ---
 
 # mpi-end-session Skill
@@ -35,10 +35,17 @@ Read these references when `.agents/mpi-kanban/state/index.json` exists:
 - `<mpi-lib-root>/docs/coordination/README.md`
 - `<mpi-lib-root>/coordination-ops/lifecycle.md`
 - `<mpi-lib-root>/coordination-ops/statuses.md`
+- `<mpi-lib-root>/interop-ops/modes.md`
 
 Reread the active session, task, file claim, and handoff records before
 committing. A released file claim means no active writer owns the file; it does
 not mean the pending changes are independently safe to commit.
+
+Read `.agents/mpi-kanban/state/interop.json` when present. If it is missing,
+assume `file` mode. In `nimbalyst` mode, Nimbalyst trackers/sessions are
+canonical: do not move the MPI board entry during close-out. Commit/session
+cleanup may proceed, but board snapshots require an explicit
+`mpi-nimbalyst-sync` boundary.
 
 If this session owns active `claimed` files, complete, release, or hand them off
 before committing. If another fresh active session owns claimed files that are
@@ -130,23 +137,38 @@ Lib pointers (read each only when its recipe is needed):
 
 Steps:
 
+`VALIDATING` is the gate between implementation and final completion. All done
+IMPLEMENTING steps move to VALIDATING. A VALIDATING entry moves to COMPLETED
+only when the user explicitly approves final completion for that entry in the
+current request.
+
+If interop mode is `nimbalyst`, skip all MPI board movement in this section and
+report: "Interop mode is nimbalyst - Nimbalyst trackers/sessions are canonical.
+Skipping kanban close-out; use mpi-nimbalyst-sync for a board snapshot."
+
 1. Read `<mpi-lib-root>/kanban-ops/find.md` for `findKanban`. Call `findKanban()`. If
    the file does not exist, skip kanban close-out Ã¢â‚¬â€ there is nothing to
    update. Tell the user: "No kanban file found Ã¢â‚¬â€ skipping board close-out."
 2. Identify the active plan: the plan file most recently touched in this
    session (from `git diff --stat HEAD` or conversation context).
 3. Call `findEntry(e => e.body matches "Plan file: <activePlan>")` Ã¢â‚¬â€ locate
-   the IMPLEMENTING entry tied to that plan.
+   the PLANNING, IMPLEMENTING, VALIDATING, or COMPLETED entry tied to that
+   plan. If the board has the legacy four-column shape, ask before inserting
+   `## VALIDATING` between `## IMPLEMENTING` and `## COMPLETED`.
 4. If no matching entry Ã¢â€ â€™ tell the user, do nothing further.
 5. If found Ã¢â€ â€™ read `<mpi-lib-root>/kanban-ops/steps.md` for `allStepsDone`. Call
    `allStepsDone(entry.title)`:
    - **True** Ã¢â€ â€™ read `<mpi-lib-root>/kanban-ops/mutate.md` for `moveEntry`. Call
-     `moveEntry(entry.title, "IMPLEMENTING", "COMPLETED")`. Report the move
-     in chat with a clickable [kanban.md](.agents/mpi-kanban/kanban.md) link.
+     `moveEntry(entry.title, "IMPLEMENTING", "VALIDATING")`. Report that the
+     work is ready for validation with a clickable
+     [kanban.md](.agents/mpi-kanban/kanban.md) link.
    - **False** Ã¢â€ â€™ leave the entry in IMPLEMENTING. Append a single line to the
      commit message body: `Note: session ended mid-implementation; kanban
      entry "<title>" still has open steps.` (Edit the commit if already made,
      or include in the original commit message.)
+   - If the matching entry is already in VALIDATING, promote it to COMPLETED
+     only when the user explicitly approved final completion in the current
+     request. Otherwise ask before moving it.
 
 After commit/kanban close-out, close or complete the active coordination session
 and task according to `<mpi-lib-root>/coordination-ops/lifecycle.md`. Remove closed records
@@ -161,9 +183,13 @@ Output to the user:
 - Rules/docs updated (one line each, or "none").
 - Project profile/index updates (one line each, or "none").
 - Memory entries written/updated (one line each, or "none").
+- Kanban result should distinguish `IMPLEMENTING -> VALIDATING`, explicitly
+  approved `VALIDATING -> COMPLETED`, entries still in IMPLEMENTING, and no
+  matching board entry.
 - Kanban result Ã¢â‚¬â€ one of:
   - `Kanban: "<title>" Ã¢â€ â€™ COMPLETED. [kanban.md](.agents/mpi-kanban/kanban.md)`
   - `Kanban: "<title>" still in IMPLEMENTING Ã¢â‚¬â€ open steps remain. [kanban.md](.agents/mpi-kanban/kanban.md)`
+  - `Kanban: "<title>" -> VALIDATING. [kanban.md](.agents/mpi-kanban/kanban.md)`
   - `Kanban: no matching entry / no kanban file.`
 
 Then a final `git status` Ã¢â‚¬â€ confirm working tree clean (or list deferred items
@@ -183,8 +209,8 @@ explicitly).
 - All session-touched files committed (or explicitly deferred with reason).
 - Rules/docs reflect any architectural change with the user's per-file approval.
 - Memory entries written for non-obvious learnings; `MEMORY.md` index current.
-- Kanban entry moved to COMPLETED if all steps done; otherwise left in
-  IMPLEMENTING with a note in the commit.
+- Kanban entry moved to VALIDATING if implementation steps are done, or moved
+  from VALIDATING to COMPLETED only after explicit user approval.
 - `git status` clean (or remaining items explained).
 - Suggest `mpi-cleanup`
   after a completed entry if old plans or handoffs are likely stale. Do not run
