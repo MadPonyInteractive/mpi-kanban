@@ -17,11 +17,17 @@ update session phase and tracker items directly. The interop design must avoid
 dual-writing both Nimbalyst trackers and `.agents/mpi-kanban/kanban.md` during
 normal work.
 
+The companion VS Code extension release `v0.1.7` has been pushed with
+backward-compatible `VALIDATING` documentation, parser regression coverage, and
+the MPI logo editor shortcut. Existing four-column boards remain valid until
+the skill pack changes introduce the new lifecycle.
+
 Reference repository: `https://github.com/nimbalyst/nimbalyst`
 
 ## Completed
 
-- [ ] Nothing yet.
+- [x] Prepared and pushed `mpi-kanban-vscode` release `v0.1.7` for
+  backward-compatible `VALIDATING` support and the MPI logo editor shortcut.
 
 ## Remaining Work
 
@@ -40,7 +46,7 @@ Reference repository: `https://github.com/nimbalyst/nimbalyst`
   `VALIDATING`, and only explicit user approval promotes work to `COMPLETED`.
   **Verify:** `mpi-continue`, `mpi-end-session`, and shared step/plan references
   describe the new validation gate consistently.
-- [ ] Coordinate the companion VS Code extension schema change before treating
+- [x] Coordinate the companion VS Code extension schema change before treating
   five-column boards as the only supported format. **Verify:**
   `C:\AI\Mpi\Plugins\mpi-kanban-vscode` can parse, render, drag, and persist the
   `VALIDATING` column without losing entries.
