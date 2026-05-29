@@ -40,6 +40,48 @@ that needs to mutate board lifecycle state must pause and ask before inserting
 `## VALIDATING` between `## IMPLEMENTING` and `## COMPLETED`. Fresh boards use
 the five-column template directly.
 
+### Board-shape drift
+
+A board is "shape-drifted" when any of these is true:
+
+- A locked column (`BACKLOG`, `PLANNING`, `IMPLEMENTING`, `VALIDATING`,
+  `COMPLETED`) is missing.
+- Columns appear out of order.
+- An unknown H2 column is present.
+
+`mpi-project-setup` and `mpi-project-refresh` MUST detect this and propose
+migration. The migration proposal lists the columns currently present, the
+columns to insert, and the insertion positions. It never reorders user entries
+across columns. It only:
+
+- inserts missing locked columns in canonical position with an empty body;
+- flags unknown H2 columns for the user to keep, rename, or remove (never
+  silently delete);
+- leaves entries inside existing columns untouched.
+
+Other skills (`mpi-create-plan`, `mpi-continue`, `mpi-end-session`) must not
+silently rewrite the board shape. They may insert a single missing
+`## VALIDATING` between `## IMPLEMENTING` and `## COMPLETED` after asking, but
+broader shape repair belongs to setup/refresh.
+
+### Forbidden freehand entry format
+
+Entries are ALWAYS `### Title` + 2-space-indented metadata bullets + a fenced
+body, as shown above. The following shapes are NOT valid entries and MUST NOT
+be written by any skill, even when surrounding entries on the board already use
+them:
+
+- A top-level bullet as title: `- **Title**` or `* Title` directly under an H2
+  column.
+- Free-form numbered or bulleted "Steps:" lines outside the locked `- steps:`
+  metadata block.
+- A `Plan file:` line outside the 4-space-indented ```` ```md ```` body fence.
+- Any metadata key not in the locked metadata table.
+
+If a skill encounters freehand entries on an existing board, treat them as
+malformed and surface them to the user. Do not adopt the malformed style for
+new entries.
+
 ---
 
 ## Entry shape

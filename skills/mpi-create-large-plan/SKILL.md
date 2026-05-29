@@ -168,6 +168,14 @@ Next: say "continue this plan" to start, or "create a handoff" if you want a fre
 - Do not add kanban steps yet; `mpi-continue` derives lifecycle/phase steps on
   PLANNING -> IMPLEMENTING.
 - Do not create parallel batches without explicit ownership for every task.
+- Entries written to `kanban.md` MUST use the `### Title` + 2-space-indented
+  metadata bullets + 4-space-indented ```` ```md ```` body fence schema from
+  `<mpi-lib-root>/kanban-ops/_schema.md`. Never write a top-level
+  `- **Title**` bullet, a free-form `Steps:` block, or a bare `Plan file:`
+  line outside the body fence, even if surrounding entries on the board
+  already use those malformed shapes. If existing entries are malformed,
+  surface them and recommend `mpi-project-refresh`; do not adopt the
+  malformed style.
 
 ## Related invocations
 

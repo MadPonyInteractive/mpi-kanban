@@ -91,9 +91,18 @@ because several files may change.
 
 Lib pointers, read only when needed:
 
+- `<mpi-lib-root>/kanban-ops/_schema.md` - locked entry shape and forbidden
+  freehand entry format
 - `<mpi-lib-root>/kanban-ops/find.md` - `findEntry`, `ensureKanban`
 - `<mpi-lib-root>/kanban-ops/mutate.md` - `moveEntry`, `updateEntry`, `createEntry`
 - `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode gate
+
+Before mutating the board, inspect its column shape. If a locked column is
+missing (legacy four-column boards, or older boards missing
+`## IMPLEMENTING`), pause and ask before inserting the missing column. Do not
+silently repair broader shape drift here — recommend `mpi-project-refresh` for
+multi-column or unknown-column drift. A single missing `## VALIDATING` between
+`## IMPLEMENTING` and `## COMPLETED` may be inserted after explicit approval.
 
 Before mutating `kanban.md`, read `.agents/mpi-kanban/state/interop.json` when
 it exists. If `source_of_truth` is `nimbalyst`, do not move or create MPI board
@@ -139,6 +148,18 @@ Next: say "continue this plan" to start implementation.
 - Do not add `## Parallel Batch` syntax to a compact plan.
 - If the work obviously needs phased investigation, or splits into independent
   parallel implementation tasks, redirect to `mpi-create-large-plan`.
+- Entries written to `kanban.md` MUST use the `### Title` + 2-space-indented
+  metadata bullets + 4-space-indented ```` ```md ```` body fence schema from
+  `<mpi-lib-root>/kanban-ops/_schema.md`. Never write a top-level
+  `- **Title**` bullet, a free-form `Steps:` block, or a bare `Plan file:`
+  line outside the body fence, even if surrounding entries on the board
+  already use those malformed shapes. If existing entries are malformed,
+  surface them and recommend `mpi-project-refresh`; do not adopt the
+  malformed style.
+- Plan steps belong in the plan file under `## Implementation`. Steps on the
+  kanban entry are added by `mpi-continue` on the PLANNING → IMPLEMENTING
+  transition via `<mpi-lib-root>/kanban-ops/steps.md`. Do not add a `steps`
+  block to a PLANNING entry here.
 
 
 

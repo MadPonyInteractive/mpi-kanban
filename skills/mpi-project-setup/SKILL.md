@@ -129,6 +129,19 @@ Never delete the legacy directory without explicit user approval. If the
 target file already exists, classify the conflict and ask which copy is
 canonical.
 
+If a board file is found at either path, also audit its shape per
+`<mpi-lib-root>/kanban-ops/_schema.md` "Board-shape drift":
+
+- list missing locked columns (e.g. `## IMPLEMENTING`, `## VALIDATING`);
+- list locked columns out of canonical order;
+- list unknown H2 columns;
+- list freehand entries that do not match the `### Title` + metadata
+  bullets + fenced body schema.
+
+Each finding becomes a per-finding proposal: insert missing column at the
+canonical position; ask about unknown columns; list freehand entries for
+the user to convert. Never reorder or rewrite user entries silently.
+
 ### 5. Build the adoption map
 
 Classify each inspected source per `<mpi-lib-root>/project-knowledge/adoption.md`:
@@ -165,7 +178,9 @@ The proposal is a single message containing:
    entrypoint edits to short pointer additions.
 6. Any legacy board migration proposed from `.claude/mpi-kanban/` to
    `.agents/mpi-kanban/`, listing each file and whether it is a move, skip,
-   or conflict requiring a decision.
+   or conflict requiring a decision. Include any board-shape migrations
+   (missing locked columns to insert, unknown columns to resolve, freehand
+   entries to convert).
 7. Any rule file changes proposed, including new `.agents/rules/*.md` files or
    edits to existing rules (per file, one-line summary and purpose).
 8. Any memory pointers proposed (existing project/user memory preferred; new
@@ -218,6 +233,13 @@ out of.
      not conflict.
    - Preserve `.claude/mpi-kanban/` if any file remains, if the user did not
      approve deletion, or if the directory contains unknown files.
+   - Apply approved board-shape migrations on the resulting
+     `.agents/mpi-kanban/kanban.md`: insert each approved missing locked
+     column at its canonical position, apply approved unknown-column
+     resolutions, and rewrite each approved freehand entry to the
+     `### Title` schema using `<mpi-lib-root>/kanban-ops/mutate.md`
+     recipes. Preserve original body text inside the new ```` ```md ````
+     body fence. Do not reorder entries across columns.
 6. Apply approved rule file creations or edits per file. Each file should be
    concise and include a `## Sub-Agent Briefing` section when it is intended
    for `mpi-brief-rule` or parallel worker briefings.
@@ -249,6 +271,9 @@ Output to the user:
 - Never overwrite `.agents/mpi-kanban/kanban.md` with a legacy
   `.claude/mpi-kanban/kanban.md` file without explicit conflict approval.
 - Never delete `.claude/mpi-kanban/` automatically after migration.
+- Board-shape migrations only insert missing locked columns and convert
+  freehand entries the user has explicitly approved. Never reorder entries
+  across columns. Never silently delete an unknown column.
 - Never overwrite an existing profile or index without showing diff and
   getting approval.
 - Memory writes use `AskUserQuestion` before removing or modifying existing

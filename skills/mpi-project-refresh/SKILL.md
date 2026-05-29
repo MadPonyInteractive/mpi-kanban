@@ -39,6 +39,8 @@ Invocation: Use the installed Agent Skills invocation for this agent, or ask nat
   rules.
 - `<mpi-lib-root>/project-intent/modes.md` - mode contracts for
   the reassessment step.
+- `<mpi-lib-root>/kanban-ops/_schema.md` - locked board schema,
+  board-shape drift definition, forbidden freehand entry format.
 
 <HARD-GATE>
 Refresh inspects and proposes. It does NOT write to any project file,
@@ -95,6 +97,20 @@ Per `<mpi-lib-root>/project-knowledge/updates.md`:
   - Memory pointers still resolve.
   - Legacy `.claude/mpi-kanban/` board files are absent, or have a proposed
     migration path to `.agents/mpi-kanban/`.
+- **Board shape:** read `<mpi-lib-root>/kanban-ops/_schema.md` for the
+  locked column list and the "Board-shape drift" definition. If
+  `.agents/mpi-kanban/kanban.md` (or a legacy `.claude/mpi-kanban/kanban.md`)
+  exists, parse its H2 columns and flag:
+  - missing locked columns (e.g. legacy four-column boards without
+    `## VALIDATING`, or older boards missing `## IMPLEMENTING`);
+  - locked columns out of canonical order;
+  - unknown H2 columns;
+  - freehand entries that do not match the `### Title` + metadata bullets
+    + fenced body shape (top-level bullet titles, free-form `Steps:` lines,
+    `Plan file:` outside the body fence).
+  Each finding becomes a per-finding proposal (insert missing column at the
+  canonical position; ask about unknown columns; list freehand entries for the
+  user to convert). Never reorder or rewrite user entries silently.
 
 Cap inspection to a sane budget. Sample, do not enumerate every file. If
 the repo is too large for a full audit, say so and narrow scope with the
@@ -130,6 +146,15 @@ Single message containing:
      `.agents/rules/testing.md` - ask user which is canonical."
    - "Legacy board path `.claude/mpi-kanban/kanban.md` still exists -
      propose migration to `.agents/mpi-kanban/kanban.md`."
+   - "Board shape drift: `## VALIDATING` missing - propose inserting empty
+     column between `## IMPLEMENTING` and `## COMPLETED`."
+   - "Board shape drift: `## IMPLEMENTING` missing - propose inserting
+     empty column between `## PLANNING` and `## VALIDATING`."
+   - "Board shape drift: unknown column `## DOING` present - ask whether to
+     rename to a locked column, keep as user-managed, or remove."
+   - "Freehand entries detected in `## BACKLOG` (`- **Phase 2 ...**`,
+     `- **Phase 3 ...**`) - propose converting to `### Title` schema with
+     locked metadata; list each entry for user confirmation."
 3. Mode reassessment line (current mode + evidence + recommendation or
    "no change recommended").
 4. Newly inspected sources (from `<mpi-lib-root>/project-knowledge/adoption.md`) with
@@ -163,9 +188,21 @@ After approval, in order:
 4. Apply approved legacy board migrations from `.claude/mpi-kanban/` to
    `.agents/mpi-kanban/`, with the same no-overwrite rule as
    `mpi-project-setup`.
-5. Apply approved memory pointer edits. Use `AskUserQuestion` before
+5. Apply approved board-shape migrations on `.agents/mpi-kanban/kanban.md`:
+   - Insert each approved missing locked column at its canonical position,
+     using just the H2 header and a single trailing blank line. Do not
+     reorder or alter entries already in other columns.
+   - Apply approved unknown-column resolutions (rename to a locked column,
+     keep as user-managed, or remove). Never silently delete an unknown
+     column or its entries.
+   - For approved freehand-entry conversions, rewrite each listed entry to
+     the `### Title` schema using `<mpi-lib-root>/kanban-ops/mutate.md`
+     `createEntry`/`updateEntry` recipes. Preserve original body text inside
+     the new ```` ```md ```` body fence. Skip any entry the user did not
+     explicitly approve for conversion.
+6. Apply approved memory pointer edits. Use `AskUserQuestion` before
    removing or modifying existing memory entries.
-6. Apply approved `AGENTS.md` or `CLAUDE.md` pointer edits. Preserve
+7. Apply approved `AGENTS.md` or `CLAUDE.md` pointer edits. Preserve
    existing content; pointer-first additions only.
 
 ### 7. Final report
@@ -177,6 +214,7 @@ Refresh applied.
 - Rules: <files updated or "none">.
 - Memory: <entries updated or "none">.
 - Agent entrypoints: <files updated or "none">.
+- Board shape: <columns inserted, freehand entries converted, or "no changes">.
 - Mode reassessment: <"no change recommended" or "consider $mpi-project-mode">.
 ```
 
@@ -190,6 +228,9 @@ Refresh applied.
 - Do not change project mode from this skill. Recommend `mpi-project-mode`.
 - Refresh does not bootstrap missing artifacts. Recommend
   `mpi-project-setup` if the profile is absent.
+- Board-shape migrations only insert missing locked columns and convert
+  freehand entries the user has explicitly approved. Never reorder entries
+  across columns. Never silently delete an unknown column.
 
 ## Related invocations
 
