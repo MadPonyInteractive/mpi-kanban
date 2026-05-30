@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- JSON task board contract with `.agents/mpi-kanban/board.json`,
+  `.agents/mpi-kanban/events.jsonl`, and task workspaces under
+  `.agents/mpi-kanban/tasks/<id>/`.
+- Shared `mpi-lib/task-board-ops/` references for JSON board schema, read,
+  mutation, migration, and validation behavior.
+- Validator coverage for JSON board templates and live board/task workspace
+  consistency.
+
+### Changed
+
+- Workflow skills now treat `board.json` as the primary human board once it
+  exists, with fixed `To do`, `Doing`, and `Done` columns.
+- Legacy Markdown boards remain readable as migration inputs or snapshots, not
+  competing live sources of truth after JSON-board migration.
+- Nimbalyst interop docs and workflow references map tracker state into the
+  JSON board model instead of restoring legacy MPI lifecycle columns.
+
 ## [0.6.1] - 2026-05-24
 
 ### Changed

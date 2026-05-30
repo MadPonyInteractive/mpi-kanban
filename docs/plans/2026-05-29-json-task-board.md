@@ -68,6 +68,7 @@ publishing builds.
 - [x] Phase 2: Shared Task Store And Migration.
 - [x] Parallel Batch: Skill Workflow Update.
 - [x] Parallel Batch: VS Code Extension Update.
+- [x] Phase 3: Compatibility, Cleanup, And Release Readiness.
 
 ## Remaining Work
 
@@ -183,12 +184,12 @@ publishing builds.
   maintaining two live source-of-truth files. **Verify:** opening a legacy board
   does not silently corrupt or rewrite it, and the user is told exactly what
   migration will create.
-- [ ] Update tests and smoke fixtures across the skill pack and VS Code
+- [x] Update tests and smoke fixtures across the skill pack and VS Code
   extension. Include JSON board fixtures, migrated legacy board fixtures,
   whole-card drag scenarios, add/edit/delete flows, detail links, event appends,
   and agent-facing task lookup by ID. **Verify:** skill validator passes and the
   extension smoke-test workflow exercises the new UI/state path locally.
-- [ ] Update user-facing docs and release notes. Explain the new mental model:
+- [x] Update user-facing docs and release notes. Explain the new mental model:
   board as `To do / Doing / Done`, task folders as agent workspaces, JSON files
   as primary state, passive events as audit/future bus protocol, and Markdown
   board files as legacy compatibility. **Verify:** README and install docs do
