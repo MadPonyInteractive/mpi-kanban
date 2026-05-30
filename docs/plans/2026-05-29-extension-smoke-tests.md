@@ -23,27 +23,42 @@ workspace files locally.
 
 ## Implementation
 
-- [ ] Establish a local VS Code extension smoke-test workflow in
-  `C:\AI\Mpi\Plugins\mpi-kanban-vscode` using the existing VS Code test tooling:
-  inspect the current test harness, add or update fixture workspace data,
-  define the minimum smoke scenarios for opening the board webview, rendering
-  cards, dragging/mutating entries where feasible, and verifying file writes,
-  then document the exact local command agents should run before extension UI
-  changes. **Verify:** the smoke workflow runs locally without publishing an
-  extension build and clearly reports pass/fail for the extension board surface.
+- [x] Establish a local VS Code extension preview/smoke workflow in
+  `C:\AI\Mpi\Plugins\mpi-kanban-vscode`. **Verify:** the workflow runs locally
+  without publishing an extension build and shows the real board UI for review.
 
 ## Completed
 
-- [ ] Nothing yet.
+- [x] Added a curated fixture board at
+  `test/fixtures/sample-board/.agents/mpi-kanban/kanban.md` that exercises every
+  render path (5 columns, all priority/workload badges, upcoming + overdue due
+  dates, single/multi tags, collapsed + expanded cards, 0/1, 2/4, 2/2 step
+  bars).
+- [x] Added a `Run Extension (sample board)` launch config (started via Command
+  Palette -> "Debug: Select and Start Debugging") that compiles the extension
+  and opens an Extension Development Host on the fixture with the board already
+  open, plus an `Extension Tests` debug config.
+- [x] Wrote `CONTRIBUTING.md` documenting the F5 preview (human eyeball review),
+  fixture reset, and `npm test` parser regression run (with the first-run
+  VS Code download note).
+- [x] Verified `npm run compile` and `npm run compile-tests` both pass.
 
 ## Remaining Work
 
-- Establish the local extension smoke-test workflow and document how agents
-  should use it before changing the companion extension UI.
+- None. Done. The harness unblocks the JSON task board plan's dependency
+  ("preview locally without publishing"). User confirmed the dev host launches
+  on the fixture. The fixture and UI scenarios are intentionally Markdown-shaped
+  for the current extension; the JSON board plan's "VS Code Extension Update"
+  batch owns rebuilding both for the `To do / Doing / Done` JSON board.
 
 ## Plan Drift
 
-- None yet.
+- The plan originally framed this as automated smoke scenarios (open/render/
+  drag/file-write assertions). Clarified with the user: the goal is a
+  human-in-the-loop preview harness — the agent changes the UI, the user
+  launches the dev host and judges it. Automated coverage stays at the parser
+  unit-test layer (`npm test`); no Playwright / webview-iframe automation was
+  added.
 
 ## Verification
 
