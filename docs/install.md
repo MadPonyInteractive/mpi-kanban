@@ -38,6 +38,24 @@ The skill folders install under Agent Skills directories such as
 `~/.agents/skills/`, `.agents/skills/`, `~/.claude/skills/`, or
 `.claude/skills/` depending on agent and install scope.
 
+## Board Files
+
+New projects use a JSON task board:
+
+```text
+.agents/mpi-kanban/board.json
+.agents/mpi-kanban/events.jsonl
+.agents/mpi-kanban/tasks/<id>/task.json
+```
+
+The fixed human columns are `To do`, `Doing`, and `Done`, stored in JSON as
+`todo`, `doing`, and `done`. Task IDs are system-assigned visible IDs such as
+`MPI-42`; use those IDs when asking an agent to continue or inspect work.
+
+Legacy projects may still contain `.agents/mpi-kanban/kanban.md` or
+`.claude/mpi-kanban/kanban.md`. Treat those files as migration inputs or
+snapshots after `board.json` exists, not as a second live board.
+
 ## Migration From Old Installs
 
 Older releases used Claude Code and Codex plugin packaging. Those install
@@ -66,7 +84,8 @@ full command above.
 Nimbalyst interop uses `.agents/mpi-kanban/state/interop.json` to decide which
 system is canonical:
 
-- `file` mode: MPI updates `.agents/mpi-kanban/kanban.md`.
+- `file` mode: MPI updates `.agents/mpi-kanban/board.json`, task folders, and
+  passive event logs.
 - `nimbalyst` mode: Nimbalyst trackers/sessions are canonical and MPI board
   updates happen only through explicit `mpi-nimbalyst-sync` import/export
   snapshots.

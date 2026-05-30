@@ -1,20 +1,20 @@
-# plan-ops/derive - derive kanban steps from a plan
+# plan-ops/derive - derive task checklist items from a plan
 
-Read this when transitioning PLANNING -> IMPLEMENTING (deciding what `steps`
-to put on the kanban entry), moving IMPLEMENTING -> VALIDATING after all
-implementation steps are verified, or flipping a kanban step after a continue
-action is verified. For shape see `_shape.md`. For mutations see `mutate.md`.
+Read this when transitioning a task from `todo` to `doing`, deciding what
+checklist items to put in the task workspace, or flipping a checklist item after
+a continue action is verified. For shape see `_shape.md`. For mutations see
+`mutate.md`.
 
 ---
 
 ## Phased plan
 
 - Steps = phase titles, stripped of `Phase N:` prefix, shortened to 3-6 words.
-- A kanban step flips to `[x]` when `phaseAllDone(phase)` returns true.
-- When every implementation step is `[x]`, the entry is ready to move from
-  `IMPLEMENTING` to `VALIDATING`, not directly to `COMPLETED`.
+- A task checklist item flips to `[x]` when `phaseAllDone(phase)` returns true.
+- When every implementation item is `[x]`, validation state should be recorded
+  in the task workspace before moving the task to `done`.
 
-### Worked example - phased plan -> kanban steps
+### Worked example - phased plan -> task checklist
 
 Plan file:
 
@@ -31,7 +31,7 @@ Plan file:
 - [ ] Remove dead code
 ```
 
-Derived kanban steps:
+Derived task checklist:
 
 ```text
   - steps:
@@ -47,9 +47,10 @@ Derived kanban steps:
 - Steps = one stable step: `Implementation`.
 - The step flips to `[x]` when the implementation item is verified and the
   plan's `## Remaining Work` is empty or explicitly complete.
-- A checked compact-plan step means the entry is ready for `VALIDATING`.
+- A checked compact-plan item means implementation is ready for validation
+  notes in the task workspace.
 
-### Worked example - compact plan -> kanban steps
+### Worked example - compact plan -> task checklist
 
 Plan file:
 
@@ -59,7 +60,7 @@ Plan file:
 - [ ] Implement the planned change end to end. **Verify:** Run the smoke test.
 ```
 
-Derived kanban steps:
+Derived task checklist:
 
 ```text
   - steps:
@@ -83,6 +84,6 @@ If a large plan has no explicit phase headings, use lifecycle steps:
 
 These steps are intentionally stable even when the plan drifts.
 
-When all lifecycle steps are checked, the implementation phase is complete and
-the entry is ready for `VALIDATING`. `COMPLETED` requires an explicit user
-approval gate after validation.
+When all lifecycle items are checked, the implementation phase is complete and
+validation state should be recorded in the task workspace before moving the
+task to `done`.

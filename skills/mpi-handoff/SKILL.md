@@ -67,15 +67,26 @@ handoffs relevant to this handoff.
 Read `<mpi-lib-root>/coordination-ops/lifecycle.md`. If coordination state is active,
 renew or identify the current session and task before writing the handoff.
 
-### Step 3 - Look up the active kanban entry
+### Step 3 - Look up the active task card
 
-Read `<mpi-lib-root>/kanban-ops/find.md` for `findKanban` and
-`findEntry`. Then:
+Read these references:
 
-1. Call `findKanban()`. If the file does not exist, set `kanban_entry` to
-   `null` and continue.
-2. Otherwise call `findEntry(e => (e.column === "IMPLEMENTING" || e.column === "VALIDATING") && e.body matches "Plan file: <activePlan>")`.
-3. If a match is found, `kanban_entry = entry.title`. Otherwise, `null`.
+- `<mpi-lib-root>/task-board-ops/_schema.md`
+- `<mpi-lib-root>/task-board-ops/read.md`
+- `<mpi-lib-root>/kanban-ops/find.md` only for legacy compatibility
+
+Then:
+
+1. Call `findBoard()`. If `.agents/mpi-kanban/board.json` exists, locate the
+   active task by task ID, linked plan path, or required attention in `doing`.
+2. Set `task_card` to the task ID, title, column, and
+   `.agents/mpi-kanban/tasks/<id>/` workspace path. Include links to
+   `plan.md`, `checklist.md`, `validation.md`, and `handoffs/` when present.
+3. If no JSON board exists, call legacy `findKanban()` and look for an
+   IMPLEMENTING or VALIDATING entry whose body matches
+   `Plan file: <activePlan>`. Set `kanban_entry` to that entry title or `null`.
+4. If a JSON task card exists, set `kanban_entry` to `null`; do not duplicate
+   live task state into the legacy field.
 
 ### Step 4 - Preservation pass
 
@@ -88,6 +99,9 @@ has context:
   mark unfinished file claims `complete`, `needs_integration`, or
   `needs_review` as appropriate, and keep pending-change provenance visible in
   `pending_file_states`.
+- Keep implementation checklists, validation notes, and long-form handoff
+  context in the task workspace files under `.agents/mpi-kanban/tasks/<id>/`.
+  The visible task card should contain only concise summary fields and links.
 - If known docs/rules/memory updates can be made accurately, do them now,
   respecting project approval rules for architectural rule files.
 - If updates are blocked, need approval, or should wait for completion, record
@@ -128,7 +142,19 @@ Use this exact JSON structure:
     "completed": ["<done item 1>", "<done item 2>"],
     "pending": ["<next item 1>", "<next item 2>"]
   },
-  "kanban_entry": "<title of active IMPLEMENTING or VALIDATING entry, or null>",
+  "task_card": {
+    "id": "<MPI-* id, or null>",
+    "title": "<task title, or null>",
+    "column": "<todo | doing | done, or null>",
+    "workspace": "<.agents/mpi-kanban/tasks/<id>/, or null>",
+    "links": {
+      "plan": "<relative or project path, or null>",
+      "checklist": "<relative or project path, or null>",
+      "validation": "<relative or project path, or null>",
+      "handoffs": "<relative or project path, or null>"
+    }
+  },
+  "kanban_entry": "<legacy active IMPLEMENTING or VALIDATING title, or null>",
   "allowed_actions": [
     "<actions the next agent may take, e.g. read, continue, verify>"
   ],
@@ -172,7 +198,7 @@ Use this exact JSON structure:
       "event": "handoff_created"
     }
   ],
-  "resume_prompt": "<single paragraph the user can paste into a new session. Second person, present tense. Mentions the handoff file path AND the kanban entry title if not null.>"
+  "resume_prompt": "<single paragraph the user can paste into a new session. Second person, present tense. Mentions the handoff file path and task ID when present, or the legacy kanban entry title when no task ID exists.>"
 }
 ```
 
@@ -196,7 +222,8 @@ copy/paste block is mandatory:
 
 ```text
 Handoff saved: .agents/mpi-kanban/state/handoffs/<uuid>.json
-Active kanban entry: "<title>"   (or "none" if kanban_entry is null)
+Active task: "<MPI-* title>"   (or "none" if task_card.id is null)
+Legacy kanban entry: "<title>"   (or "none" if kanban_entry is null)
 
 To resume in a new session, paste this:
 ---
@@ -212,8 +239,11 @@ The next action is: <next_action.description>
 - The final chat output MUST include the copy/paste resume block every time.
 - New canonical handoffs MUST be written under `.agents/mpi-kanban/state/handoffs/`.
 - `docs/handoffs/` is legacy compatibility, not canonical state.
-- `kanban_entry` is required in the JSON; use `null` if no IMPLEMENTING or
-  VALIDATING entry matches the active plan.
+- `task_card` is required in the JSON; use null fields when no JSON task card
+  matches the active work.
+- `kanban_entry` is required in the JSON for backward compatibility; use
+  `null` when the active work is represented by a JSON task card or when no
+  legacy IMPLEMENTING/VALIDATING entry matches the active plan.
 - `allowed_actions` is required in the JSON.
 - `files_to_read_first` = files the fresh agent must read before touching code.
 - `rules_active` = rule files relevant to the pending work.

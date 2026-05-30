@@ -14,8 +14,12 @@ The workflow is:
 brainstorm -> create-plan/create-large-plan -> continue -> handoff/continue -> end-session -> cleanup
 ```
 
-The human board lives at `.agents/mpi-kanban/kanban.md`. Machine-readable
-coordination state lives separately under `.agents/mpi-kanban/state/`.
+The human task board lives at `.agents/mpi-kanban/board.json` with per-task
+workspaces under `.agents/mpi-kanban/tasks/<id>/`. Machine-readable agent
+coordination state lives separately under `.agents/mpi-kanban/state/`. Legacy
+projects may still have `.agents/mpi-kanban/kanban.md`; that Markdown file is
+a migration input or snapshot, not the primary live board after the JSON task
+board is present.
 
 ## 2. Distribution
 
@@ -39,20 +43,20 @@ Old users must reinstall through the npx command above.
 - `mpi-project-mode` - review, reaffirm, or change project mode.
 - `mpi-project-refresh` - audit drift between project knowledge and repo
   reality.
-- `mpi-brainstorm` - explore an idea and capture a BACKLOG entry.
+- `mpi-brainstorm` - explore an idea and capture a `todo` task.
 - `mpi-create-plan` - create a compact/default plan.
 - `mpi-create-large-plan` - create an adaptive, investigation-backed large
   plan.
-- `mpi-continue` - resume/implement from the active plan, handoff, kanban
-  entry, and current repo state.
+- `mpi-continue` - resume/implement from the active task, plan, handoff, and
+  current repo state.
 - `mpi-execute-parallel` - execute explicit safe `## Parallel Batch` sections.
 - `mpi-nimbalyst-sync` - coordinate Nimbalyst detection, source-of-truth mode,
   dry-run import/export boundaries, and tracker mappings.
 - `mpi-handoff` - preserve current state in canonical JSON.
 - `mpi-end-session` - sync docs/rules/memory, commit when appropriate, and
-  close the active kanban entry when complete.
+  close the active task when complete.
 - `mpi-cleanup` - propose conservative cleanup for stale workflow artifacts.
-- `mpi-archive` - archive kanban entries out of the active board.
+- `mpi-archive` - archive completed board tasks and legacy kanban entries.
 - `mpi-brief-rule` - return configured rule briefings or rule bundles.
 - `mpi-lib` - shared reference library support skill; not a user workflow.
 
@@ -81,54 +85,136 @@ npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 Workflow skills must not rely on `${CLAUDE_PLUGIN_ROOT}`, Claude `!` injection,
 Codex plugin roots, or any runtime-specific plugin packaging feature.
 
-## 5. Kanban Contract
+## 5. Task Board Contract
 
-The board lives at:
+The primary board index lives at:
 
 ```text
-<project-root>/.agents/mpi-kanban/kanban.md
+<project-root>/.agents/mpi-kanban/board.json
+```
+
+Human task workspaces live at:
+
+```text
+<project-root>/.agents/mpi-kanban/tasks/<id>/
 ```
 
 Legacy projects may still contain:
 
 ```text
+<project-root>/.agents/mpi-kanban/kanban.md
 <project-root>/.claude/mpi-kanban/kanban.md
 ```
 
-`mpi-project-setup` is responsible for proposing migration of legacy board
-files from `.claude/mpi-kanban/` to `.agents/mpi-kanban/`. It must list the
-files to move, preserve unknown files, and ask before overwriting an existing
-target or deleting the legacy directory.
+`mpi-project-setup` and the future board migration flow are responsible for
+proposing migration of legacy board files. Migration must list files to move or
+snapshot, preserve unknown files, and ask before overwriting an existing target
+or deleting a legacy directory. Skills must not maintain both `board.json` and
+`kanban.md` as competing live sources of truth.
 
-Fixed columns:
+Fixed JSON board columns:
 
-```markdown
-## BACKLOG
-## PLANNING
-## IMPLEMENTING
-## VALIDATING
-## COMPLETED
+```json
+{
+  "schema": "mpi-kanban/board/v1",
+  "next_id": 43,
+  "columns": {
+    "todo": ["MPI-40"],
+    "doing": ["MPI-41"],
+    "done": ["MPI-42"]
+  }
+}
 ```
 
-Entry metadata fields are locked for VS Code extension compatibility:
+Column IDs are locked as `todo`, `doing`, and `done`. User-facing labels are
+`To do`, `Doing`, and `Done`. Each column stores ordered task IDs only. Task
+IDs are system-assigned visible IDs in the form `MPI-<number>`; users may
+reference these IDs, but must not edit or choose them.
 
-- `due`
-- `tags`
-- `priority`
-- `workload`
-- `defaultExpanded`
-- `steps`
+`next_id` is the next integer to allocate for an `MPI-*` ID. It must only move
+forward. If migration imports existing IDs, set `next_id` higher than the
+largest imported numeric suffix.
 
-For PLANNING, IMPLEMENTING, and VALIDATING entries, the body fence must contain:
+Each task folder contains `task.json` plus optional linked work files:
 
 ```text
-Plan file: docs/plans/YYYY-MM-DD-<slug>.md
+.agents/mpi-kanban/tasks/MPI-42/
+  task.json
+  brief.md
+  plan.md
+  checklist.md
+  validation.md
+  files.json
+  events.jsonl
+  handoffs/
+  research/
 ```
 
-Skills must not add columns outside this locked contract or add metadata
-fields. Legacy four-column boards that omit `VALIDATING` may be read, but any
-workflow that needs to mutate lifecycle state must ask before inserting
-`## VALIDATING` between `## IMPLEMENTING` and `## COMPLETED`.
+Initial `task.json` shape:
+
+```json
+{
+  "schema": "mpi-kanban/task-card/v1",
+  "id": "MPI-42",
+  "title": "Short task title",
+  "description": "Optional short card summary.",
+  "column": "doing",
+  "maturity": "planned",
+  "status": "active",
+  "attention": {
+    "state": "required",
+    "reason": "Needs user decision before validation.",
+    "updated_at": "2026-05-30T12:00:00Z"
+  },
+  "activeSessionTitle": "Codex implementation session",
+  "created_at": "2026-05-30T12:00:00Z",
+  "updated_at": "2026-05-30T12:30:00Z",
+  "links": {
+    "brief": "brief.md",
+    "plan": "plan.md",
+    "checklist": "checklist.md",
+    "validation": "validation.md",
+    "files": "files.json",
+    "events": "events.jsonl",
+    "handoffs": "handoffs/",
+    "research": "research/"
+  }
+}
+```
+
+Required fields are `schema`, `id`, `title`, `column`, `created_at`,
+`updated_at`, and `links`. `description`, `attention`, and
+`activeSessionTitle` are optional. `maturity` and `status` are compact badges
+for UI scanning; they must not duplicate long plans, handoffs, research, or
+implementation notes. Long-form work belongs in the linked task workspace
+files.
+
+Passive append-only event records live in:
+
+```text
+.agents/mpi-kanban/events.jsonl
+.agents/mpi-kanban/tasks/<id>/events.jsonl
+```
+
+Each line is one JSON object:
+
+```json
+{"schema":"mpi-kanban/event/v1","id":"MPI-42","type":"task.moved","at":"2026-05-30T12:30:00Z","actor":"codex","from":"todo","to":"doing","summary":"Moved into active implementation."}
+```
+
+Supported initial event types are `task.created`, `task.updated`,
+`task.moved`, `task.deleted`, `attention.required`, `attention.cleared`,
+`checklist.updated`, `validation.updated`, `migration.started`,
+`migration.task_imported`, and `migration.completed`. Events are an audit trail
+and future protocol shape only; this release does not require a daemon, broker,
+or live message bus.
+
+Legacy Markdown boards use the old five-column lifecycle `BACKLOG`,
+`PLANNING`, `IMPLEMENTING`, `VALIDATING`, and `COMPLETED` with the locked
+metadata fields `due`, `tags`, `priority`, `workload`, `defaultExpanded`, and
+`steps`. Skills may read `kanban.md` for migration or compatibility. Once
+`board.json` exists, normal board creation, movement, and status updates must
+use the JSON task board.
 
 ## 6. Coordination State
 
@@ -147,10 +233,12 @@ The state root contains:
 - `handoffs/<uuid>.json`
 - `archive/`
 
-Agents read `state/index.json` first when it exists. File claims with status
-`claimed` are active write locks. Completed or released file ownership does not
-grant commit ownership; the closing or integrating session must reread current
-state and Git state before committing.
+Agents read `state/index.json` first when it exists. Its `board` pointer should
+refer to `.agents/mpi-kanban/board.json` for JSON-board projects and may refer
+to `.agents/mpi-kanban/kanban.md` only for unmigrated legacy projects. File
+claims with status `claimed` are active write locks. Completed or released file
+ownership does not grant commit ownership; the closing or integrating session
+must reread current state and Git state before committing.
 
 Lifecycle references live in `skills/mpi-lib/coordination-ops/`.
 
@@ -167,15 +255,17 @@ When the file is absent, skills must treat the project as `file` mode.
 Supported `source_of_truth` values:
 
 - `file` - default portable mode. MPI workflow skills mutate
-  `.agents/mpi-kanban/kanban.md` and coordination state directly.
+  `.agents/mpi-kanban/board.json`, task workspaces, passive event logs, and
+  coordination state directly. Legacy projects may still update `kanban.md`
+  until explicitly migrated.
 - `nimbalyst` - Nimbalyst sessions and trackers are canonical. MPI workflow
-  skills must not live-update both Nimbalyst and `.agents/mpi-kanban/kanban.md`
-  during normal work. Markdown import/export happens only through explicit sync
+  skills must not live-update both Nimbalyst and the JSON task board during
+  normal work. File import/export happens only through explicit sync
   boundaries.
 
 The interop state records last environment detection, last sync/export times,
-and ID mappings between MPI entries and Nimbalyst trackers. Skills must not add
-Nimbalyst IDs or sync metadata to kanban entry fields.
+and ID mappings between MPI task IDs and Nimbalyst trackers. Skills must not
+add Nimbalyst IDs or sync metadata to task card fields.
 
 ## 7. Project Knowledge
 
@@ -224,18 +314,20 @@ matches the written plan.
 
 `mpi-continue` is the normal implementation skill. It:
 
-1. Finds active work from a handoff, plan path, IMPLEMENTING entry, VALIDATING
-   entry, or PLANNING entry.
+1. Finds active work from a handoff, task ID, plan path, `doing` task with
+   attention, or legacy IMPLEMENTING/VALIDATING/PLANNING entry.
 2. Reads project profile/index when present.
 3. Reads coordination state when present.
-4. Locates the kanban entry by `Plan file:`.
-5. Moves PLANNING to IMPLEMENTING when needed.
-6. Adds stable kanban steps.
+4. Locates the task by task ID, plan link, active attention state, or legacy
+   `Plan file:` during migration.
+5. Moves `todo` to `doing` when needed.
+6. Adds stable checklist items in the task workspace.
 7. Inspects current repo state.
 8. Updates/annotates plan drift when needed.
 9. Presents a continue brief before implementation.
 10. Presents a post-implementation verification gate before marking work done.
-11. Moves fully implemented work to VALIDATING instead of COMPLETED.
+11. Moves fully implemented work toward `done` only after validation state is
+    represented in the task workspace.
 
 `mpi-continue` does not commit or push.
 
@@ -251,8 +343,8 @@ Each batch task must include:
 - `**Verify:**`.
 
 The main agent spawns workers, integrates results, verifies the batch, and
-updates plan/kanban state. Workers must not edit plan, kanban, handoff, rules,
-or memory files unless explicitly owned.
+updates plan/task-board state. Workers must not edit plan, board, task
+workspace, handoff, rules, or memory files unless explicitly owned.
 
 ## 11. Handoff
 
@@ -316,8 +408,9 @@ Validation must check:
 - `npx skills add MadPonyInteractive/mpi-kanban -l` lists all 16 skills.
 - Claude, Codex, and Kilo can invoke one workflow skill after npx install.
 - Workflow skills resolve `mpi-lib` and read shared references successfully.
-- Kanban schema uses the five locked columns in order:
-  BACKLOG, PLANNING, IMPLEMENTING, VALIDATING, COMPLETED.
+- Task board schema uses locked JSON columns `todo`, `doing`, and `done`.
+- Task card IDs are system-assigned visible IDs such as `MPI-42`.
+- Legacy Markdown boards remain readable for migration and compatibility.
 - Coordination state remains under `.agents/mpi-kanban/state/`.
 - Project profile/index remain under `.agents/mpi-kanban/`.
 - `mpi-project-setup` can migrate legacy `.claude/mpi-kanban/` board files to

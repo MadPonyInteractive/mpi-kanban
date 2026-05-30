@@ -3,8 +3,8 @@
 An Agent Skills pack that lets multiple AI agents work side by side on the
 same project - even on the same files - without overwriting each other.
 Agents share a live coordination state so one can implement while another
-reviews, verifies, or integrates, and a visible Kanban board keeps you in the
-loop on what every agent is doing. Bundles the full MPI workflow (brainstorm,
+reviews, verifies, or integrates, and a visible JSON task board keeps you in
+the loop on what every agent is doing. Bundles the full MPI workflow (brainstorm,
 plan, continue, parallel execution, handoff, end session, cleanup) so a single
 session or a whole team of agents can pick up work, coordinate file ownership,
 and ship together.
@@ -58,10 +58,28 @@ Direct invocation depends on the agent. Use the Agent Skills invocation surface
 your tool provides, such as `mpi-continue`, `/mpi-continue`, or an equivalent
 skill command.
 
-## VS Code Board
+## Task Board
 
-The board file is plain Markdown. The companion **Mpi-Kanban** VS Code
-extension renders it as an interactive board:
+The primary board is a small JSON index:
+
+```text
+.agents/mpi-kanban/board.json
+```
+
+It has three fixed human columns: `To do`, `Doing`, and `Done`. Each card has a
+system-assigned visible ID such as `MPI-42`, and its detailed workspace lives
+under:
+
+```text
+.agents/mpi-kanban/tasks/MPI-42/
+```
+
+Task folders keep the card compact: `task.json` stores the visible metadata,
+while `brief.md`, `plan.md`, `checklist.md`, `validation.md`, `files.json`,
+`events.jsonl`, `handoffs/`, and `research/` hold the work detail.
+
+The companion **Mpi-Kanban** VS Code extension renders the board as an
+interactive task surface:
 
 - Marketplace ID: `MadPonyInteractive.mpi-kanban`
 - Repository: <https://github.com/MadPonyInteractive/mpi-kanban-vscode>
@@ -72,7 +90,9 @@ extension renders it as an interactive board:
 To open the board, press `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS) and run
 **Mpi-Kanban: Open Mpi-Kanban Board**.
 
-Without the extension, `.agents/mpi-kanban/kanban.md` still works as Markdown.
+Legacy projects may still contain `.agents/mpi-kanban/kanban.md`. That file is
+kept for migration or snapshots; once `board.json` exists, workflows should not
+maintain both files as live sources of truth.
 
 ## Workflow
 
@@ -82,12 +102,12 @@ The normal loop is:
 brainstorm -> create-plan/create-large-plan -> continue -> handoff/continue -> end-session -> cleanup
 ```
 
-- `mpi-brainstorm` explores an idea and can capture it on the board.
+- `mpi-brainstorm` explores an idea and can capture it as a `todo` task.
 - `mpi-create-plan` creates compact plans for normal work.
 - `mpi-create-large-plan` creates phased/adaptive plans and explicit parallel
   batches when work can be split safely.
-- `mpi-continue` resumes from the current plan, handoff, board state, and repo
-  state; it claims files before editing.
+- `mpi-continue` resumes from the current task ID, plan, handoff, board state,
+  and repo state; it claims files before editing.
 - `mpi-execute-parallel` executes explicit safe parallel batches.
 - `mpi-nimbalyst-sync` coordinates source-of-truth mode, detection, dry-run
   import/export boundaries, and tracker mappings for Nimbalyst interop.
@@ -97,9 +117,9 @@ brainstorm -> create-plan/create-large-plan -> continue -> handoff/continue -> e
   implemented work into validation or closes explicitly validated work.
 - `mpi-cleanup` proposes conservative cleanup for old workflow artifacts.
 
-Board lifecycle is `BACKLOG -> PLANNING -> IMPLEMENTING -> VALIDATING ->
-COMPLETED`. `COMPLETED` is reserved for work the user has explicitly accepted
-after validation.
+Board lifecycle is `To do -> Doing -> Done`. Planning, checklists, validation,
+attention, and handoffs live in the task workspace instead of being embedded in
+card bodies.
 
 ## Project Knowledge
 
@@ -117,22 +137,23 @@ Agents coordinate through `.agents/mpi-kanban/state/`:
 
 - `index.json` is the first file agents read.
 - Sessions record role and heartbeat.
-- Tasks connect work to a plan and board entry.
+- Coordination tasks connect agent sessions to a plan and task-board item.
 - File claims are active write locks.
 - Handoffs preserve state for a fresh session.
 
-Kanban tags are display summaries only. The coordination state is the source of
-truth.
+Task-card badges and attention state are display summaries only. The
+coordination state is the source of truth for agent ownership and handoffs.
 
 For Nimbalyst interop, source-of-truth mode lives in
 `.agents/mpi-kanban/state/interop.json`. Default `file` mode keeps normal MPI
-board updates. In `nimbalyst` mode, Nimbalyst trackers/sessions are canonical
-and MPI board snapshots happen only at explicit sync boundaries.
+JSON board updates. In `nimbalyst` mode, Nimbalyst trackers/sessions are
+canonical and MPI board snapshots happen only at explicit sync boundaries.
 
 Expected behavior by environment:
 
 - VS Code and generic agents: stay in `file` mode; MPI updates
-  `.agents/mpi-kanban/kanban.md` and the extension renders it.
+  `.agents/mpi-kanban/board.json`, task folders, and event logs, and the
+  extension renders them.
 - Nimbalyst: switch to `nimbalyst` mode only after explicit approval; update
   Nimbalyst trackers/sessions during normal work, and use `mpi-nimbalyst-sync`
   for import/export snapshots.
@@ -152,10 +173,10 @@ surfaces are removed. Reinstall through skills.sh:
 npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 ```
 
-For existing projects that used older MPI locations, run `mpi-project-setup`
-after updating. It detects legacy `.claude/mpi-kanban/` board files and
-proposes migrating them into `.agents/mpi-kanban/` without silently
-overwriting current files or deleting the legacy directory.
+For existing projects that used older MPI locations or Markdown boards, run
+`mpi-project-setup` after updating. It detects legacy `.claude/mpi-kanban/` and
+`.agents/mpi-kanban/kanban.md` board files and proposes migration without
+silently overwriting current files or deleting legacy directories.
 
 If a workflow skill cannot find `mpi-lib`, reinstall with the full command
 above.

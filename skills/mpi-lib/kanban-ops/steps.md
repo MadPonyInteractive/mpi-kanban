@@ -1,7 +1,8 @@
 # kanban-ops/steps — `- steps:` block manipulation
 
-Read this when adding or flipping IMPLEMENTING entry steps. For schema see
-`_schema.md`.
+Read this only for legacy Markdown board compatibility and migration. New task
+board work should keep checklists in `.agents/mpi-kanban/tasks/<id>/checklist.md`.
+For legacy schema see `_schema.md`.
 
 ---
 

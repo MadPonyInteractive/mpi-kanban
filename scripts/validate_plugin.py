@@ -10,6 +10,9 @@ ROOT = Path(__file__).resolve().parent.parent
 KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 NAME_MAX = 64
 DESCRIPTION_MAX = 1024
+TASK_ID = re.compile(r"^MPI-[1-9][0-9]*$")
+TASK_COLUMNS = ("todo", "doing", "done")
+TASK_REQUIRED_FIELDS = {"schema", "id", "title", "column", "created_at", "updated_at", "links"}
 
 REMOVED_PATHS = (
     ".claude-plugin",
@@ -112,9 +115,16 @@ def validate_mpi_lib_present() -> None:
         "coordination-ops/lifecycle.md",
         "coordination-ops/statuses.md",
         "interop-ops/modes.md",
+        "task-board-ops/_schema.md",
+        "task-board-ops/read.md",
+        "task-board-ops/mutate.md",
+        "task-board-ops/migrate.md",
+        "task-board-ops/validate.md",
         "kanban-ops/find.md",
         "project-knowledge/indexing.md",
         "docs/coordination/README.md",
+        "templates/board.json",
+        "templates/task.json",
         "templates/kanban.md",
     )
     for rel in required:
@@ -155,6 +165,183 @@ def validate_kanban_templates() -> None:
                 f"{path.relative_to(ROOT)} must use columns in order: "
                 + " -> ".join(expected)
             )
+
+
+def load_json(path: Path, label: str) -> object | None:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        fail(f"{label} is invalid JSON: {exc}")
+    except OSError as exc:
+        fail(f"{label} could not be read: {exc}")
+    return None
+
+
+def validate_task_board_templates() -> None:
+    board_path = ROOT / "skills" / "mpi-lib" / "templates" / "board.json"
+    task_path = ROOT / "skills" / "mpi-lib" / "templates" / "task.json"
+
+    board = load_json(board_path, str(board_path.relative_to(ROOT)))
+    if not isinstance(board, dict):
+        fail("templates/board.json must be a JSON object")
+    else:
+        if board.get("schema") != "mpi-kanban/board/v1":
+            fail("templates/board.json must use schema mpi-kanban/board/v1")
+        if board.get("next_id") != 1:
+            fail("templates/board.json next_id must start at 1")
+        columns = board.get("columns")
+        if not isinstance(columns, dict) or tuple(columns.keys()) != TASK_COLUMNS:
+            fail("templates/board.json columns must be exactly todo, doing, done")
+        elif any(columns[column] != [] for column in TASK_COLUMNS):
+            fail("templates/board.json columns must start empty")
+
+    task = load_json(task_path, str(task_path.relative_to(ROOT)))
+    if not isinstance(task, dict):
+        fail("templates/task.json must be a JSON object")
+    else:
+        missing = TASK_REQUIRED_FIELDS - set(task)
+        if missing:
+            fail(f"templates/task.json missing required fields: {sorted(missing)}")
+        if task.get("schema") != "mpi-kanban/task-card/v1":
+            fail("templates/task.json must use schema mpi-kanban/task-card/v1")
+        if task.get("id") != "MPI-1":
+            fail("templates/task.json must use placeholder id MPI-1")
+        if task.get("column") not in TASK_COLUMNS:
+            fail("templates/task.json column must be todo, doing, or done")
+        if not isinstance(task.get("links"), dict):
+            fail("templates/task.json links must be an object")
+
+
+def validate_event_log(path: Path, label: str, *, require_task_id: bool = False) -> None:
+    if not path.exists():
+        return
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        fail(f"{label} could not be read: {exc}")
+        return
+    for index, line in enumerate(lines, start=1):
+        if not line.strip():
+            continue
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError as exc:
+            fail(f"{label}:{index} malformed JSONL event: {exc}")
+            continue
+        if not isinstance(event, dict):
+            fail(f"{label}:{index} event must be a JSON object")
+            continue
+        if event.get("schema") != "mpi-kanban/event/v1":
+            fail(f"{label}:{index} event schema must be mpi-kanban/event/v1")
+        if not event.get("type"):
+            fail(f"{label}:{index} event missing type")
+        if not event.get("at"):
+            fail(f"{label}:{index} event missing at")
+        if require_task_id and not event.get("id"):
+            fail(f"{label}:{index} task event missing id")
+
+
+def linked_path_is_inside(task_dir: Path, link_value: object) -> Path | None:
+    if not isinstance(link_value, str) or not link_value:
+        return None
+    if Path(link_value).is_absolute():
+        return None
+    target = (task_dir / link_value).resolve()
+    try:
+        target.relative_to(task_dir.resolve())
+    except ValueError:
+        return None
+    return target
+
+
+def validate_task_board_tree() -> None:
+    board_root = ROOT / ".agents" / "mpi-kanban"
+    board_path = board_root / "board.json"
+    if not board_path.exists():
+        return
+
+    board = load_json(board_path, ".agents/mpi-kanban/board.json")
+    if not isinstance(board, dict):
+        return
+    if board.get("schema") != "mpi-kanban/board/v1":
+        fail(".agents/mpi-kanban/board.json schema must be mpi-kanban/board/v1")
+    next_id = board.get("next_id")
+    if not isinstance(next_id, int) or next_id < 1:
+        fail(".agents/mpi-kanban/board.json next_id must be a positive integer")
+
+    columns = board.get("columns")
+    if not isinstance(columns, dict) or tuple(columns.keys()) != TASK_COLUMNS:
+        fail(".agents/mpi-kanban/board.json columns must be exactly todo, doing, done")
+        return
+
+    listed: dict[str, str] = {}
+    max_suffix = 0
+    for column in TASK_COLUMNS:
+        ids = columns.get(column)
+        if not isinstance(ids, list):
+            fail(f".agents/mpi-kanban/board.json column {column} must be a list")
+            continue
+        for task_id in ids:
+            if not isinstance(task_id, str) or not TASK_ID.match(task_id):
+                fail(f".agents/mpi-kanban/board.json contains invalid task id in {column}: {task_id!r}")
+                continue
+            if task_id in listed:
+                fail(f"task id {task_id} appears in both {listed[task_id]} and {column}")
+            listed[task_id] = column
+            max_suffix = max(max_suffix, int(task_id.split("-", 1)[1]))
+
+    if isinstance(next_id, int) and next_id <= max_suffix:
+        fail(".agents/mpi-kanban/board.json next_id must be greater than all existing task IDs")
+
+    tasks_root = board_root / "tasks"
+    for task_id, column in listed.items():
+        task_dir = tasks_root / task_id
+        task_json = task_dir / "task.json"
+        if not task_json.exists():
+            fail(f"listed task {task_id} is missing {task_json.relative_to(ROOT)}")
+            continue
+        task = load_json(task_json, str(task_json.relative_to(ROOT)))
+        if not isinstance(task, dict):
+            continue
+        if task.get("schema") != "mpi-kanban/task-card/v1":
+            fail(f"{task_json.relative_to(ROOT)} schema must be mpi-kanban/task-card/v1")
+        missing = TASK_REQUIRED_FIELDS - set(task)
+        if missing:
+            fail(f"{task_json.relative_to(ROOT)} missing required fields: {sorted(missing)}")
+        if task.get("id") != task_id:
+            fail(f"{task_json.relative_to(ROOT)} id must match folder/listed id {task_id}")
+        if task.get("column") != column:
+            fail(f"{task_json.relative_to(ROOT)} column must match board column {column}")
+        links = task.get("links")
+        if not isinstance(links, dict):
+            fail(f"{task_json.relative_to(ROOT)} links must be an object")
+            continue
+        for key, value in links.items():
+            target = linked_path_is_inside(task_dir, value)
+            if target is None:
+                fail(f"{task_json.relative_to(ROOT)} link {key!r} must be a relative path inside the task folder")
+                continue
+            if target.exists() and target.name == "events.jsonl":
+                validate_event_log(target, str(target.relative_to(ROOT)), require_task_id=True)
+            if target.exists() and target.name.endswith(".json"):
+                load_json(target, str(target.relative_to(ROOT)))
+        checklist = linked_path_is_inside(task_dir, links.get("checklist"))
+        validation = linked_path_is_inside(task_dir, links.get("validation"))
+        brief = linked_path_is_inside(task_dir, links.get("brief"))
+        attention = task.get("attention")
+        if column == "doing" and checklist is not None and not checklist.exists():
+            fail(f"{task_json.relative_to(ROOT)} is in doing but missing linked checklist.md")
+        if column == "done" and validation is not None and not validation.exists():
+            fail(f"{task_json.relative_to(ROOT)} is in done but missing linked validation.md")
+        if isinstance(attention, dict) and attention.get("state") == "required" and brief is not None and not brief.exists():
+            fail(f"{task_json.relative_to(ROOT)} requires attention but missing linked brief.md")
+
+    if tasks_root.exists():
+        for child in tasks_root.iterdir():
+            if child.is_dir() and (child / "task.json").exists() and child.name not in listed:
+                fail(f"orphaned task folder not listed in board.json: {child.relative_to(ROOT)}")
+
+    validate_event_log(board_root / "events.jsonl", ".agents/mpi-kanban/events.jsonl")
 
 
 def validate_interop_state() -> None:
@@ -244,6 +431,8 @@ def main() -> int:
     skill_names = validate_skills()
     validate_mpi_lib_present()
     validate_kanban_templates()
+    validate_task_board_templates()
+    validate_task_board_tree()
     validate_interop_state()
     validate_no_stale_runtime_refs()
     validate_skills_sh_json(skill_names)

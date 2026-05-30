@@ -20,8 +20,8 @@ Cache that root path for the rest of this session. All references below resolve 
 
 ## Purpose
 
-Conservatively clean workflow artifacts so `docs/plans/`, legacy
-`docs/handoffs/`, `.agents/mpi-kanban/`, and eventually
+Conservatively clean workflow artifacts so task workspaces, `docs/plans/`,
+legacy `docs/handoffs/`, `.agents/mpi-kanban/`, and
 `.agents/mpi-kanban/state/` do not become stale junk drawers.
 
 This skill proposes cleanup first and waits for approval before editing or
@@ -31,8 +31,25 @@ Invocation: Use the installed Agent Skills invocation for this agent, or ask nat
 
 ## Classification
 
+Lib pointers:
+
+- `<mpi-lib-root>/task-board-ops/_schema.md` - JSON board and task workspace
+  contract.
+- `<mpi-lib-root>/task-board-ops/read.md` - `findBoard`, `loadTask`,
+  `listTasks`.
+- `<mpi-lib-root>/task-board-ops/validate.md` - validation checks before
+  proposing repairs or archive actions.
+- `<mpi-lib-root>/kanban-ops/find.md` - legacy compatibility lookup only when
+  `board.json` is absent.
+
 Scan:
 
+- `.agents/mpi-kanban/board.json`
+- `.agents/mpi-kanban/events.jsonl`
+- `.agents/mpi-kanban/tasks/*/task.json`
+- `.agents/mpi-kanban/tasks/*/checklist.md`
+- `.agents/mpi-kanban/tasks/*/validation.md`
+- `.agents/mpi-kanban/tasks/*/handoffs/`
 - `docs/plans/*.md`
 - `docs/handoffs/*.json` as legacy compatibility handoffs or pointers
 - `.agents/mpi-kanban/state/index.json`
@@ -43,14 +60,22 @@ Scan:
 - `.agents/mpi-kanban/project-profile.md`
 - `.agents/mpi-kanban/project-knowledge-index.md`
 - `.agents/mpi-kanban/archived*.md`
-- `.agents/mpi-kanban/kanban.md`
+- `.agents/mpi-kanban/kanban.md` as a legacy migration source or snapshot
 
 Classify artifacts:
 
-- **Active:** referenced by a PLANNING, IMPLEMENTING, or VALIDATING kanban
-  entry.
-- **Completed:** referenced by a COMPLETED kanban entry.
-- **Orphaned:** not referenced by any kanban entry or handoff.
+- **Active task workspace:** referenced by a `todo` or `doing` task card, or by
+  active coordination state.
+- **Completed task workspace:** referenced by a `done` task card with
+  validation represented in `validation.md`.
+- **Attention-required task:** task card with `attention.state === "required"`;
+  keep and surface before archive/delete proposals.
+- **Legacy active:** referenced by a PLANNING, IMPLEMENTING, or VALIDATING
+  kanban entry when no JSON board exists.
+- **Legacy completed:** referenced by a COMPLETED kanban entry when no JSON
+  board exists.
+- **Orphaned:** not referenced by any JSON board column, task workspace,
+  coordination record, legacy kanban entry, or handoff.
 - **Superseded handoff:** older handoff for the same active plan when a newer
   handoff exists.
 - **Stale:** older than the chosen threshold and not active.
@@ -63,6 +88,8 @@ Classify artifacts:
 - **Active project knowledge:** project profile and knowledge index are
   active by default. Never delete or auto-rewrite. Recommend
   `mpi-project-refresh` when the user wants drift cleaned up.
+- **Legacy Markdown board:** `kanban.md` is a migration input or snapshot once
+  `board.json` exists. Do not rewrite it as the live board during cleanup.
 
 Default stale threshold: 60 days.
 
@@ -71,6 +98,7 @@ Default stale threshold: 60 days.
 Print a cleanup proposal grouped by action:
 
 - keep active,
+- keep attention-required tasks,
 - archive completed,
 - delete superseded handoffs,
 - review orphaned,
@@ -87,12 +115,17 @@ Approve this cleanup? Reply "yes" to apply, or tell me what to change.
 Approved cleanup may:
 
 - move completed/orphaned plans and handoffs to `docs/archive/mpi-kanban/`,
+- move approved completed task workspace snapshots out of the active
+  `.agents/mpi-kanban/tasks/<id>/` tree only when their `done` state and
+  validation notes are preserved and the board/event updates are explicit,
 - delete superseded handoffs,
 - move closed coordination records to `.agents/mpi-kanban/state/archive/`,
 - remove closed records from active `index.json` arrays,
 - leave active and uncertain files untouched.
 
-Never delete active files. Never delete archives by default.
+Never delete active task cards, task workspaces, files, or archives by default.
+Do not remove a task ID from `board.json` without preserving the task workspace
+and appending a board/task event that explains the archive action.
 
 Coordination-state cleanup is conservative. Propose actions first. Do not delete
 coordination-state files unless the user explicitly approves those exact paths.

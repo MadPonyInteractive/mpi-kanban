@@ -62,8 +62,9 @@ The map is shown to the user for approval. Shape:
   `docs/archive/` or leave with a top-of-file note.
 - `TODO.md` -> **index pointer**. Stays where it is; index lists it under
   backlog.
-- `.claude/mpi-kanban/kanban.md` -> **small update**. Propose migration to
-  `.agents/mpi-kanban/kanban.md`.
+- `.claude/mpi-kanban/kanban.md` -> **small update**. Propose migrating or
+  snapshotting it into the JSON task board at `.agents/mpi-kanban/board.json`
+  and `.agents/mpi-kanban/tasks/<id>/`.
 - `CONTRIBUTING.md` and `README.md` disagree on the dev server command ->
   **conflict / uncertain**. Ask the user.
 ```

@@ -31,7 +31,10 @@ be `MadPonyInteractive.mpi-kanban`. It is a fork of
 `holooooo.markdown-kanban`; keep the original MIT copyright in the extension
 `LICENSE` and keep fork attribution in the extension `NOTICE`.
 
-The fork intentionally watches only `.agents/mpi-kanban/kanban.md`.
+The fork is moving to the JSON task board contract at
+`.agents/mpi-kanban/board.json` plus `.agents/mpi-kanban/tasks/<id>/`. Legacy
+`.agents/mpi-kanban/kanban.md` boards are migration inputs or snapshots, not
+the primary live board once `board.json` exists.
 
 ## Source of Truth
 
@@ -46,8 +49,8 @@ If SPEC and PLAN disagree, ask the user before choosing.
 
 ## Hard Constraints
 
-- Do not add kanban columns or metadata fields beyond the SPEC board contract;
-  the VS Code extension expects the fixed board schema.
+- Do not add task-board columns or task-card fields beyond the SPEC board
+  contract; the VS Code extension expects the fixed JSON board schema.
 - Skills are pure Markdown. Shared reference docs live in `skills/mpi-lib/`.
 - Do not use `${CLAUDE_PLUGIN_ROOT}`, Claude `!` injection, Codex plugin
   manifests, or plugin-scoped install assumptions in workflow skills.

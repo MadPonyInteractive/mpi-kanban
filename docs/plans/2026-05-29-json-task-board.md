@@ -11,14 +11,21 @@ is simultaneously the human dashboard, agent coordination surface, persistence
 format, planning pointer, and VS Code extension input. In larger projects this
 has made the board noisy and hard for humans to scan.
 
-The companion VS Code extension at `C:\AI\Mpi\Plugins\mpi-kanban-vscode`
-currently loads `.agents/mpi-kanban/kanban.md`, parses it with
-`src/markdownParser.ts`, mutates an in-memory board in
-`src/kanbanWebviewPanel.ts`, and writes Markdown back on moves, edits, step
-updates, and task creation. The webview UI still exposes column operations and
-drag handles that do not match the desired human workflow.
+The companion VS Code extension at `C:\AI\Mpi\Plugins\mpi-kanban-vscode` has
+been updated and user-verified for the JSON task board. It opens
+`.agents/mpi-kanban/board.json`, loads `tasks/<id>/task.json`, writes task
+files and event logs, renders `To do`, `Doing`, and `Done`, supports whole-card
+dragging, and keeps task workspace links available below the board on narrow
+layouts.
 
-The planned direction is a JSON-first board with simple human columns:
+The extension now also handles legacy Markdown workspaces explicitly. When
+`board.json` is missing but `.agents/mpi-kanban/kanban.md` or
+`.claude/mpi-kanban/kanban.md` exists, it prompts before creating the JSON
+board, task workspaces, event logs, and a timestamped legacy snapshot. It does
+not modify or delete the source Markdown board during migration.
+
+The remaining direction is release readiness for the JSON-first board with
+simple human columns:
 `To do`, `Doing`, and `Done`. The board should be task-centered, not
 agent-centered. Every card gets a system-assigned visible ID such as `MPI-42`;
 users may reference that ID to agents without moving the card. The UI should be
@@ -57,29 +64,32 @@ publishing builds.
 
 ## Completed
 
-- [ ] Nothing yet.
+- [x] Phase 1: Finalize JSON Board Contract.
+- [x] Phase 2: Shared Task Store And Migration.
+- [x] Parallel Batch: Skill Workflow Update.
+- [x] Parallel Batch: VS Code Extension Update.
 
 ## Remaining Work
 
 ## Phase 1: Finalize JSON Board Contract
 
-- [ ] Update `SPEC.md`, `README.md`, `docs/install.md`, project knowledge, and
+- [x] Update `SPEC.md`, `README.md`, `docs/install.md`, project knowledge, and
   `skills/mpi-lib/` references to define the JSON-first board contract:
   `.agents/mpi-kanban/board.json` as the board index, top-level
   `.agents/mpi-kanban/tasks/<id>/` as the human task workspace, and
   `.agents/mpi-kanban/kanban.md` as legacy compatibility rather than the
   primary live board. **Verify:** targeted searches show no remaining source of
   truth wording that says the active human board is only `kanban.md`.
-- [ ] Define the initial `board.json` schema with `schema`, `next_id`, and fixed
+- [x] Define the initial `board.json` schema with `schema`, `next_id`, and fixed
   columns `todo`, `doing`, and `done`, where each column stores ordered task
   IDs. **Verify:** docs and examples show no user-editable ID field and no extra
   planning/validation columns.
-- [ ] Define `tasks/<id>/task.json` with system-assigned `id`, `title`,
+- [x] Define `tasks/<id>/task.json` with system-assigned `id`, `title`,
   optional short `description`, `column`, maturity/status badges, optional
   `attention`, optional `activeSessionTitle`, timestamps, and relative links to
   task workspace files. **Verify:** the schema supports visible cards without
   embedding plans, handoffs, research, or long implementation notes inline.
-- [ ] Define passive event records for global `.agents/mpi-kanban/events.jsonl`
+- [x] Define passive event records for global `.agents/mpi-kanban/events.jsonl`
   and per-task `tasks/<id>/events.jsonl`: `task.created`, `task.updated`,
   `task.moved`, `task.deleted`, `attention.required`, `checklist.updated`,
   `validation.updated`, and migration events. **Verify:** event examples are
@@ -88,26 +98,26 @@ publishing builds.
 
 ## Phase 2: Shared Task Store And Migration
 
-- [ ] Add shared task-board operation references or helpers for creating task
+- [x] Add shared task-board operation references or helpers for creating task
   IDs, reading `board.json`, loading task folders, moving cards, writing task
   JSON, ensuring linked files, appending events, and setting/clearing attention.
   Ownership: `skills/mpi-lib/`, `docs/`, validation scripts. **Verify:**
   workflows can describe task operations without parsing Markdown card blocks.
-- [ ] Add a migration path from the existing Markdown board to the JSON task
+- [x] Add a migration path from the existing Markdown board to the JSON task
   board. The migration must preserve current entries, assign stable `MPI-*`
   IDs, map old columns to `todo` / `doing` / `done` conservatively, preserve
   plan-file links in each task folder, and keep the old `kanban.md` available as
   a legacy snapshot. **Verify:** a fixture board with BACKLOG, PLANNING,
   IMPLEMENTING, VALIDATING, and COMPLETED entries migrates without losing
   titles, descriptions, priorities, steps, or plan links.
-- [ ] Add repair/validation tooling for the JSON board index and task folders:
+- [x] Add repair/validation tooling for the JSON board index and task folders:
   missing task folder, orphaned task folder, duplicate ID, mismatched column,
   invalid JSON, missing linked file, and malformed event line. **Verify:** the
   validator reports actionable errors and does not silently delete user data.
 
 ## Parallel Batch: Skill Workflow Update
 
-- [ ] Update task discovery and board mutation workflows for `mpi-brainstorm`,
+- [x] Update task discovery and board mutation workflows for `mpi-brainstorm`,
   `mpi-init`, `mpi-create-plan`, and `mpi-create-large-plan`. Ownership:
   `skills/mpi-brainstorm/`, `skills/mpi-init/`, `skills/mpi-create-plan/`,
   `skills/mpi-create-large-plan/`, relevant `mpi-lib` task-board references.
@@ -115,7 +125,7 @@ publishing builds.
   **Verify:** new ideas create `todo` tasks with system-assigned IDs, plan
   skills attach plan links to task folders, and users can still refer to work by
   task ID.
-- [ ] Update execution and closing workflows for `mpi-continue`,
+- [x] Update execution and closing workflows for `mpi-continue`,
   `mpi-execute-parallel`, `mpi-handoff`, `mpi-end-session`, `mpi-cleanup`, and
   `mpi-archive`. Ownership: listed skill folders and relevant shared lifecycle
   references. Briefings: `shared-agent-coordination`, `kanban-board-contract`.
@@ -123,7 +133,7 @@ publishing builds.
   implementation checklists in task files, move completed work to `done` only
   through the new board operations, and preserve handoffs/validation links
   without stuffing them into card bodies.
-- [ ] Update Nimbalyst interop handling for the new source-of-truth model.
+- [x] Update Nimbalyst interop handling for the new source-of-truth model.
   Ownership: `skills/mpi-nimbalyst-sync/`, `docs/nimbalyst-interop.md`,
   `skills/mpi-lib/interop-ops/`. Briefings: `nimbalyst-interop`,
   `kanban-board-contract`. **Verify:** `file` mode points to the JSON board as
@@ -133,7 +143,7 @@ publishing builds.
 
 ## Parallel Batch: VS Code Extension Update
 
-- [ ] Replace the extension's Markdown parser persistence path with a JSON task
+- [x] Replace the extension's Markdown parser persistence path with a JSON task
   store layer that reads `board.json`, loads visible `tasks/<id>/task.json`
   files, writes task files, and appends events. Ownership:
   `C:\AI\Mpi\Plugins\mpi-kanban-vscode\src\extension.ts`,
@@ -141,7 +151,7 @@ publishing builds.
   extension smoke-test plan, `kanban-board-contract`. **Verify:** the extension
   can open a workspace with JSON board files and render all three fixed columns
   without reading `kanban.md` as the live source.
-- [ ] Redesign the webview UI around the simple human board:
+- [x] Redesign the webview UI around the simple human board:
   `To do`, `Doing`, `Done`; one global Add Task button that creates a `todo`
   task; visible task IDs on every card; title and short description only on
   inactive cards; checklist display only for `Doing`; badges for maturity and
@@ -151,14 +161,14 @@ publishing builds.
   Briefings: extension smoke-test plan. **Verify:** a human can understand what
   is to do, doing, and done without reading raw files, and task detail links
   open the relevant task workspace files.
-- [ ] Replace drag-handle behavior with whole-card dragging. Dragging a card to
+- [x] Replace drag-handle behavior with whole-card dragging. Dragging a card to
   another column updates `board.json`, updates the task's column/state metadata,
   appends events, and sets attention when the move implies agent reconciliation.
   Ownership: `src/html/webviewScript.js`, extension message handlers, task-store
   module. Briefings: extension smoke-test plan. **Verify:** cards drag from any
   non-control part of the card; moving `todo -> doing`, `doing -> done`,
   `done -> doing`, and `doing -> todo` writes the expected task/event updates.
-- [ ] Add extension commands only where they complement the UI:
+- [x] Add extension commands only where they complement the UI:
   install/update agent skills through the existing skills.sh command, open board,
   open task by ID, and optionally add task for power users. Ownership:
   extension `package.json`, `src/extension.ts`, README. Briefings:
@@ -168,7 +178,7 @@ publishing builds.
 
 ## Phase 3: Compatibility, Cleanup, And Release Readiness
 
-- [ ] Decide and implement the minimum supported legacy behavior. At minimum,
+- [x] Decide and implement the minimum supported legacy behavior. At minimum,
   existing `kanban.md` projects need a clear migration prompt or command; avoid
   maintaining two live source-of-truth files. **Verify:** opening a legacy board
   does not silently corrupt or rewrite it, and the user is told exactly what
@@ -186,7 +196,14 @@ publishing builds.
 
 ## Plan Drift
 
-- None yet.
+- 2026-05-30: Phase 1 also needed minimal updates to `AGENTS.md`,
+  `CLAUDE.md`, coordination docs, interop references, and Nimbalyst sync
+  wording so no live source-of-truth text still described `kanban.md` as the
+  primary board.
+- 2026-05-30: The VS Code Extension Update batch was not parallel-eligible as
+  written because ownership overlapped across `extension.ts`,
+  `kanbanWebviewPanel.ts`, `webviewScript.js`, and the new task-store layer.
+  Continue handled it sequentially.
 
 ## Verification
 

@@ -28,7 +28,7 @@ interpretation.
 
 - Workflow skills live under `skills/mpi-*/SKILL.md`.
 - `skills/mpi-lib/` is a support skill containing shared reference docs and
-  the board bootstrap template.
+  board/task templates.
 - Skill-private templates live inside the consuming skill folder, such as
   `skills/mpi-project-setup/templates/`.
 
@@ -44,14 +44,17 @@ The paired VS Code extension lives next to this repository:
 - GitHub: `https://github.com/MadPonyInteractive/mpi-kanban-vscode`
 - Marketplace ID: `MadPonyInteractive.mpi-kanban`
 
-The extension watches `.agents/mpi-kanban/kanban.md`. Do not change the board
-path or schema unless the extension contract also changes.
+The extension is moving to the JSON task board contract at
+`.agents/mpi-kanban/board.json` plus `.agents/mpi-kanban/tasks/<id>/`.
+Legacy `.agents/mpi-kanban/kanban.md` boards are migration inputs or snapshots,
+not the primary live board once `board.json` exists.
 
 ## Coordination State
 
-The human-visible board remains:
+The human-visible task board is:
 
-- `.agents/mpi-kanban/kanban.md`
+- `.agents/mpi-kanban/board.json`
+- `.agents/mpi-kanban/tasks/<id>/`
 
 The canonical machine-readable coordination state lives under:
 
@@ -60,9 +63,10 @@ The canonical machine-readable coordination state lives under:
 When coordination state is relevant, read `state/index.json` first. Lifecycle
 references live under `skills/mpi-lib/coordination-ops/`.
 
-File claims with status `claimed` are active write locks. Completed or
-released file ownership does not equal commit ownership; reread current state
-before committing or integrating.
+Do not reuse `.agents/mpi-kanban/state/tasks/` for human board cards; it is
+reserved for UUID-based coordination task records. File claims with status
+`claimed` are active write locks. Completed or released file ownership does not
+equal commit ownership; reread current state before committing or integrating.
 
 ## Project Knowledge
 

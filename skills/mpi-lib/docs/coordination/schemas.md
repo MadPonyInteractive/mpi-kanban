@@ -9,7 +9,7 @@ JSON Schemas. Add fields only when they support agent coordination directly.
 {
   "schema": "mpi-kanban/state-index/v1",
   "updated_at": "2026-05-17T12:00:00Z",
-  "board": ".agents/mpi-kanban/kanban.md",
+  "board": ".agents/mpi-kanban/board.json",
   "heartbeat_timeout_minutes": 120,
   "active_sessions": [
     ".agents/mpi-kanban/state/sessions/018f6e8a-7b9f-4f0b-85f3-6a11f6de2b1a.json"
@@ -34,6 +34,8 @@ JSON Schemas. Add fields only when they support agent coordination directly.
 carry pending-change provenance, such as `complete`, `needs_review`,
 `needs_verification`, or `needs_integration`.
 
+Use `.agents/mpi-kanban/kanban.md` here only for unmigrated legacy projects.
+
 ## `state/interop.json`
 
 ```json
@@ -54,7 +56,7 @@ carry pending-change provenance, such as `complete`, `needs_review`,
 
 `source_of_truth` is `file` or `nimbalyst`. `file` is the default when this file
 is absent. In `nimbalyst` mode, Nimbalyst trackers/sessions are canonical and
-the Markdown board is imported or exported only on explicit sync boundaries.
+the JSON task board is imported or exported only on explicit sync boundaries.
 `id_mappings` links MPI entries to Nimbalyst tracker IDs without adding card
 metadata fields.
 

@@ -21,8 +21,10 @@ Cache that root path for the rest of this session. All references below resolve 
 ## Purpose
 
 Continue active work intelligently. This skill replaces rigid "execute next"
-behavior: it reads the active kanban entry, plan, latest handoff, and current
-workspace state, then proposes the next best action based on reality.
+behavior: it reads the active JSON task card, plan, latest handoff, and current
+workspace state, then proposes the next best action based on reality. Legacy
+Markdown kanban entries are compatibility inputs only when `board.json` is
+absent or the project has not been migrated.
 
 When shared coordination state exists, `mpi-continue` also reads
 `.agents/mpi-kanban/state/index.json` first and follows its pointers only as
@@ -44,10 +46,13 @@ Find the active work from the first available source:
 1. Handoff path mentioned by the user or visible in context, including either
    `.agents/mpi-kanban/state/handoffs/<uuid>.json` or legacy
    `docs/handoffs/*.json`.
-2. Plan path mentioned by the user or visible in context.
-3. VALIDATING kanban entry with a `Plan file:` body line.
-4. IMPLEMENTING kanban entry with a `Plan file:` body line.
-5. PLANNING kanban entry with a `Plan file:` body line.
+2. JSON task ID mentioned by the user, such as `MPI-42`.
+3. Plan path mentioned by the user or visible in context.
+4. `doing` task with `attention.state === "required"` or a recent
+   `attention.required` event.
+5. `doing` task linked to the active plan.
+6. Legacy VALIDATING, IMPLEMENTING, or PLANNING kanban entry with a
+   `Plan file:` body line, only when no JSON board is available.
 
 If none is visible, ask:
 
@@ -62,6 +67,10 @@ Lib pointers, read only when needed:
 - `<mpi-lib-root>/kanban-ops/find.md` - `findEntry`
 - `<mpi-lib-root>/kanban-ops/mutate.md` - `moveEntry`
 - `<mpi-lib-root>/kanban-ops/steps.md` - `addSteps`, `markStep`
+- `<mpi-lib-root>/task-board-ops/_schema.md` - JSON board and task-card schema
+- `<mpi-lib-root>/task-board-ops/read.md` - `findBoard`, `loadTask`, `findTask`
+- `<mpi-lib-root>/task-board-ops/mutate.md` - `moveTask`, `writeTask`,
+  `ensureLinkedFiles`, `appendEvent`, `setAttention`
 - `<mpi-lib-root>/coordination-ops/lifecycle.md` - session/task/file claim lifecycle
 - `<mpi-lib-root>/coordination-ops/statuses.md` - state vocabulary
 - `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode gate
@@ -80,17 +89,22 @@ Lib pointers, read only when needed:
    coordination facade.
 4. Read `.agents/mpi-kanban/state/interop.json` when present. If it is missing,
    assume `file` mode. Include the mode in the Continue Brief. If
-   `source_of_truth` is `nimbalyst`, do not move kanban entries, add steps, or
+   `source_of_truth` is `nimbalyst`, do not move JSON task cards, mutate
+   linked task workspace state, move legacy kanban entries, add steps, or
    update board state. Defer live work-state changes to Nimbalyst
    tracker/session instructions, or ask the user to run `mpi-nimbalyst-sync`
    for an explicit snapshot boundary.
 5. Register or renew an `implementer` session and create or attach a task
-   record for the active kanban entry and plan.
+   coordination record for the active JSON task card and plan. Legacy kanban
+   title may be used only for unmigrated projects.
 6. Read the active plan.
-7. Locate the kanban entry whose body contains `Plan file: <planPath>`.
-   If the board has the legacy four-column shape, ask before inserting
-   `## VALIDATING` between `## IMPLEMENTING` and `## COMPLETED`.
-8. If the entry is in PLANNING and interop mode is `file`, move it to
+7. Read `<mpi-lib-root>/task-board-ops/read.md` and locate the active task by
+   direct task ID, linked plan path, or required attention in `doing`. If
+   `board.json` is missing, use legacy `kanban-ops/find.md` compatibility to
+   locate a kanban entry whose body contains `Plan file: <planPath>`.
+8. In `file` mode, if the JSON task is in `todo`, call `moveTask(id, "doing",
+   actor, reason)` and ensure `checklist.md` / `validation.md` links exist when
+   the workflow needs them. If using a legacy Markdown board, move PLANNING to
    IMPLEMENTING and add stable steps:
    - Compact plan: one step, `Implementation`.
    - Large/adaptive plan: phase-level steps when phases exist; otherwise use
@@ -201,19 +215,25 @@ Stop and wait.
    - Update `## Current State`.
    - Keep `## Remaining Work` accurate.
    - Keep `## Completed` for plan-level work already finished; this is
-     separate from the kanban `COMPLETED` column.
+     separate from the JSON board `done` column or any legacy kanban
+     `COMPLETED` column.
 3. Complete or release file claims using the lifecycle operation:
    `complete`, `needs_review`, `needs_verification`, `needs_integration`,
    `verified`, or `released` as appropriate.
 4. Update the task record to the appropriate status. Remember that released
    file ownership is not commit ownership; preserve pending-change provenance
    until review/integration/session close resolves it.
-5. In `file` mode, flip the relevant kanban step when a lifecycle/phase
-   boundary is complete. If every implementation step is now done, move the
-   kanban entry from IMPLEMENTING to VALIDATING. Do not move it directly to
-   COMPLETED. Update kanban tags only as a coarse user-facing summary and only
-   when useful. In `nimbalyst` mode, do not mutate `kanban.md`; tell the user
-   which Nimbalyst tracker/session state should be updated instead.
+5. In `file` mode, update the JSON task workspace instead of embedding
+   implementation state in `task.json`: mark the relevant item in
+   `checklist.md`, add validation notes to `validation.md`, call `writeTask`
+   for concise status/badge changes, and append `checklist.updated` or
+   `validation.updated` events when meaningful. Move the card to `done` only
+   after validation state is represented in the task workspace and the user has
+   verified the work. If using a legacy Markdown board, flip the relevant
+   kanban step when a lifecycle/phase boundary is complete and move
+   IMPLEMENTING to VALIDATING rather than directly to COMPLETED. In
+   `nimbalyst` mode, do not mutate JSON board files or `kanban.md`; tell the
+   user which Nimbalyst tracker/session state should be updated instead.
 6. If meaningful work remains, say:
 
 ```text
@@ -223,7 +243,7 @@ Step verified. Say "continue" to keep going, "handoff" to switch sessions, or "e
 7. If the plan is complete, say:
 
 ```text
-Plan complete. Suggested next step: run `mpi-end-session` to preserve docs/rules/memory, commit, and move the kanban entry to VALIDATING or, after explicit validation approval, COMPLETED.
+Plan complete. Suggested next step: run `mpi-end-session` to preserve docs/rules/memory, commit, and move the JSON task card to `done` after validation is represented and explicitly approved.
 ```
 
 ## If user chooses Option 2

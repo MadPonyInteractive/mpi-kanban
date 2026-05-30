@@ -1,20 +1,22 @@
 # kanban-ops/_schema â€” board file schema
 
-Reference for any skill touching `kanban.md`. Read this first when you do not
-already know the column/entry/metadata layout.
+Reference for legacy compatibility and migration code touching `kanban.md`.
+New task-board work should use `task-board-ops/_schema.md` and
+`.agents/mpi-kanban/board.json`.
 
 ---
 
-## File location
+## Legacy file location
 
 ```
 <project-root>/.agents/mpi-kanban/kanban.md
 ```
 
-NOT at project root. NOT inside `.claude/`. Always inside the
-`.agents/mpi-kanban/` subfolder. The board file is separate from per-project
-plugin config (`.agents/mpi-kanban.local.md`) so `.agents/*.local.md`
-gitignores can cover config without ignoring the board.
+NOT at project root. NOT inside `.claude/` for new snapshots. Legacy projects
+may still have `.claude/mpi-kanban/kanban.md`.
+
+Once `.agents/mpi-kanban/board.json` exists, this Markdown file is a migration
+input or snapshot. Do not update both files as live sources of truth.
 
 ---
 
@@ -144,4 +146,3 @@ Notes on shape:
 | Body fence open | ` ^    ` ```md` | 4-space indent + ```` ```md ````. |
 | Body fence close | ` ^    ` ``` ` | 4-space indent + ```` ``` ````. |
 | Plan-file ref (in body) | `^Plan [Ff]ile:\s*(.+)$` | Multiline, body content only. |
-

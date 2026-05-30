@@ -1,12 +1,12 @@
 <!--
-This file is rendered as an interactive board by the "Mpi-Kanban" VS Code extension:
-https://github.com/MadPonyInteractive/mpi-kanban-vscode
+Legacy Markdown board template.
 
-Install the extension to see this file as a board. Without it, the file still works as
-plain Markdown - the MPI skills will read and edit it either way.
+The primary MPI board is now .agents/mpi-kanban/board.json with task folders under
+.agents/mpi-kanban/tasks/<id>/. Use this template only for legacy compatibility,
+fixtures, or explicit migration input.
 
 Do NOT add, rename, or remove the five H2 columns below. Do NOT introduce metadata fields
-beyond the locked schema in the plugin SPEC - the extension will break on unknown fields.
+beyond the legacy schema in the plugin SPEC.
 -->
 
 ## BACKLOG

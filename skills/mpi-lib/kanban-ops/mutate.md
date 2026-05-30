@@ -1,8 +1,9 @@
 # kanban-ops/mutate — create, move, update entries
 
-Read this when you need to add an entry, move one between columns, or change
-fields on an existing entry. For schema see `_schema.md`. For step
-manipulation see `steps.md`. For errors see `errors.md`.
+Read this only for legacy Markdown board compatibility and migration. New task
+board work should mutate `.agents/mpi-kanban/board.json` and
+`.agents/mpi-kanban/tasks/<id>/task.json`. For legacy schema see `_schema.md`.
+For step manipulation see `steps.md`. For errors see `errors.md`.
 
 ---
 

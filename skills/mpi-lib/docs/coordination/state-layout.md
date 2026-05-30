@@ -29,15 +29,19 @@ remain small and pointer-driven. It directly lists active record paths, active
 write claims, pending file states, and handoffs so agents can decide what to
 inspect next.
 
-The Markdown board remains human-visible state only:
+The JSON task board remains human-visible state only:
 
 ```text
-.agents/mpi-kanban/kanban.md
+.agents/mpi-kanban/board.json
+.agents/mpi-kanban/tasks/<id>/
 ```
 
-The board must keep the locked five-column lifecycle and metadata fields
-required by the VS Code extension. Agent-only coordination details belong in
-`.agents/`, not in extra board columns or metadata fields.
+The board must keep the locked `todo` / `doing` / `done` columns and task-card
+fields required by the VS Code extension. Agent-only coordination details belong
+in `.agents/mpi-kanban/state/`, not in extra board columns or task-card fields.
+
+Do not reuse `.agents/mpi-kanban/state/tasks/` for human board cards. Human task
+folders live under `.agents/mpi-kanban/tasks/<id>/`.
 
 ## Active Records
 

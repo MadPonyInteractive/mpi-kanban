@@ -22,9 +22,14 @@ path as `<mpi-lib-root>`, and read individual reference files only when needed.
 - `docs/coordination/` - coordination state layout, schemas, roles, UUID
   helper, and handoff migration references.
 - `interop-ops/` - source-of-truth mode and Nimbalyst interop state guidance.
-- `kanban-ops/` - board schema, entry lookup, mutation, archive, and errors.
+- `task-board-ops/` - JSON task board schema, read/mutation, migration, and
+  validation/repair contracts.
+- `kanban-ops/` - legacy Markdown board schema, lookup, mutation, archive, and
+  errors for compatibility and migration.
 - `plan-ops/` - plan shape, reading, derivation, and mutation guidance.
 - `project-intent/` - project mode contracts.
 - `project-knowledge/` - project profile and knowledge-index contracts.
-- `templates/kanban.md` - board bootstrap template used by `kanban-ops/find.md`.
+- `templates/board.json` - JSON board bootstrap template.
+- `templates/task.json` - task-card bootstrap template.
+- `templates/kanban.md` - legacy Markdown board template.
 

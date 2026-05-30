@@ -4,11 +4,15 @@ Phase 1 defines the shared coordination contract for Claude and Codex agents.
 Phase 2 adds shared lifecycle procedures for sessions, tasks, file claims,
 handoffs, stale claims, and cleanup behavior.
 
-The human board remains:
+The human task board lives outside coordination state:
 
 ```text
-.agents/mpi-kanban/kanban.md
+.agents/mpi-kanban/board.json
+.agents/mpi-kanban/tasks/<id>/
 ```
+
+Legacy projects may still have `.agents/mpi-kanban/kanban.md`. Treat it as a
+migration input or snapshot after `board.json` exists.
 
 The canonical machine-readable coordination state lives under:
 
@@ -20,9 +24,9 @@ Agents should read `state/index.json` first when it exists. The index is a
 small facade that points to active session, task, file-claim, and handoff
 records without requiring agents to scan every state directory.
 
-Agents coordinate through `.agents/mpi-kanban/state/` first. The kanban board is
-the human display surface; tags may summarize state for the user, but tags are
-not the machine coordination source.
+Agents coordinate through `.agents/mpi-kanban/state/` first. The JSON task
+board is the human display surface; card badges and attention state may
+summarize state for the user, but they are not the machine coordination source.
 
 Reference docs:
 

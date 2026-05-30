@@ -1,15 +1,16 @@
 # kanban-ops/find â€” locate the board and its entries
 
-Read this when you need to find the board, ensure it exists, list entries, or
-find a specific entry. For schema/regexes see `_schema.md`. For mutations see
-`mutate.md`.
+Read this only for legacy Markdown board compatibility and migration. New task
+board work should use `task-board-ops/_schema.md` and
+`.agents/mpi-kanban/board.json`. For legacy schema/regexes see `_schema.md`.
+For legacy mutations see `mutate.md`.
 
 References in this file resolve relative to `<mpi-lib-root>`, the installed
 root of the sibling `mpi-lib` support skill.
 
 ---
 
-## `findKanban()`
+## `findKanban()` legacy helper
 
 1. Resolve path: `<project-root>/.agents/mpi-kanban/kanban.md`.
 2. Try `Read`.
@@ -19,7 +20,7 @@ root of the sibling `mpi-lib` support skill.
 
 ---
 
-## `ensureKanban()`
+## `ensureKanban()` legacy helper
 
 1. Call `findKanban()`.
 2. If found â†’ return path.
@@ -32,6 +33,9 @@ root of the sibling `mpi-lib` support skill.
       - Extension link: `https://github.com/MadPonyInteractive/mpi-kanban-vscode`
       - One-line note: "Install the extension to see this file as an interactive board."
 4. Return path.
+
+Do not call `ensureKanban()` once `.agents/mpi-kanban/board.json` exists; avoid
+creating a competing live Markdown board.
 
 If a found board has the legacy four-column shape without `## VALIDATING`,
 return the path without silently rewriting it. Skills that need to mutate board

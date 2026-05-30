@@ -1,7 +1,7 @@
 # coordination-ops/lifecycle - session, task, and claim operations
 
-Read this before writing `.agents/mpi-kanban/state/` records. The human kanban
-board is display state; agents coordinate through these records first.
+Read this before writing `.agents/mpi-kanban/state/` records. The human JSON
+task board is display state; agents coordinate through these records first.
 
 Related references:
 
@@ -27,7 +27,7 @@ Related references:
    {
      "schema": "mpi-kanban/state-index/v1",
      "updated_at": "<ISO-8601 timestamp>",
-     "board": ".agents/mpi-kanban/kanban.md",
+     "board": ".agents/mpi-kanban/board.json",
      "heartbeat_timeout_minutes": 120,
      "active_sessions": [],
      "active_tasks": [],
@@ -80,15 +80,19 @@ Inputs: session path.
 
 ## Operation: Create Or Attach Task
 
-Inputs: title, kanban entry title, plan path, owner session path.
+Inputs: title, JSON task-board item ID or legacy kanban entry title, plan path,
+owner session path.
 
-1. Reuse an existing non-closed task for the same plan and kanban entry when it
-   clearly represents the same work.
+1. Reuse an existing non-closed coordination task for the same plan and
+   task-board item when it clearly represents the same work.
 2. Otherwise generate a UUID and create `tasks/<uuid>.json` with status
    `in_progress`.
-3. Set `owner_session`, `kanban_entry`, `plan`, and `allowed_actions`.
-4. Add the task path to `active_tasks`.
-5. Link the task path from the session record.
+3. For JSON-board projects, set `task_card` to the visible `MPI-*` task ID and
+   keep any task-workspace paths as pointers only. For unmigrated legacy
+   projects, set `kanban_entry` to the entry title.
+4. Set `owner_session`, `plan`, and `allowed_actions`.
+5. Add the task path to `active_tasks`.
+6. Link the task path from the session record.
 
 ## Operation: Claim Files
 
@@ -145,7 +149,8 @@ Inputs: task path, outcome.
 
 ## Operation: Record Handoff
 
-Inputs: session path, task path, active plan, kanban entry, next role.
+Inputs: session path, task path, active plan, JSON task-board item or legacy
+kanban entry, next role.
 
 1. Update active task/file records to `handoff_ready`, `complete`, or
    `needs_integration` as appropriate.
@@ -154,6 +159,8 @@ Inputs: session path, task path, active plan, kanban entry, next role.
 3. Add the handoff path to `active_handoffs`.
 4. Set the outgoing session to `handoff_ready` unless it will continue working.
 5. The resume prompt must point the next session to `mpi-continue`.
+6. Include the visible task-card ID and task workspace links when available.
+   Use the legacy kanban entry title only for unmigrated projects.
 
 ## Operation: Close Session
 
@@ -168,12 +175,13 @@ Inputs: session path.
 4. Set session status to `completed` or `closed`.
 5. Remove closed sessions and closed records from active index arrays.
 
-## Kanban Summary Tags
+## Task Board Summary State
 
-Kanban tags are optional user-facing summaries. They must never be the source of
-truth for coordination.
+Task-card badges, column placement, linked checklist/validation files, and
+attention state are user-facing work summaries. They must never be the source
+of truth for agent coordination.
 
-Suggested summary tags:
+Suggested summary badges or status labels:
 
 - `agent-active`
 - `claimed`
@@ -184,5 +192,8 @@ Suggested summary tags:
 - `stale-claim`
 - `handoff-ready`
 
-Update tags sparingly because the kanban board is a single shared file.
+Update card badges or attention state sparingly through JSON task-board
+operations. Detailed coordination state belongs in `.agents/mpi-kanban/state/`;
+long implementation checklists, validation notes, and handoffs belong in
+`.agents/mpi-kanban/tasks/<id>/` workspace files.
 
