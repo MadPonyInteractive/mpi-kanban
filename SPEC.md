@@ -42,7 +42,6 @@ Old users must reinstall through the npx command above.
 
 - `mpi-init` - initialize/adopt a project, including JSON board bootstrap or
   migration, project mode, durable project knowledge, and backlog import.
-- `mpi-show` - show/read one board task by ID or title without mutating state.
 - `mpi-project-refresh` - audit drift between project knowledge and repo
   reality, maintain board/state consistency, and handle project mode changes.
 - `mpi-brainstorm` - explore an idea and capture a `todo` task.
@@ -404,7 +403,7 @@ It never deletes active files and never deletes archives by default.
 
 ## 14. Cross-Agent Skill Distribution
 
-Mpi-Kanban is a 15-skill pack distributed through skills.sh. The install
+Mpi-Kanban is a 14-skill pack distributed through skills.sh. The install
 command always uses `--all`; missing `mpi-lib` is a user installation error.
 
 The pack intentionally accepts a non-standard shared support skill to avoid
@@ -426,10 +425,11 @@ Validation must check:
 ## 15. Acceptance Criteria
 
 - `npx skills add MadPonyInteractive/mpi-kanban --all -y -g` installs the pack.
-- `npx skills add MadPonyInteractive/mpi-kanban -l` lists all 15 skills.
+- `npx skills add MadPonyInteractive/mpi-kanban -l` lists all 14 skills.
 - Claude, Codex, and Kilo can invoke one workflow skill after npx install.
-- Agents can answer "what is MPI-5?" through a bounded read-only skill that
-  reads only the active board entry and direct linked task files.
+- Agents can answer "what is MPI-5?" through `mpi-continue`'s bounded
+  read-only mode, which reads only the active board entry and direct linked
+  task files.
 - Workflow skills resolve `mpi-lib` and read shared references successfully.
 - Task board schema uses locked JSON columns `todo`, `doing`, and `done`.
 - Task card IDs are system-assigned visible IDs such as `MPI-42`.

@@ -9,7 +9,6 @@
       "description": "Install every skill in this group together. The workflow skills depend on mpi-lib.",
       "skills": [
         "mpi-init",
-        "mpi-show",
         "mpi-project-refresh",
         "mpi-brainstorm",
         "mpi-create-plan",

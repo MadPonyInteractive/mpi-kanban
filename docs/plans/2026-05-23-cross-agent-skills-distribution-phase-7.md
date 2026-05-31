@@ -420,7 +420,7 @@ Ownership: `SPEC.md`, `.agents/mpi-kanban/project-profile.md`,
 
 - [x] Rewrite SPEC.md Â§14 from "KiloCode Distribution" to "Cross-Agent
   Skill Distribution via skills.sh". Cover:
-  - Skill pack model + 15-skill count + mpi-lib sibling.
+  - Skill pack model + current skill count + mpi-lib sibling.
   - skills.sh as the only supported distribution channel.
   - Path-discovery contract (`<mpi-lib-root>/...` candidate list).
   - All-or-nothing semantics; `--all` flag in install command.

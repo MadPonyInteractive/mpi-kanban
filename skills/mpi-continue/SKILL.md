@@ -1,6 +1,6 @@
 ---
 name: mpi-continue
-description: MPI workflow pack - Continue active MPI work from the real current state. Use when the user says "continue this MPI plan", "MPI continue", "continue", "resume", "keep going", "pick this back up", "read a handoff and continue", "$mpi-continue", or wants implementation to proceed from an MPI plan or handoff.
+description: MPI workflow pack - Continue active MPI work or show/read one board task. Use when the user says "continue this MPI plan", "MPI continue", "continue", "resume", "keep going", "pick this back up", "read a handoff and continue", "what is MPI-5", "tell me about MPI-5", "show MPI-5", "open MPI-5", "read MPI-5", "what is this card", "look at the <title> card", "$mpi-continue", or wants implementation to proceed from an MPI plan/handoff.
 ---
 
 # mpi-continue Skill
@@ -26,6 +26,11 @@ workspace state, then proposes the next best action based on reality. Legacy
 Markdown kanban entries are compatibility inputs only when `board.json` is
 absent or the project has not been migrated.
 
+It also owns the read-only board-entry lookup path. When the user asks "what is
+MPI-5?", "show MPI-5", "open MPI-5", "read MPI-5", "what is this card?", or
+"look at the <title> card", run the read-only mode below instead of starting
+implementation.
+
 When shared coordination state exists, `mpi-continue` also reads
 `.agents/mpi-kanban/state/index.json` first and follows its pointers only as
 needed. The shared contract is documented in
@@ -38,6 +43,64 @@ Plans are living documents. If implementation has drifted, update or annotate
 the plan instead of forcing the next unchecked item.
 
 Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
+
+## Read-only board entry mode
+
+Use this mode when the user asks to inspect one card/task rather than continue
+implementation.
+
+1. Check for `.agents/mpi-kanban/board.json`.
+2. If present, use the JSON board path. Ignore `.agents/mpi-kanban/kanban.md`
+   except to mention that it is legacy/tombstoned if relevant.
+3. If `board.json` is absent, check for legacy `.agents/mpi-kanban/kanban.md`
+   and `.claude/mpi-kanban/kanban.md`.
+4. If no board exists, stop and tell the user to run `mpi-init`.
+
+For JSON boards, resolve `MPI-*` IDs directly from `board.json`. For title
+lookups, load only the visible `task.json` files listed by `board.json` and
+match title case-insensitively. If multiple title matches exist, list the
+matching IDs and ask the user to choose one. If no match exists, report that
+the task was not found on the active JSON board. Do not search sibling repos or
+legacy boards to "confirm" unless the user explicitly asks.
+
+For legacy boards, use `<mpi-lib-root>/kanban-ops/find.md` and read only the
+matching entry block. Legacy boards do not have `MPI-*` IDs unless the
+title/body explicitly contains one.
+
+For JSON tasks, stay inside `.agents/mpi-kanban/tasks/<id>/` and read direct
+links only:
+
+1. Required: `task.json`.
+2. Summary first: `brief.md`, when present.
+3. Current work detail: `plan.md`, then `checklist.md`, when present.
+4. Completion evidence: `validation.md`, when present.
+5. File context: `files.json`, when present.
+6. Recent activity: last 10 lines of `events.jsonl`, when present.
+7. Handoffs: list files under `handoffs/` and read only the newest one unless
+   the user asks for all.
+8. Research: list files under `research/`; read only a named research file or
+   the newest one if the task summary depends on it.
+
+Report:
+
+```text
+<ID or legacy title> - <title>
+Column: <todo | doing | done | legacy column>
+Status: <status/maturity/attention summary when available>
+
+Summary:
+<brief explanation in plain language>
+
+Linked context read:
+- <files read or "task.json only">
+
+Next useful action:
+<one sentence, e.g. continue, review validation, archive, or no action obvious>
+```
+
+After reporting, stop. Do not mutate board, task, state, memory, docs, or plan
+files. `source_of_truth: "file"` means the JSON board and task workspaces when
+`board.json` exists; it does not mean `kanban.md`.
 
 ## Pre-conditions
 
@@ -263,6 +326,8 @@ Context getting large? Run `mpi-handoff` before starting a new session.
 - Do not spawn implementation workers here. When the next eligible unit is a
   valid `## Parallel Batch`, default to routing it to `mpi-execute-parallel`; that skill is the
   only worker-spawning implementation path.
+- In read-only board entry mode, read one named task/card only and do not
+  search sibling repositories or unrelated board surfaces.
 
 
 

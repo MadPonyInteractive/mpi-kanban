@@ -9,7 +9,7 @@ plan, continue, parallel execution, handoff, end session, cleanup) so a single
 session or a whole team of agents can pick up work, coordinate file ownership,
 and ship together.
 
-Skills: `mpi-init`, `mpi-show`, `mpi-project-refresh`, `mpi-brainstorm`,
+Skills: `mpi-init`, `mpi-project-refresh`, `mpi-brainstorm`,
 `mpi-create-plan`, `mpi-create-large-plan`, `mpi-continue`,
 `mpi-execute-parallel`, `mpi-nimbalyst-sync`, `mpi-handoff`,
 `mpi-end-session`, `mpi-cleanup`, `mpi-archive`, `mpi-brief-rule`, and the
@@ -81,8 +81,9 @@ Task folders keep the card compact: `task.json` stores the visible metadata,
 while `brief.md`, `plan.md`, `checklist.md`, `validation.md`, `files.json`,
 `events.jsonl`, `handoffs/`, and `research/` hold the work detail.
 
-Ask `what is MPI-42?`, `show MPI-42`, or `look at the <title> card` to read one
-card and its direct task-folder context without starting implementation.
+Ask `what is MPI-42?`, `show MPI-42`, or `look at the <title> card` to trigger
+`mpi-continue`'s read-only mode. It reads one card and its direct task-folder
+context without starting implementation.
 
 The companion **Mpi-Kanban** VS Code extension renders the board as an
 interactive task surface:
@@ -114,8 +115,6 @@ brainstorm -> create-plan/create-large-plan -> continue -> handoff/continue -> e
 ```
 
 - `mpi-brainstorm` explores an idea and can capture it as a `todo` task.
-- `mpi-show` reads one task/card by ID or title and reports its direct linked
-  context without mutating board state.
 - `mpi-create-plan` creates compact plans for normal work.
 - `mpi-create-large-plan` creates phased/adaptive plans and explicit parallel
   batches when work can be split safely.

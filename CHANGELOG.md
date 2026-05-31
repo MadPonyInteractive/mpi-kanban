@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-05-31
+
+### Changed
+
+- Folded read-only card lookup into `mpi-continue` instead of shipping a
+  standalone `mpi-show` skill, keeping the installable pack at 14 skills for
+  `npx skills`.
+
 ## [0.7.1] - 2026-05-31
 
 ### Changed
@@ -219,7 +227,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.7.2...HEAD
+[0.7.2]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.2
 [0.7.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.1
 [0.7.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.0
 [0.6.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.6.1
