@@ -62,7 +62,12 @@ If a plan file exists in `docs/plans/`, read its current state:
 
 If `.agents/mpi-kanban/state/index.json` exists, read it next. Use it as a
 small pointer facade to identify active sessions, tasks, file claims, or prior
-handoffs relevant to this handoff.
+handoffs relevant to this handoff. At this handoff boundary, also read any
+`open_messages` records that target the current session, task, files,
+workspace, agent, role, or user. Treat statuses `open`, `acknowledged`, and
+`replied` as unresolved and preserve their paths or required follow-up in the
+handoff context. This is an async boundary check only; do not promise live
+interruption, remote delivery, global broadcast, or a background broker.
 
 Read `<mpi-lib-root>/coordination-ops/lifecycle.md`. If coordination state is active,
 renew or identify the current session and task before writing the handoff.
@@ -99,6 +104,11 @@ has context:
   mark unfinished file claims `complete`, `needs_integration`, or
   `needs_review` as appropriate, and keep pending-change provenance visible in
   `pending_file_states`.
+- Preserve unresolved relevant message context: acknowledge, reply, resolve, or
+  supersede messages only when this session can do so accurately; otherwise
+  list the message paths and needed follow-up under
+  `knowledge_preservation.pending`, `context.constraints`, or
+  `files_to_read_first`.
 - Keep implementation checklists, validation notes, and long-form handoff
   context in the task workspace files under `.agents/mpi-kanban/tasks/<id>/`.
   The visible task card should contain only concise summary fields and links.
@@ -114,6 +124,20 @@ Do not commit. Do not run cleanup.
 Create file at `.agents/mpi-kanban/state/handoffs/<uuid>.json` and create the
 directory if missing. Generate `<uuid>` with `python scripts/new_uuid.py`. Use
 the same value for the filename and the JSON `id`.
+
+When `task_card.id` is present, also create a lightweight pointer under
+`.agents/mpi-kanban/tasks/<id>/handoffs/<uuid>.json`:
+
+```json
+{
+  "schema": "mpi-kanban/task-handoff-pointer/v1",
+  "canonical_handoff": ".agents/mpi-kanban/state/handoffs/<uuid>.json"
+}
+```
+
+The task-local pointer is for discoverability from read-only task lookup and
+`mpi-continue`. Do not duplicate the canonical handoff body into the task
+workspace.
 
 After writing the handoff, add it to `state/index.json` `active_handoffs` and
 update `index.updated_at`.

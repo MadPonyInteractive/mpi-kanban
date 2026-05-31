@@ -98,6 +98,11 @@ columns. Unknown Nimbalyst phases are conflicts. Do not invent new MPI columns,
 and do not restore `BACKLOG`, `PLANNING`, `IMPLEMENTING`, `VALIDATING`, or
 `COMPLETED` as live JSON-board columns.
 
+Nimbalyst phase names are not MPI task-card maturity values. When importing or
+exporting the implementation phase, map Nimbalyst `implementing` to MPI
+`maturity: "in-progress"` on a `doing` card. Valid MPI maturity values are
+`idea`, `planned`, `in-progress`, `validating`, and `complete`.
+
 ## Field Mapping
 
 | MPI field | Nimbalyst field |

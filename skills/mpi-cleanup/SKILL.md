@@ -56,6 +56,7 @@ Scan:
 - `.agents/mpi-kanban/state/sessions/*.json`
 - `.agents/mpi-kanban/state/tasks/*.json`
 - `.agents/mpi-kanban/state/files/*.json`
+- `.agents/mpi-kanban/state/messages/*.json`
 - `.agents/mpi-kanban/state/handoffs/*.json`
 - `.agents/mpi-kanban/project-profile.md`
 - `.agents/mpi-kanban/project-knowledge-index.md`
@@ -83,8 +84,21 @@ Classify artifacts:
   closed.
 - **Pending file state:** no active writer, but provenance remains for review,
   verification, integration, or final commit summary.
+- **Open message:** message listed in `state/index.json` `open_messages` or
+  message record with status `open`, `acknowledged`, or `replied`. Keep and
+  surface before cleanup decisions; messages are async boundary records, not
+  live interruptions.
+- **Closed/resolved message:** message record with status `resolved`,
+  `superseded`, or `closed`; remove from `open_messages` only after approval
+  and preserve or archive according to the proposal.
 - **Closed coordination state:** status `closed` or completed records no longer
   referenced by active tasks/handoffs.
+- **Stale active coordination task:** a record listed in
+  `state/index.json` `active_tasks` that is missing, has status `closed`, or
+  names a JSON `task_card` already in `done` while the coordination status is
+  resolved (`verified` or `completed`). Keep unresolved done-card records such
+  as `needs_review`, `needs_verification`, and `needs_integration` active until
+  the pending work is resolved.
 - **Active project knowledge:** project profile and knowledge index are
   active by default. Never delete or auto-rewrite. Recommend
   `mpi-project-refresh` when the user wants drift cleaned up.
@@ -98,6 +112,7 @@ Default stale threshold: 60 days.
 Print a cleanup proposal grouped by action:
 
 - keep active,
+- keep open messages,
 - keep attention-required tasks,
 - archive completed,
 - delete superseded handoffs,
@@ -121,6 +136,12 @@ Approved cleanup may:
 - delete superseded handoffs,
 - move closed coordination records to `.agents/mpi-kanban/state/archive/`,
 - remove closed records from active `index.json` arrays,
+- move approved resolved, superseded, or closed message records to
+  `.agents/mpi-kanban/state/archive/messages/` and remove them from
+  `open_messages`,
+- remove approved stale active coordination task pointers from
+  `state/index.json` `active_tasks` while preserving the task record for
+  archive or review,
 - leave active and uncertain files untouched.
 
 Never delete active task cards, task workspaces, files, or archives by default.
@@ -130,6 +151,10 @@ and appending a board/task event that explains the archive action.
 Coordination-state cleanup is conservative. Propose actions first. Do not delete
 coordination-state files unless the user explicitly approves those exact paths.
 Prefer moving closed state to archive over deletion.
+
+Do not delete or archive open, acknowledged, or replied messages by default.
+Cleanup checks messages only at its normal decision boundary; it does not
+monitor for live messages while it runs.
 
 Never delete `.agents/mpi-kanban/project-profile.md` or
 `.agents/mpi-kanban/project-knowledge-index.md`. They are active project

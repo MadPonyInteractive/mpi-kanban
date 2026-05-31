@@ -22,6 +22,13 @@ Run these checks against `.agents/mpi-kanban/board.json` when it exists:
 - Task `schema` is `mpi-kanban/task-card/v1`.
 - Task `id` matches its folder name.
 - Task `column` matches the board column that lists it.
+- Task `maturity`, when present, is one of `idea`, `planned`,
+  `in-progress`, `validating`, or `complete`.
+- Task `maturity` matches the board column: `todo` allows `idea` or
+  `planned`; `doing` allows `in-progress` or `validating`; `done` allows
+  `complete`.
+- A `done` task card should not keep `status: "active"` after completion is
+  accepted.
 - Required fields exist: `id`, `title`, `column`, `created_at`,
   `updated_at`, and `links`.
 - Every relative link stays inside the task folder.
@@ -31,6 +38,12 @@ Run these checks against `.agents/mpi-kanban/board.json` when it exists:
   `schema: "mpi-kanban/event/v1"`.
 - If `.agents/mpi-kanban/state/index.json` exists, its `board` field points at
   `.agents/mpi-kanban/board.json`.
+- `state/index.json` `active_tasks`, when present, does not list missing or
+  `closed` coordination task records.
+- Coordination task records listed in `active_tasks` that name a JSON
+  `task_card` in `done` are unresolved only (`needs_review`,
+  `needs_verification`, or `needs_integration`); completed, verified, or closed
+  work must not stay active.
 - If `.agents/mpi-kanban/state/interop.json` has `source_of_truth: "file"`,
   treat that as the JSON board and task workspaces, not `kanban.md`.
 - If `.agents/mpi-kanban/kanban.md` still exists, it is either under
@@ -51,6 +64,8 @@ requires that file for the task's current state. Examples:
   allowed.
 - boot docs tell agents to read, edit, continue, or boot active work from
   `kanban.md`: warning or repair finding.
+- active coordination task records still point at a done card with no
+  unresolved status: warning or repair finding.
 
 ---
 
@@ -69,6 +84,10 @@ Safe repairs to propose:
   clearly the intended state.
 - Update `state/index.json` `board` to `.agents/mpi-kanban/board.json` when
   `board.json` exists.
+- Remove `closed` coordination task records from `active_tasks`.
+- For a coordination task tied to a `done` card, remove it from `active_tasks`
+  when its status is `verified`, `completed`, or `closed`, preserving the
+  record for archive/cleanup.
 - Move a migrated `.agents/mpi-kanban/kanban.md` to
   `.agents/mpi-kanban/legacy/kanban-<timestamp>.md` after preserving a snapshot.
 - Replace a retained `.agents/mpi-kanban/kanban.md` with a tombstone after

@@ -23,6 +23,14 @@ board is present. After migration, skills should move the old Markdown board
 under `.agents/mpi-kanban/legacy/` or leave only a tombstoned compatibility
 file at the old path.
 
+An MPI Kanban root represents one work context. That context may be a single
+project folder, or it may be a VS Code `.code-workspace` whose `folders`
+entries define the member folders for the shared board, coordination state, and
+same-filesystem message inbox. Separate workspace roots remain separate work
+contexts unless an agent explicitly routes a message to a known peer root.
+The v0.8.0 mental model is one Kanban per VS Code work context, not one Kanban
+per folder.
+
 ## 2. Distribution
 
 The only supported install and update channel is skills.sh / `npx skills`:
@@ -51,6 +59,8 @@ Old users must reinstall through the npx command above.
 - `mpi-continue` - resume/implement from the active task, plan, handoff, and
   current repo state.
 - `mpi-execute-parallel` - execute explicit safe `## Parallel Batch` sections.
+- `mpi-message` - send, read, acknowledge, reply to, resolve, and explicitly
+  route same-filesystem async coordination messages.
 - `mpi-nimbalyst-sync` - coordinate Nimbalyst detection, source-of-truth mode,
   dry-run import/export boundaries, and tracker mappings.
 - `mpi-handoff` - preserve current state in canonical JSON.
@@ -174,7 +184,7 @@ Initial `task.json` shape:
   "title": "Short task title",
   "description": "Optional short card summary.",
   "column": "doing",
-  "maturity": "planned",
+  "maturity": "in-progress",
   "status": "active",
   "attention": {
     "state": "required",
@@ -204,6 +214,22 @@ for UI scanning; they must not duplicate long plans, handoffs, research, or
 implementation notes. Long-form work belongs in the linked task workspace
 files.
 
+Canonical task-card `maturity` values are `idea`, `planned`, `in-progress`,
+`validating`, and `complete`. JSON task boards must not use legacy Markdown
+column names or Nimbalyst phase names as maturity values. In particular,
+Nimbalyst `implementing` maps to MPI `maturity: "in-progress"` on a `doing`
+card; `implementing` is not a task-card maturity value.
+
+Column and maturity must stay coherent:
+
+- `todo` cards use `idea` or `planned`.
+- `doing` cards use `in-progress` or `validating`.
+- `done` cards use `complete`.
+
+Companion renderers should surface unknown maturity values as invalid with an
+obvious fallback badge or board notice instead of rendering them as an unstyled
+normal card.
+
 Passive append-only event records live in:
 
 ```text
@@ -222,8 +248,8 @@ Supported initial event types are `task.created`, `task.updated`,
 `checklist.updated`, `checklist.item_checked`,
 `checklist.item_unchecked`, `validation.updated`, `migration.started`,
 `migration.task_imported`, and `migration.completed`. Events are an audit trail
-and future protocol shape only; this release does not require a daemon, broker,
-or live message bus.
+and task-board history. They are not a live interruption channel and do not
+require a daemon, broker, remote service, or real-time delivery.
 
 Legacy Markdown boards use the old five-column lifecycle `BACKLOG`,
 `PLANNING`, `IMPLEMENTING`, `VALIDATING`, and `COMPLETED` with the locked
@@ -248,6 +274,7 @@ The state root contains:
 - `sessions/<uuid>.json`
 - `tasks/<uuid>.json`
 - `files/<uuid>.json`
+- `messages/<uuid>.json`
 - `handoffs/<uuid>.json`
 - `archive/`
 
@@ -258,9 +285,174 @@ claims with status `claimed` are active write locks. Completed or released file
 ownership does not grant commit ownership; the closing or integrating session
 must reread current state and Git state before committing.
 
+`active_tasks` must not retain closed coordination task records. When a JSON
+task card is moved to `done`, any coordination task record tied to that
+`task_card` should be closed and removed from `active_tasks` unless it remains
+explicitly unresolved, such as `needs_review`, `needs_verification`, or
+`needs_integration`. Stale active coordination records for done cards are drift
+to be repaired by `mpi-project-refresh`, `mpi-cleanup`, or session close-out;
+normal continuation should report them without silently mutating unrelated
+tasks.
+
 Lifecycle references live in `skills/mpi-lib/coordination-ops/`.
 
-### 6.1 Interop Mode State
+### 6.1 Workspace Scope
+
+The active Kanban root owns the coordination state for one work context:
+
+- **single-folder context** - `.agents/mpi-kanban/board.json` lives directly
+  under the project folder and paths are relative to that folder unless a
+  record says otherwise;
+- **VS Code workspace context** - a `.code-workspace` file is the primary scope
+  map, and each `folders` entry is a member folder of the same board,
+  coordination state, and message inbox;
+- **peer workspace context** - a separate Kanban root may receive explicit
+  same-machine messages, but it is not discovered or broadcast to implicitly.
+
+Agents must not silently treat sibling folders as in scope. If the user asks an
+agent to work in a related folder that is outside the active `.code-workspace`
+scope, the agent should recommend adding that folder to the workspace before
+treating it as part of the shared work context.
+
+Workspace discovery references live in
+`skills/mpi-lib/workspace-ops/discovery.md`. Workflow skills that need
+folder-aware behavior should use that reference before deciding that a path
+belongs to the active work context.
+
+Active root selection follows this order:
+
+1. Use an explicit root from the user's prompt, handoff, task card, or
+   coordination record.
+2. If the session is attached to a `.code-workspace`, parse that workspace file
+   and treat its `folders` entries as the complete member list.
+3. If exactly one member folder contains `.agents/mpi-kanban/board.json`, use
+   that folder as the Kanban root.
+4. If multiple member folders contain a board, ask the user or use an existing
+   persisted project setting; do not pick silently.
+5. If no board exists, initialize only the selected project folder through
+   `mpi-init`, not every workspace member.
+
+For `.code-workspace` parsing, resolve each `folders[].path` relative to the
+directory containing the workspace file unless it is already absolute. Use
+`folders[].name` as the member alias when present; otherwise use the final path
+segment of the resolved folder. If a workspace file contains JSONC features,
+use a JSONC-capable parser when available or inspect the `folders` entries
+conservatively.
+
+For example, `Mpi-Kanban.code-workspace` in this repository resolves:
+
+| Alias | Resolved folder | Role |
+|---|---|---|
+| `Mpi-Kanban` | `C:/AI/Mpi/Plugins/Mpi-Kanban` | skill-pack source and active Kanban root |
+| `mpi-kanban-vscode` | `C:/AI/Mpi/Plugins/mpi-kanban-vscode` | companion extension member folder |
+
+No other `C:/AI/Mpi/Plugins/*` sibling is in scope unless it is added to the
+workspace file or identified as a separate peer Kanban root.
+
+Folder-aware coordination references must disambiguate files in multi-folder
+workspaces. Message and claim records may use this shape when a plain
+project-relative path is ambiguous:
+
+```json
+{
+  "workspace_folder": "Website",
+  "workspace_root": "C:/work/Website",
+  "path": "src/App.tsx"
+}
+```
+
+`workspace_folder` is the display alias from the workspace member entry when
+available. `workspace_root` is the resolved folder root. `path` is relative to
+that root. This lets records distinguish, for example, `Website/src/App.tsx`
+from `App/src/App.tsx`.
+
+### 6.2 Message Records
+
+Same-filesystem async messages live under:
+
+```text
+<project-root>/.agents/mpi-kanban/state/messages/<uuid>.json
+```
+
+Messages are durable coordination records checked by agents at workflow
+boundaries, claim conflicts, handoff, continue, parallel execution, cleanup,
+and end-session. They do not interrupt running agents and do not require a
+daemon, broker, remote service, global machine-wide broadcast, or live
+subscription.
+
+`state/index.json` may include `open_messages` pointing to message records with
+status `open`, `acknowledged`, or `replied`. The index must remain small and
+pointer-driven; message bodies and thread details stay in
+`state/messages/<uuid>.json`.
+
+Minimal message shape:
+
+```json
+{
+  "schema": "mpi-kanban/message/v1",
+  "id": "018f6e8a-7b9f-4f0b-85f3-6a11f6de2b1a",
+  "status": "open",
+  "created_at": "2026-05-31T12:00:00Z",
+  "updated_at": "2026-05-31T12:00:00Z",
+  "from": {
+    "session": ".agents/mpi-kanban/state/sessions/source.json",
+    "agent": "codex",
+    "role": "implementer"
+  },
+  "to": {
+    "selector": "file",
+    "value": {
+      "workspace_folder": "Website",
+      "workspace_root": "C:/work/Website",
+      "path": "src/App.tsx"
+    }
+  },
+  "subject": "Request claim handoff for src/App.tsx",
+  "body": "I need to edit this file for MPI-2. Can you release or hand off the claim?",
+  "related": {
+    "task_card": "MPI-2",
+    "task": ".agents/mpi-kanban/state/tasks/task.json",
+    "files": [
+      {
+        "workspace_folder": "Website",
+        "workspace_root": "C:/work/Website",
+        "path": "src/App.tsx"
+      }
+    ]
+  },
+  "thread": {
+    "root": null,
+    "parent": null
+  },
+  "recent_events": [
+    {
+      "at": "2026-05-31T12:00:00Z",
+      "event": "created"
+    }
+  ]
+}
+```
+
+Message statuses are `open`, `acknowledged`, `replied`, `resolved`,
+`superseded`, and `closed`. Recipient selector values are `session`, `agent`,
+`role`, `task`, `file`, `workspace`, and `user`.
+
+Explicit same-machine peer routing writes a message record into the known peer
+workspace root's `.agents/mpi-kanban/state/messages/` folder and records
+provenance:
+
+```json
+{
+  "from_workspace": "C:/work/Mpi-Kanban",
+  "to_workspace": "C:/work/mpi-kanban-vscode"
+}
+```
+
+Peer routing is opt-in and same-filesystem only. It must not scan every MPI
+project on the machine, broadcast globally, deliver across machines, or start a
+background delivery process.
+
+### 6.3 Interop Mode State
 
 Durable source-of-truth mode state lives at:
 
@@ -340,13 +532,19 @@ matches the written plan.
 3. Reads coordination state when present.
 4. Locates the task by task ID, plan link, active attention state, or legacy
    `Plan file:` during migration.
-5. Moves `todo` to `doing` when needed.
-6. Adds stable checklist items in the task workspace.
-7. Inspects current repo state.
-8. Updates/annotates plan drift when needed.
-9. Presents a continue brief before implementation.
-10. Presents a post-implementation verification gate before marking work done.
-11. Moves fully implemented work toward `done` only after validation state is
+5. If a complete handoff identifies the task card, plan, and task workspace,
+   uses those pointers as the primary route and reads `state/index.json` only
+   for blockers such as active file claims, pending file states, open messages,
+   handoffs, and interop mode.
+6. Moves `todo` to `doing` when needed through the shared begin-implementation
+   flow, setting `maturity: "in-progress"`, `status: "active"`, active session
+   context, derived checklist items, and task events together.
+7. Adds stable checklist items in the task workspace.
+8. Inspects current repo state.
+9. Updates/annotates plan drift when needed.
+10. Presents a continue brief before implementation.
+11. Presents a post-implementation verification gate before marking work done.
+12. Moves fully implemented work toward `done` only after validation state is
     represented in the task workspace.
 
 `mpi-continue` does not commit or push.
@@ -377,6 +575,12 @@ workspace, handoff, rules, or memory files unless explicitly owned.
 `docs/handoffs/` is legacy compatibility during migration. New canonical
 handoffs live in `.agents/mpi-kanban/state/handoffs/`.
 
+When a JSON task card is active, `mpi-handoff` also writes a lightweight
+task-local pointer under `.agents/mpi-kanban/tasks/<id>/handoffs/` that
+references the canonical state handoff. The canonical handoff remains under
+`state/handoffs/`; task-local pointers are discovery aids for task lookup and
+must not duplicate long handoff state.
+
 The final chat output must include a pasteable resume block pointing the next
 session to `mpi-continue`.
 
@@ -401,9 +605,15 @@ superseded, stale, or uncertain. It proposes cleanup and waits for approval.
 
 It never deletes active files and never deletes archives by default.
 
+Cleanup and refresh workflows should detect coordination task records listed in
+`state/index.json` `active_tasks` that are already `closed`, missing, or tied
+to a `done` JSON task card without an unresolved coordination status. Approved
+repairs remove closed records from active index arrays and preserve or archive
+the coordination record according to lifecycle rules.
+
 ## 14. Cross-Agent Skill Distribution
 
-Mpi-Kanban is a 14-skill pack distributed through skills.sh. The install
+Mpi-Kanban is a 15-skill pack distributed through skills.sh. The install
 command always uses `--all`; missing `mpi-lib` is a user installation error.
 
 The pack intentionally accepts a non-standard shared support skill to avoid
@@ -425,7 +635,7 @@ Validation must check:
 ## 15. Acceptance Criteria
 
 - `npx skills add MadPonyInteractive/mpi-kanban --all -y -g` installs the pack.
-- `npx skills add MadPonyInteractive/mpi-kanban -l` lists all 14 skills.
+- `npx skills add MadPonyInteractive/mpi-kanban -l` lists all 15 skills.
 - Claude, Codex, and Kilo can invoke one workflow skill after npx install.
 - Agents can answer "what is MPI-5?" through `mpi-continue`'s bounded
   read-only mode, which reads only the active board entry and direct linked

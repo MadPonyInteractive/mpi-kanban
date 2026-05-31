@@ -10,6 +10,7 @@ Related references:
 - `docs/coordination/roles.md`
 - `docs/coordination/uuid-helper.md`
 - `coordination-ops/statuses.md`
+- `coordination-ops/messages.md`
 
 ## State Root
 
@@ -19,6 +20,7 @@ Related references:
    - `.agents/mpi-kanban/state/sessions/`
    - `.agents/mpi-kanban/state/tasks/`
    - `.agents/mpi-kanban/state/files/`
+   - `.agents/mpi-kanban/state/messages/`
    - `.agents/mpi-kanban/state/handoffs/`
    - `.agents/mpi-kanban/state/archive/`
 2. If `.agents/mpi-kanban/state/index.json` is missing, create it with:
@@ -33,6 +35,7 @@ Related references:
      "active_tasks": [],
      "active_file_claims": [],
      "pending_file_states": [],
+     "open_messages": [],
      "active_handoffs": []
    }
    ```
@@ -48,10 +51,28 @@ Related references:
 - `active_file_claims` points only at file records with status `claimed`.
 - `pending_file_states` points at file records with `complete`,
   `needs_review`, `needs_verification`, or `needs_integration` status.
+- `open_messages` points at message records with `open`, `acknowledged`, or
+  `replied` status.
 - `active_handoffs` points at handoffs with `open` or `accepted` status.
+
+If a coordination task record names a JSON `task_card` that is already in the
+board `done` column, keep it in `active_tasks` only while the coordination
+status is explicitly unresolved (`needs_review`, `needs_verification`, or
+`needs_integration`). `verified`, `completed`, and `closed` coordination tasks
+for done cards must be removed from `active_tasks`; `closed` records may be
+archived by cleanup.
 
 Keep the index small. Do not duplicate plan text, diffs, or long histories in
 it.
+
+## Message Boundary
+
+Message records live under `.agents/mpi-kanban/state/messages/`. They are
+same-filesystem async coordination records checked at workflow boundaries such
+as continue, contested file claims, handoff, parallel execution, cleanup, and
+end-session. They must not promise live interruption, remote delivery, global
+broadcast, or a daemon. Message operations for send, inbox, acknowledge, reply,
+resolve, and explicit peer routing live in `coordination-ops/messages.md`.
 
 ## Operation: Register Or Renew Session
 
@@ -146,6 +167,11 @@ Inputs: task path, outcome.
 3. Close or update related file records only when their pending state has been
    reviewed, verified, integrated, or intentionally released.
 4. Do not treat a completed file claim as a commit boundary.
+
+When the matching JSON task card is moved to `done` after explicit validation,
+set resolved coordination tasks to `closed` and remove them from
+`active_tasks`. Keep unresolved records active only when review, verification,
+or integration is still pending.
 
 ## Operation: Record Handoff
 

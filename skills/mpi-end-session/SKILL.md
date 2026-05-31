@@ -47,6 +47,14 @@ Reread the active session, task, file claim, and handoff records before
 committing. A released file claim means no active writer owns the file; it does
 not mean the pending changes are independently safe to commit.
 
+At this end-session and commit boundary, read any `open_messages` records
+pointed to by `state/index.json` when they target the current session, task,
+changed files, workspace, agent, role, or user. Treat `open`, `acknowledged`,
+and `replied` as unresolved. Relevant unresolved messages can block commit,
+require a reply/acknowledgement, require an integrator, or require a handoff
+before close-out. This is an async boundary check only; do not promise live
+interruption, remote delivery, global broadcast, or a background broker.
+
 Read `.agents/mpi-kanban/state/interop.json` when present. If it is missing,
 assume `file` mode. In `nimbalyst` mode, Nimbalyst trackers/sessions are
 canonical: do not move JSON task cards or legacy MPI board entries during
@@ -56,7 +64,8 @@ explicit `mpi-nimbalyst-sync` boundary.
 If this session owns active `claimed` files, complete, release, or hand them off
 before committing. If another fresh active session owns claimed files that are
 part of the current task, do not commit those changes; ask the user or assign an
-integrator.
+integrator. Before deciding, reread relevant `open_messages` for those
+contested files, owning sessions, task, workspace, agent, or role.
 
 ### 1. Survey what changed
 
@@ -157,6 +166,9 @@ Skipping task-board close-out; use mpi-nimbalyst-sync for a board snapshot."
 5. If validation is represented and the user explicitly approved final
    completion in the current request, call `moveTask(id, "done", actor,
    reason)` and update concise status/badges with `writeTask` if useful.
+   Then close resolved coordination task records tied to that `task_card` and
+   remove them from `state/index.json` `active_tasks`. Leave unresolved
+   `needs_review`, `needs_verification`, or `needs_integration` records active.
 6. If validation is not represented, keep the card in `doing` and call
    `setAttention(id, "required", reason, actor)` when the next action needs
    user validation.
@@ -184,6 +196,9 @@ Output to the user:
 - Task-board result should distinguish moved to `done`, still in `doing`,
   attention required for validation, already `done`, no matching JSON task, and
   legacy kanban fallback.
+- Message result should distinguish no relevant open messages, messages
+  resolved/acknowledged/replied during close-out, or messages left unresolved
+  with their paths and next action.
 - Task-board result - one of:
   - `Task board: "MPI-42" -> done. [task.json](.agents/mpi-kanban/tasks/MPI-42/task.json)`
   - `Task board: "MPI-42" still in doing - validation or implementation remains. [task.json](.agents/mpi-kanban/tasks/MPI-42/task.json)`

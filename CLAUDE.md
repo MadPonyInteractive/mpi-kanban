@@ -45,7 +45,7 @@ the primary live board once `board.json` exists.
 - [skills/mpi-lib/](./skills/mpi-lib/) - shared references consumed by the
   workflow skills.
 - [docs/plans/2026-05-31-skill-onboarding-simplification.md](./docs/plans/2026-05-31-skill-onboarding-simplification.md) -
-  lifecycle command simplification for the current 14-skill surface.
+  lifecycle command simplification for the pre-message 14-skill surface.
 
 If SPEC and PLAN disagree, ask the user before choosing.
 

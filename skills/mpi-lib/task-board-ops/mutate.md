@@ -125,6 +125,42 @@ Do not store plan bodies or long plan summaries in `task.json`.
 
 ---
 
+## `beginImplementation(id, actor, planPath, sessionTitle)`
+
+Use this recipe when a workflow starts implementation for a JSON task card. It
+prevents partial state such as a card in `doing` with `maturity: "planned"` or
+missing checklist items.
+
+1. Read `read.md`, `_schema.md`, and `plan-ops/derive.md`.
+2. Load the task with `loadTask(id)` and read `board.json`.
+3. If the task is in `todo`, call `moveTask(id, "doing", actor,
+   "Implementation started.")`.
+4. If the task is already in `doing`, leave board order alone.
+5. Stop and report drift if the task is in `done`; do not silently reopen a
+   completed card.
+6. Call `ensureLinkedFiles(id, { "plan": "plan.md", "checklist":
+   "checklist.md", "validation": "validation.md", "events": "events.jsonl",
+   "handoffs": "handoffs/" })`.
+7. If `planPath` points at the task workspace plan, derive checklist items from
+   the plan:
+   - phased plan: phase titles, stripped of `Phase N:` prefix;
+   - compact plan: one `Implementation` item;
+   - large adaptive plan without phases: lifecycle items from
+     `plan-ops/derive.md`.
+8. Preserve checked checklist items that still match derived item text. Rewrite
+   stale derived items only when the plan changed or the checklist was missing.
+9. Call `writeTask(id, { "maturity": "in-progress", "status": "active",
+   "activeSessionTitle": sessionTitle, "links": { ...existingLinks,
+   "plan": "plan.md", "checklist": "checklist.md", "validation":
+   "validation.md", "events": "events.jsonl", "handoffs": "handoffs/" } },
+   actor)`.
+10. Append `checklist.updated` when checklist items are created or changed.
+
+Do not set `maturity: "implementing"`; that is a Nimbalyst phase and maps to
+MPI `in-progress`.
+
+---
+
 ## `appendEvent(scope, event)`
 
 Scopes:

@@ -15,6 +15,7 @@
         "mpi-create-large-plan",
         "mpi-continue",
         "mpi-execute-parallel",
+        "mpi-message",
         "mpi-nimbalyst-sync",
         "mpi-handoff",
         "mpi-end-session",

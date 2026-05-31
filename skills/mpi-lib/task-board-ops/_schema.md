@@ -82,7 +82,7 @@ research outside the card JSON.
   "title": "Short task title",
   "description": "Optional short card summary.",
   "column": "doing",
-  "maturity": "planned",
+  "maturity": "in-progress",
   "status": "active",
   "attention": {
     "state": "required",
@@ -124,14 +124,32 @@ Optional fields:
 - `activeSessionTitle`
 
 `column` must match the column containing the task ID in `board.json`.
+Canonical `maturity` values are:
+
+- `idea`
+- `planned`
+- `in-progress`
+- `validating`
+- `complete`
+
+Column and maturity must stay coherent:
+
+- `todo` cards use `idea` or `planned`.
+- `doing` cards use `in-progress` or `validating`.
+- `done` cards use `complete`.
+
+Nimbalyst `implementing` maps to MPI `in-progress`; it is not a valid
+task-card maturity value.
+
 `attention.state` is `required` or `cleared` when present.
 
 ---
 
 ## Events
 
-Events are passive append-only JSON lines. There is no live daemon, broker, or
-message bus requirement.
+Events are passive append-only JSON lines for task-board history. They are not
+the async message transport and do not require a live daemon, broker, remote
+service, or real-time delivery.
 
 ```json
 {"schema":"mpi-kanban/event/v1","id":"MPI-42","type":"task.moved","at":"2026-05-30T12:30:00Z","actor":"codex","from":"todo","to":"doing","summary":"Moved into active implementation."}

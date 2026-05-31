@@ -23,6 +23,9 @@ JSON Schemas. Add fields only when they support agent coordination directly.
   "pending_file_states": [
     ".agents/mpi-kanban/state/files/a90d5036-353d-4b7e-a6cc-0f11c9f804b8.json"
   ],
+  "open_messages": [
+    ".agents/mpi-kanban/state/messages/a3b8ac9e-9d78-4ef2-a0c6-034d3a6746d2.json"
+  ],
   "active_handoffs": [
     ".agents/mpi-kanban/state/handoffs/5e89a64e-5efd-4087-a4a6-75c64d4280a0.json"
   ]
@@ -33,6 +36,8 @@ JSON Schemas. Add fields only when they support agent coordination directly.
 `pending_file_states` lists file records that no longer block writers but still
 carry pending-change provenance, such as `complete`, `needs_review`,
 `needs_verification`, or `needs_integration`.
+`open_messages` lists unresolved message records with status `open`,
+`acknowledged`, or `replied`.
 
 Use `.agents/mpi-kanban/kanban.md` here only for unmigrated legacy projects.
 
@@ -108,6 +113,86 @@ it out of `active_file_claims`. If the work still matters to review,
 verification, integration, or final commit summary, set status to `complete`,
 `needs_review`, `needs_verification`, or `needs_integration` and list it in
 `pending_file_states`.
+
+Folder-aware file references may replace or supplement plain `path` fields when
+a VS Code workspace contains several folders:
+
+```json
+{
+  "workspace_folder": "Website",
+  "workspace_root": "C:/work/Website",
+  "path": "src/App.tsx"
+}
+```
+
+`workspace_folder` is the workspace member alias when available,
+`workspace_root` is the resolved folder path, and `path` is relative to that
+folder.
+
+## `state/messages/<uuid>.json`
+
+```json
+{
+  "schema": "mpi-kanban/message/v1",
+  "id": "a3b8ac9e-9d78-4ef2-a0c6-034d3a6746d2",
+  "status": "open",
+  "created_at": "2026-05-31T12:00:00Z",
+  "updated_at": "2026-05-31T12:00:00Z",
+  "from": {
+    "session": ".agents/mpi-kanban/state/sessions/018f6e8a-7b9f-4f0b-85f3-6a11f6de2b1a.json",
+    "agent": "codex",
+    "role": "implementer"
+  },
+  "to": {
+    "selector": "file",
+    "value": {
+      "workspace_folder": "Website",
+      "workspace_root": "C:/work/Website",
+      "path": "src/App.tsx"
+    }
+  },
+  "subject": "Request file-claim handoff",
+  "body": "I need to edit this file for MPI-2. Can you release or hand off the claim?",
+  "related": {
+    "task_card": "MPI-2",
+    "task": ".agents/mpi-kanban/state/tasks/8b39a23b-bca6-4dd2-b1ab-64d90677d22e.json",
+    "files": [
+      {
+        "workspace_folder": "Website",
+        "workspace_root": "C:/work/Website",
+        "path": "src/App.tsx"
+      }
+    ]
+  },
+  "thread": {
+    "root": null,
+    "parent": null
+  },
+  "recent_events": [
+    {
+      "at": "2026-05-31T12:00:00Z",
+      "event": "created"
+    }
+  ]
+}
+```
+
+Message status values are `open`, `acknowledged`, `replied`, `resolved`,
+`superseded`, and `closed`. Recipient selectors are `session`, `agent`, `role`,
+`task`, `file`, `workspace`, and `user`.
+
+Same-machine peer routing writes the record into a known peer workspace root's
+`.agents/mpi-kanban/state/messages/` directory and adds provenance fields:
+
+```json
+{
+  "from_workspace": "C:/work/Mpi-Kanban",
+  "to_workspace": "C:/work/mpi-kanban-vscode"
+}
+```
+
+Peer routing is explicit. It is not remote delivery, a global broadcast, or a
+daemon-backed queue.
 
 ## `state/tasks/<uuid>.json`
 

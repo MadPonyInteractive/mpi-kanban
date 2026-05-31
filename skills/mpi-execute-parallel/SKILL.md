@@ -54,6 +54,15 @@ exists, locate the active task card by task ID, plan link, or `doing` task with
 `handoffs/` links exist when needed. If `board.json` is absent, legacy
 `kanban.md` references are compatibility context only.
 
+At this parallel execution boundary, read any `open_messages` records pointed
+to by `state/index.json` when they target the active batch, task, declared
+ownership, workspace, orchestrator session, agent, role, or user. Treat
+`open`, `acknowledged`, and `replied` as unresolved. A relevant unresolved
+message can block eligibility, require a reply/acknowledgement, change
+ownership, or route the batch to an integrator/user decision before workers are
+spawned. This is an async boundary check only; do not promise live
+interruption, remote delivery, global broadcast, or a background broker.
+
 Abort and explain why if any task is missing:
 
 - an unchecked `- [ ]` task,
@@ -65,8 +74,10 @@ If ownership overlaps or a task depends on another task in the same batch,
 do not parallelize. Tell the user to use `mpi-continue` instead.
 
 If any declared ownership is already claimed by another fresh active writer,
-do not spawn workers for that batch. Choose wait, handoff, integration, or user
-clarification according to the lifecycle rules.
+do not spawn workers for that batch. Reread relevant `open_messages` for the
+contested files, owning sessions, task, workspace, agent, or role, then choose
+wait, handoff, integration, a message/request record, or user clarification
+according to the lifecycle rules.
 
 ## Briefing workers
 
@@ -83,6 +94,8 @@ For each task:
    - active JSON task ID and task workspace path when available,
    - instruction to register/renew its own `implementer` session and claim only
      its owned files before editing,
+   - instruction to read relevant `open_messages` at worker startup and before
+     contested file claims, treating messages as async boundary records only,
    - instruction not to edit `board.json`, `tasks/<id>/task.json`, task
      workspace files, plan, handoff, rules, or memory unless those paths are
      explicitly in its ownership,
@@ -96,15 +109,19 @@ Workers must edit only their owned files/modules and report changed paths.
 While workers run, do non-overlapping integration prep if useful. After workers
 finish:
 
-1. Review changed files for conflicts or ownership violations.
-2. Mark worker file claims `complete`, `needs_review`,
+1. Reread `state/index.json` and relevant `open_messages` for the batch,
+   workers, claimed files, task, workspace, agent, role, or user before
+   integration decisions. Handle unresolved messages before mutating plan or
+   task-board state.
+2. Review changed files for conflicts or ownership violations.
+3. Mark worker file claims `complete`, `needs_review`,
    `needs_verification`, or `needs_integration` according to the returned
    result.
-3. Integrate results. If same-file or cross-worker reconciliation is required,
+4. Integrate results. If same-file or cross-worker reconciliation is required,
    claim the affected files as `integrator` before editing them.
-4. Run the batch verification.
-5. Present the same post-implementation gate used by `mpi-continue`.
-6. After user verifies, mark the batch tasks complete in the plan, update the
+5. Run the batch verification.
+6. Present the same post-implementation gate used by `mpi-continue`.
+7. After user verifies, mark the batch tasks complete in the plan, update the
    active task workspace checklist/validation files, append
    `checklist.updated` or `validation.updated` events when meaningful, and use
    JSON task-board operations for any card status or column change. Move the

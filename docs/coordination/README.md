@@ -21,12 +21,23 @@ The canonical machine-readable coordination state lives under:
 ```
 
 Agents should read `state/index.json` first when it exists. The index is a
-small facade that points to active session, task, file-claim, and handoff
-records without requiring agents to scan every state directory.
+small facade that points to active session, task, file-claim, message, and
+handoff records without requiring agents to scan every state directory.
 
 Agents coordinate through `.agents/mpi-kanban/state/` first. The JSON task
 board is the human display surface; card badges and attention state may
 summarize state for the user, but they are not the machine coordination source.
+
+One Kanban root owns one work context. In a multi-root VS Code workspace, the
+active `.code-workspace` file defines the member folders for the shared board,
+coordination state, and same-filesystem message inbox. Related folders outside
+that workspace should be added to the workspace before agents treat them as in
+scope.
+
+Async messages are durable JSON records under
+`.agents/mpi-kanban/state/messages/`. Agents check them at workflow boundaries;
+they are not live interruptions and do not require a daemon, broker, remote
+delivery, or global machine-wide broadcast.
 
 Reference docs:
 

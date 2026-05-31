@@ -54,6 +54,8 @@ Lib pointers:
   board/task writes.
 - `<mpi-lib-root>/task-board-ops/validate.md` - board validation checks before
   and after archive.
+- `<mpi-lib-root>/coordination-ops/messages.md` - read relevant unresolved
+  messages before removing tasks from the active board.
 - `<mpi-lib-root>/kanban-ops/archive.md` - legacy archive file selection,
   rotation, and move procedure.
 - `<mpi-lib-root>/kanban-ops/find.md` - legacy `findKanban`.
@@ -67,6 +69,13 @@ Steps:
    - Determine the selector from the user request: all `done` tasks or one
      exact `MPI-*` ID.
    - Load each selected task with `loadTask(id)`.
+   - Read `.agents/mpi-kanban/state/index.json` when present, then load
+     `open_messages` that target the selected task IDs, related coordination
+     tasks, files, workspace, agent, role, or user. Treat `open`,
+     `acknowledged`, and `replied` as unresolved. Surface relevant unresolved
+     messages and ask before archiving; do not remove a visible task while an
+     unresolved message changes the archive decision. This is an async boundary
+     check only, not live interruption or daemon behavior.
    - Refuse to archive a task that is not in `done` unless the user explicitly
      confirms an exceptional archive and any active coordination state is
      closed or released.

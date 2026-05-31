@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-31
+
+### Added
+
+- Added `mpi-message` for same-filesystem async coordination messages between
+  agents, sessions, roles, tasks, files, users, and explicit peer workspaces.
+- Added shared `mpi-lib` message and workspace-discovery references for
+  `.agents/mpi-kanban/state/messages/` and VS Code `.code-workspace` scope.
+- Added a message-bus smoke harness and validator checks for message records,
+  open-message index pointers, claim negotiation, peer routing, and resolved
+  message archival.
+
+### Changed
+
+- Workflow skills now check relevant open messages only at safe async
+  boundaries such as continue, parallel execution, handoff, cleanup, and
+  end-session.
+- Documentation now describes the v0.8.0 model: one Kanban root per work
+  context, with separate roots communicating through explicit same-machine
+  peer messages.
+
 ## [0.7.2] - 2026-05-31
 
 ### Changed
@@ -227,7 +248,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.2
 [0.7.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.1
 [0.7.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.0

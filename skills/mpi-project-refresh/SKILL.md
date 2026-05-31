@@ -103,7 +103,10 @@ Report findings in these categories:
   orphaned task workspaces.
 - **State:** missing or invalid interop mode, stale source-of-truth claims,
   coordination state pointing at old board paths, `source_of_truth: file`
-  misread as Markdown instead of JSON/file-backed board state.
+  misread as Markdown instead of JSON/file-backed board state, `active_tasks`
+  entries that are missing, closed, or tied to `done` JSON task cards without
+  unresolved statuses such as `needs_review`, `needs_verification`, or
+  `needs_integration`.
 - **Agent entrypoints:** `AGENTS.md` / `CLAUDE.md` pointers missing or stale.
 
 Cap inspection to a sane budget. If the repo is too large, narrow scope with the
@@ -169,12 +172,17 @@ After approval, in order:
 6. Apply approved interop state changes. Do not switch source of truth silently.
    If `board.json` exists, repair `state/index.json` `board` pointers that
    still point to `kanban.md`.
-7. Apply approved rule file creations or edits per file.
-8. Apply approved memory pointer edits. Ask before removing or modifying existing
+7. Apply approved coordination-state repairs. Remove missing or `closed`
+   records from active index arrays. For coordination tasks tied to JSON cards
+   in `done`, remove them from `active_tasks` only when their status is
+   resolved (`verified`, `completed`, or `closed`); leave unresolved
+   `needs_review`, `needs_verification`, or `needs_integration` records active.
+8. Apply approved rule file creations or edits per file.
+9. Apply approved memory pointer edits. Ask before removing or modifying existing
    memory entries.
-9. Apply approved boot-doc pointer edits. Preserve existing content; prefer
+10. Apply approved boot-doc pointer edits. Preserve existing content; prefer
    small replacements from `kanban.md` to `board.json` / `tasks/<id>/`.
-10. Apply approved `AGENTS.md` or `CLAUDE.md` pointer edits. Preserve existing
+11. Apply approved `AGENTS.md` or `CLAUDE.md` pointer edits. Preserve existing
     content; pointer-first additions only.
 
 ### 6. Final report

@@ -133,7 +133,10 @@ Lib pointers, read only when needed:
 - `<mpi-lib-root>/task-board-ops/_schema.md` - JSON board and task-card schema
 - `<mpi-lib-root>/task-board-ops/read.md` - `findBoard`, `loadTask`, `findTask`
 - `<mpi-lib-root>/task-board-ops/mutate.md` - `moveTask`, `writeTask`,
-  `ensureLinkedFiles`, `appendEvent`, `setAttention`
+  `ensureLinkedFiles`, `appendEvent`, `setAttention`,
+  `beginImplementation`
+- `<mpi-lib-root>/plan-ops/derive.md` - derive stable checklist items from the
+  active plan
 - `<mpi-lib-root>/coordination-ops/lifecycle.md` - session/task/file claim lifecycle
 - `<mpi-lib-root>/coordination-ops/statuses.md` - state vocabulary
 - `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode gate
@@ -141,6 +144,10 @@ Lib pointers, read only when needed:
 
 1. Read the handoff if present. If it is a legacy `docs/handoffs/` pointer to a
    canonical `.agents/` handoff, load the canonical handoff before continuing.
+   If the handoff names `task_card.id`, `plan.file`, and task workspace links,
+   treat those as the primary route. Do not enumerate unrelated active
+   coordination tasks or done board cards unless these pointers are missing,
+   contradictory, or blocked.
 2. **Load project knowledge if present.** Read
    `.agents/mpi-kanban/project-profile.md` and
    `.agents/mpi-kanban/project-knowledge-index.md` before the Continue Brief.
@@ -149,31 +156,49 @@ Lib pointers, read only when needed:
    absent, fall back to the existing pre-condition behavior.
 3. Read `<mpi-lib-root>/coordination-ops/lifecycle.md`. Call `ensureStateRoot()` when
    coordination state is relevant, then read `state/index.json` as the active
-   coordination facade.
-4. Read `.agents/mpi-kanban/state/interop.json` when present. If it is missing,
+   coordination facade. For a complete handoff route, use the index only for
+   blockers and current pointers: `active_file_claims`, `pending_file_states`,
+   `open_messages`, `active_handoffs`, `active_sessions`, and interop mode.
+   Treat stale unrelated `active_tasks` records as cleanup findings, not as a
+   reason to scan every task before the Continue Brief.
+4. At this continue startup boundary, read any `open_messages` records pointed
+   to by the index when they target the active session, task, files, workspace,
+   agent, role, or user. Treat statuses `open`, `acknowledged`, and `replied`
+   as unresolved. Include relevant messages in the Continue Brief and resolve,
+   acknowledge, reply, or ask the user before editing when a message changes
+   the next action. This is an async boundary check only; do not promise live
+   interruption, remote delivery, broadcast, or a background broker.
+5. Read `.agents/mpi-kanban/state/interop.json` when present. If it is missing,
    assume `file` mode. Include the mode in the Continue Brief. If
    `source_of_truth` is `nimbalyst`, do not move JSON task cards, mutate
    linked task workspace state, move legacy kanban entries, add steps, or
    update board state. Defer live work-state changes to Nimbalyst
    tracker/session instructions, or ask the user to run `mpi-nimbalyst-sync`
    for an explicit snapshot boundary.
-5. Register or renew an `implementer` session and create or attach a task
+6. Register or renew an `implementer` session and create or attach a task
    coordination record for the active JSON task card and plan. Legacy kanban
    title may be used only for unmigrated projects.
-6. Read the active plan.
-7. Read `<mpi-lib-root>/task-board-ops/read.md` and locate the active task by
-   direct task ID, linked plan path, or required attention in `doing`. If
-   `board.json` is missing, use legacy `kanban-ops/find.md` compatibility to
-   locate a kanban entry whose body contains `Plan file: <planPath>`.
-8. In `file` mode, if the JSON task is in `todo`, call `moveTask(id, "doing",
-   actor, reason)` and ensure `checklist.md` / `validation.md` links exist when
-   the workflow needs them. If using a legacy Markdown board, move PLANNING to
-   IMPLEMENTING and add stable steps:
+7. Read the active plan.
+8. Read `<mpi-lib-root>/task-board-ops/read.md` and locate the active task by
+   handoff task ID first when available, otherwise by direct task ID, linked
+   plan path, or required attention in `doing`. If `board.json` is missing, use
+   legacy `kanban-ops/find.md` compatibility to locate a kanban entry whose
+   body contains `Plan file: <planPath>`.
+9. Read `<mpi-lib-root>/plan-ops/derive.md` before presenting the Continue
+   Brief so the expected checklist shape is known.
+10. In `file` mode, when implementation starts or resumes, use
+   `beginImplementation(id, actor, planPath, sessionTitle)` from
+   `<mpi-lib-root>/task-board-ops/mutate.md`. It must move `todo -> doing`
+   when needed, set `maturity: "in-progress"`, set `status: "active"`, set
+   active session context, derive checklist items from the active plan, and
+   append events together. Do not leave a `doing` card with
+   `maturity: "planned"` or `maturity: "implementing"`. If using a legacy
+   Markdown board, move PLANNING to IMPLEMENTING and add stable steps:
    - Compact plan: one step, `Implementation`.
    - Large/adaptive plan: phase-level steps when phases exist; otherwise use
      lifecycle steps: `Orient current state`, `Implement active work`,
      `Verify behavior`, `Preserve knowledge`, `Close session`.
-9. Inspect current workspace state with small commands (`git status`,
+11. Inspect current workspace state with small commands (`git status`,
    targeted file reads/searches). Do not run large diffs unless needed.
 
 ## Orient and detect drift
@@ -189,6 +214,9 @@ Before proposing work, compare the plan/handoff with actual state:
   dependency, no active write claim on owned files), the default is to route to
   `mpi-execute-parallel`, not to implement it sequentially here.
 - Are there docs/rules/memory notes that should be preserved before handoff?
+- Did `state/index.json` report stale active coordination records tied to done
+  cards? Report these as cleanup/refresh findings; do not silently close
+  unrelated task records during normal continuation.
 
 If the plan is stale, edit the plan before implementation:
 
@@ -227,7 +255,7 @@ Before implementation, output a brief and stop:
 **Conventions in play:** <1-3 bullets from matched topic block, or "none">
 **Plan drift:** <none or summary of plan edits made/proposed>
 **Files likely touched:** <files/modules>
-**Coordination:** <active claims, pending file states, or none>
+**Coordination:** <active claims, pending file states, relevant open messages, or none>
 **Approach:** <2-4 sentences>
 **Risk:** Low | Medium | High
 **Verify after:** <specific check>
@@ -245,7 +273,11 @@ After approval:
 2. Claim the files/modules likely to be edited before changing them.
 3. If another fresh active writer owns a needed file, do not edit it. Choose
    wait, request handoff, create a proposal/review note, ask for an integrator,
-   split ownership, or ask the user.
+   split ownership, or ask the user. Before choosing, reread `state/index.json`
+   and any `open_messages` targeting the contested file, owning session, task,
+   workspace, agent, or role. If no relevant message exists and coordination is
+   needed, create or ask to create a normal message record; it will be checked
+   by the recipient at its next safe workflow boundary.
 4. If a file has pending state but no active writer, read that state before
    editing and treat it as current provenance.
 5. Implement the briefed action. Keep edits scoped to the stated files/modules.

@@ -53,6 +53,31 @@ pending-change provenance as current context.
 - `superseded` - a newer handoff replaces this one.
 - `closed` - handoff no longer belongs in the active index.
 
+## Messages
+
+- `open` - message is waiting for the recipient or matching workflow boundary.
+- `acknowledged` - recipient has seen the message but has not resolved it.
+- `replied` - recipient answered and the thread may still need follow-up.
+- `resolved` - message outcome is complete and no longer belongs in
+  `open_messages`.
+- `superseded` - a newer message or handoff replaces this message.
+- `closed` - message no longer belongs in the active index.
+
+Messages are same-filesystem async coordination records. Agents check them at
+safe workflow boundaries; statuses do not imply live interruption, background
+delivery, remote transport, or a daemon.
+
+## Message Recipient Selectors
+
+- `session` - one coordination session record.
+- `agent` - an agent runtime or named agent identity.
+- `role` - a coordination role such as `implementer`, `reviewer`, or
+  `integrator`.
+- `task` - a visible `MPI-*` task card or UUID coordination task.
+- `file` - a plain or folder-aware file reference.
+- `workspace` - the active workspace context or an explicit peer workspace.
+- `user` - the human operator.
+
 ## Commit Ownership
 
 File ownership and commit ownership are separate. Releasing or completing a

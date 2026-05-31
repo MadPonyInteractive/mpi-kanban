@@ -11,9 +11,9 @@ and ship together.
 
 Skills: `mpi-init`, `mpi-project-refresh`, `mpi-brainstorm`,
 `mpi-create-plan`, `mpi-create-large-plan`, `mpi-continue`,
-`mpi-execute-parallel`, `mpi-nimbalyst-sync`, `mpi-handoff`,
-`mpi-end-session`, `mpi-cleanup`, `mpi-archive`, `mpi-brief-rule`, and the
-support skill `mpi-lib`.
+`mpi-execute-parallel`, `mpi-message`, `mpi-nimbalyst-sync`,
+`mpi-handoff`, `mpi-end-session`, `mpi-cleanup`, `mpi-archive`,
+`mpi-brief-rule`, and the support skill `mpi-lib`.
 
 ## Install
 
@@ -51,6 +51,8 @@ show the Agent Message Bus card
 create a plan
 create a large plan
 continue this MPI plan
+read inbox
+tell another agent
 refresh MPI
 create an MPI handoff
 MPI end session
@@ -62,6 +64,12 @@ your tool provides, such as `mpi-continue`, `/mpi-continue`, or an equivalent
 skill command.
 
 ## Task Board
+
+Mpi-Kanban uses one Kanban root per work context, not one board per folder. In a
+single-folder project, that work context is the project folder. In a VS Code
+multi-root workspace, the active `.code-workspace` file defines the member
+folders that share one board, coordination state, and same-filesystem message
+inbox.
 
 The primary board is a small JSON index:
 
@@ -96,6 +104,11 @@ interactive task surface:
 
 To open the board, press `Ctrl+Shift+P` (`Cmd+Shift+P` on macOS) and run
 **Mpi-Kanban: Open Mpi-Kanban Board**.
+
+If a related repository is not listed in the active `.code-workspace`, agents
+should not silently treat it as part of the same work context. Add that folder
+to the workspace when it should share the board, or keep it as a separate
+Kanban root and route only explicit same-machine peer messages between roots.
 
 Legacy projects may still contain `.agents/mpi-kanban/kanban.md`. That file is
 kept for migration or snapshots; once `board.json` exists, workflows should not
@@ -168,6 +181,11 @@ Agents coordinate through `.agents/mpi-kanban/state/`:
 
 Task-card badges and attention state are display summaries only. The
 coordination state is the source of truth for agent ownership and handoffs.
+
+Workspace-aware records can disambiguate files with a workspace folder alias,
+resolved folder root, and path relative to that folder. Shared reference details
+for `.code-workspace` discovery live in
+`skills/mpi-lib/workspace-ops/discovery.md`.
 
 For Nimbalyst interop, source-of-truth mode lives in
 `.agents/mpi-kanban/state/interop.json`. Default `file` mode keeps normal MPI

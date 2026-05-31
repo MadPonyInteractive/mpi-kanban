@@ -31,6 +31,8 @@ Skills invocation for your tool, or ask naturally:
 ```text
 what is MPI-5?
 continue this MPI plan
+read inbox
+tell another agent
 create an MPI handoff
 run MPI cleanup
 ```
@@ -40,6 +42,11 @@ The skill folders install under Agent Skills directories such as
 `.claude/skills/` depending on agent and install scope.
 
 ## Board Files
+
+Mpi-Kanban uses one Kanban root per work context, not one board per folder. A
+work context can be a single project folder or a VS Code `.code-workspace`.
+When a `.code-workspace` is active, its `folders` entries define the member
+folders that share the same board, coordination state, and message inbox.
 
 New projects use a JSON task board:
 
@@ -61,6 +68,12 @@ snapshots after `board.json` exists, not as a second live board. Prefer moving
 the old Markdown file under `.agents/mpi-kanban/legacy/`; if it must remain at
 the old path, keep a strong tombstone/header and never route active boot docs
 through it.
+
+Do not assume sibling folders are part of the same work context. If an agent
+needs a related folder that is outside the active `.code-workspace`, add it to
+the workspace before sharing this board. If it should remain independent, keep
+its own Kanban root and use only explicit same-machine peer messages between
+the two roots.
 
 ## Migration From Old Installs
 
