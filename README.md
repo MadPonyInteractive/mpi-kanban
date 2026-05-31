@@ -129,10 +129,20 @@ Mpi-Kanban can maintain durable project knowledge:
 - `.agents/mpi-kanban/project-profile.md`
 - `.agents/mpi-kanban/project-knowledge-index.md`
 
-Run `mpi-init` once per project. It creates or migrates the JSON board,
-establishes project knowledge, and records the project mode. Later, use
-`mpi-project-refresh` to audit drift, update project knowledge, or change the
-project mode.
+Two skills own the lifecycle:
+
+- `mpi-init` is the one-time onboarding/adoption skill. Run it once per project.
+  It creates or migrates the JSON board, establishes project knowledge, and
+  records the project mode. If the project is already initialized, it stops and
+  points you to `mpi-project-refresh`.
+- `mpi-project-refresh` is the ongoing maintenance skill for an already-adopted
+  project. It audits drift, updates project knowledge, changes the project mode,
+  and proposes migration of any legacy `kanban.md` board files that still need
+  JSON migration or snapshot cleanup.
+
+There are no separate `mpi-project-setup` or `mpi-project-mode` skills. Setup
+folded into `mpi-init`; mode review and changes folded into
+`mpi-project-refresh`.
 
 ## Coordination
 
@@ -176,10 +186,21 @@ surfaces are removed. Reinstall through skills.sh:
 npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 ```
 
-For existing projects that used older MPI locations or Markdown boards, run
+**Removed skills.** The separate `mpi-project-setup` and `mpi-project-mode`
+skills no longer exist. Use `mpi-init` for onboarding/adoption and
+`mpi-project-refresh` for maintenance and mode changes. Update any saved
+commands or scripts that referenced the old skill names.
+
+**Projects not yet on Mpi-Kanban.** For a project that only has older MPI
+locations or a Markdown board and was never adopted into the JSON board, run
 `mpi-init` after updating. It detects legacy `.claude/mpi-kanban/` and
 `.agents/mpi-kanban/kanban.md` board files and proposes JSON-board migration
 without silently overwriting current files or deleting legacy directories.
+
+**Projects already on the JSON board.** For a project that already has a
+`board.json` but still carries legacy drift (old `kanban.md` snapshots, stale
+profile/index, outdated mode), run `mpi-project-refresh`. It proposes the
+migration and knowledge updates without re-running onboarding.
 
 If a workflow skill cannot find `mpi-lib`, reinstall with the full command
 above.
