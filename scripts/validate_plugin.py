@@ -13,6 +13,16 @@ DESCRIPTION_MAX = 1024
 TASK_ID = re.compile(r"^MPI-[1-9][0-9]*$")
 TASK_COLUMNS = ("todo", "doing", "done")
 TASK_REQUIRED_FIELDS = {"schema", "id", "title", "column", "created_at", "updated_at", "links"}
+ACTIVE_KANBAN_REF = re.compile(
+    r"\b(read|edit|update|continue|use|open|boot|load|mutate|write)\b.{0,80}"
+    r"(\.agents/mpi-kanban/kanban\.md|\.claude/mpi-kanban/kanban\.md)",
+    re.IGNORECASE,
+)
+LEGACY_CONTEXT = re.compile(
+    r"\b(legacy|snapshot|migration|migrate|compatibility|tombstone|superseded|"
+    r"not the primary|not a live|not as canonical|do not edit)\b",
+    re.IGNORECASE,
+)
 
 REMOVED_PATHS = (
     ".claude-plugin",
@@ -172,7 +182,7 @@ def validate_kanban_templates() -> None:
 
 def load_json(path: Path, label: str) -> object | None:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(path.read_text(encoding="utf-8-sig"))
     except json.JSONDecodeError as exc:
         fail(f"{label} is invalid JSON: {exc}")
     except OSError as exc:
@@ -345,6 +355,29 @@ def validate_task_board_tree() -> None:
                 fail(f"orphaned task folder not listed in board.json: {child.relative_to(ROOT)}")
 
     validate_event_log(board_root / "events.jsonl", ".agents/mpi-kanban/events.jsonl")
+
+    state_index = board_root / "state" / "index.json"
+    if state_index.exists():
+        state = load_json(state_index, ".agents/mpi-kanban/state/index.json")
+        if isinstance(state, dict) and state.get("board") != ".agents/mpi-kanban/board.json":
+            fail(".agents/mpi-kanban/state/index.json board must point to .agents/mpi-kanban/board.json when board.json exists")
+
+    boot_docs = [
+        ROOT / "START-HERE.md",
+        ROOT / "AGENTS.md",
+        ROOT / "CLAUDE.md",
+        ROOT / "README.md",
+        ROOT / ".agents" / "mpi-kanban" / "project-profile.md",
+        ROOT / ".agents" / "mpi-kanban" / "project-knowledge-index.md",
+    ]
+    for path in boot_docs:
+        if not path.exists():
+            continue
+        for line_number, line in enumerate(path.read_text(encoding="utf-8", errors="ignore").splitlines(), start=1):
+            if ACTIVE_KANBAN_REF.search(line) and not LEGACY_CONTEXT.search(line):
+                fail(
+                    f"{path.relative_to(ROOT)}:{line_number} appears to route active work through legacy kanban.md"
+                )
 
 
 def validate_interop_state_file(path: Path, label: str) -> None:

@@ -128,6 +128,8 @@ The proposal must include:
 3. Board action:
    - create empty `board.json`;
    - migrate legacy `kanban.md` to JSON task workspaces;
+   - move migrated `kanban.md` to `.agents/mpi-kanban/legacy/` or leave a
+     tombstoned compatibility file at the old path;
    - import a freeform backlog into existing JSON board;
    - leave existing JSON board unchanged.
 4. Project knowledge action:
@@ -139,7 +141,10 @@ The proposal must include:
    - preserve existing source-of-truth mode;
    - surface a Nimbalyst conflict for explicit user direction.
 6. Agent entrypoint changes, if any, limited to short pointer additions.
-7. Rule or memory changes, if any, with per-file approval requirements.
+7. Boot-doc cleanup for `START-HERE.md`, `AGENTS.md`, `CLAUDE.md`,
+   `README.md`, project memory indexes, and similar startup docs that still
+   point active task continuation at `kanban.md`.
+8. Rule or memory changes, if any, with per-file approval requirements.
 
 End with:
 
@@ -160,19 +165,30 @@ After approval, apply only approved changes:
    `tasks/`:
    - use `ensureBoard()` for empty boards;
    - use `<mpi-lib-root>/task-board-ops/migrate.md` for legacy boards;
-   - preserve legacy snapshots and never delete legacy directories without
-     explicit approval.
+   - preserve legacy snapshots;
+   - prefer moving migrated `.agents/mpi-kanban/kanban.md` to
+     `.agents/mpi-kanban/legacy/kanban-<timestamp>.md`;
+   - if the old path remains, replace it only after approval with a tombstone
+     that says `SUPERSEDED - DO NOT EDIT` and points to `board.json`;
+   - never delete legacy directories without explicit approval.
 3. Create `.agents/mpi-kanban/state/interop.json` from
    `<mpi-lib-root>/templates/interop.json` when missing. Default
    `source_of_truth` is `file`.
+   In file mode, `file` means the JSON board and task workspaces, not
+   `kanban.md`.
 4. Create or update `.agents/mpi-kanban/project-profile.md` from
    `<mpi-lib-root>/templates/project-profile.md`.
 5. Create or update `.agents/mpi-kanban/project-knowledge-index.md` from
    `<mpi-lib-root>/templates/project-knowledge-index.md`.
-6. Apply approved `AGENTS.md` / `CLAUDE.md` pointer additions only.
-7. Apply approved rule-file or memory-pointer changes per
+6. Update `.agents/mpi-kanban/state/index.json` so `board` points at
+   `.agents/mpi-kanban/board.json` when that file exists.
+7. Apply approved `AGENTS.md` / `CLAUDE.md` pointer additions only.
+8. Apply approved boot-doc repairs that remove active `kanban.md`
+   continuation instructions.
+9. Apply approved rule-file or memory-pointer changes per
    `<mpi-lib-root>/project-knowledge/updates.md`.
-8. If a backlog source was provided, import parsed tasks after the board exists.
+10. If a backlog source was provided, import parsed tasks after the board
+    exists.
 
 ### 5. Import freeform tasks
 
@@ -220,6 +236,8 @@ Next: use `mpi-brainstorm`, `mpi-create-plan`, or `mpi-continue`.
 - `mpi-init` may create the initial profile/index and record project mode.
 - Mode changes after initialization are handled by `mpi-project-refresh`.
 - Never maintain `board.json` and `kanban.md` as competing live boards.
+- Never let `source_of_truth: file` mean the legacy Markdown board when
+  `board.json` exists.
 - Never overwrite existing profile/index/rules/memory without approval.
 - Never create task-card fields beyond `<mpi-lib-root>/task-board-ops/_schema.md`.
 - Never delete legacy MPI files automatically.

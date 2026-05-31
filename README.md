@@ -9,7 +9,7 @@ plan, continue, parallel execution, handoff, end session, cleanup) so a single
 session or a whole team of agents can pick up work, coordinate file ownership,
 and ship together.
 
-Skills: `mpi-init`, `mpi-project-refresh`, `mpi-brainstorm`,
+Skills: `mpi-init`, `mpi-show`, `mpi-project-refresh`, `mpi-brainstorm`,
 `mpi-create-plan`, `mpi-create-large-plan`, `mpi-continue`,
 `mpi-execute-parallel`, `mpi-nimbalyst-sync`, `mpi-handoff`,
 `mpi-end-session`, `mpi-cleanup`, `mpi-archive`, `mpi-brief-rule`, and the
@@ -46,6 +46,8 @@ Natural language is the intended interface:
 ```text
 brainstorm with me
 initialize MPI
+what is MPI-5?
+show the Agent Message Bus card
 create a plan
 create a large plan
 continue this MPI plan
@@ -79,6 +81,9 @@ Task folders keep the card compact: `task.json` stores the visible metadata,
 while `brief.md`, `plan.md`, `checklist.md`, `validation.md`, `files.json`,
 `events.jsonl`, `handoffs/`, and `research/` hold the work detail.
 
+Ask `what is MPI-42?`, `show MPI-42`, or `look at the <title> card` to read one
+card and its direct task-folder context without starting implementation.
+
 The companion **Mpi-Kanban** VS Code extension renders the board as an
 interactive task surface:
 
@@ -95,6 +100,11 @@ Legacy projects may still contain `.agents/mpi-kanban/kanban.md`. That file is
 kept for migration or snapshots; once `board.json` exists, workflows should not
 maintain both files as live sources of truth.
 
+After migration, prefer moving the old Markdown board to
+`.agents/mpi-kanban/legacy/`. If the old path must remain for compatibility,
+keep only a tombstoned/generated file there and update project boot docs so
+agents continue from `board.json` and `tasks/<id>/`.
+
 ## Workflow
 
 The normal loop is:
@@ -104,6 +114,8 @@ brainstorm -> create-plan/create-large-plan -> continue -> handoff/continue -> e
 ```
 
 - `mpi-brainstorm` explores an idea and can capture it as a `todo` task.
+- `mpi-show` reads one task/card by ID or title and reports its direct linked
+  context without mutating board state.
 - `mpi-create-plan` creates compact plans for normal work.
 - `mpi-create-large-plan` creates phased/adaptive plans and explicit parallel
   batches when work can be split safely.
@@ -138,7 +150,8 @@ Two skills own the lifecycle:
 - `mpi-project-refresh` is the ongoing maintenance skill for an already-adopted
   project. It audits drift, updates project knowledge, changes the project mode,
   and proposes migration of any legacy `kanban.md` board files that still need
-  JSON migration or snapshot cleanup.
+  JSON migration, snapshot cleanup, tombstoning, or stale boot-doc pointer
+  repairs.
 
 There are no separate `mpi-project-setup` or `mpi-project-mode` skills. Setup
 folded into `mpi-init`; mode review and changes folded into

@@ -95,7 +95,8 @@ listed in `## Replaces / Drops` below.
    npx skills add MadPonyInteractive/mpi-kanban --all -y -g
    ```
 
-   `skills.sh.json` groups all 15 skills under a single "MPI Workflow" pack.
+   `skills.sh.json` groups the full current skill surface under a single "MPI
+   Workflow" pack.
 
 4. **skills.sh-only distribution.** `npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
    becomes the canonical install and update path for every supported agent.
@@ -355,7 +356,7 @@ project-setup 9 â€” total 69 references). `mpi-cleanup` has zero.
 Ownership: `skills.sh.json` (new), root README.md.
 
 - [x] Add `skills.sh.json` at repo root declaring the "MPI Workflow" grouping
-  with all 15 skill names. Reference the
+  with all current skill names. Reference the
   `https://skills.sh/schemas/skills.sh.schema.json` schema. Display only â€” no
   install behavior change.
 - [x] Update README.md install section: skills.sh `npx skills add --all`
@@ -365,7 +366,7 @@ Ownership: `skills.sh.json` (new), root README.md.
   "Cross-agent install" pointer to `docs/install.md`.
 
 **Verify:** `skills.sh.json` parses; README.md renders; `npx skills add
-MadPonyInteractive/mpi-kanban -l` (after push) lists 15 skills.
+MadPonyInteractive/mpi-kanban -l` (after push) lists the current skill surface.
 
 ## Phase 7.4: Replace Kilo Docs With Universal Install Docs
 
@@ -470,7 +471,7 @@ Ownership: `CHANGELOG.md`, git tag. No plugin manifests left to bump.
 - [ ] Commit (`Release <version>`) and tag (`v<version>`). Push branch + tag.
 - [ ] Confirm `.github/workflows/release.yml` creates the GitHub release.
 - [ ] Post-release smoke: `npx skills add MadPonyInteractive/mpi-kanban -l`
-  lists 15 skills; `--all -y -g` installs cleanly; one MPI skill runs
+  lists the current skill surface; `--all -y -g` installs cleanly; one MPI skill runs
   end-to-end.
 
 **Verify:** Tag pushed; release-workflow succeeds; npx install works on a

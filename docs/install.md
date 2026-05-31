@@ -29,6 +29,7 @@ Different agents expose installed skills differently. Use the native Agent
 Skills invocation for your tool, or ask naturally:
 
 ```text
+what is MPI-5?
 continue this MPI plan
 create an MPI handoff
 run MPI cleanup
@@ -50,11 +51,15 @@ New projects use a JSON task board:
 
 The fixed human columns are `To do`, `Doing`, and `Done`, stored in JSON as
 `todo`, `doing`, and `done`. Task IDs are system-assigned visible IDs such as
-`MPI-42`; use those IDs when asking an agent to continue or inspect work.
+`MPI-42`; use those IDs when asking an agent to show, continue, or inspect
+work.
 
 Legacy projects may still contain `.agents/mpi-kanban/kanban.md` or
 `.claude/mpi-kanban/kanban.md`. Treat those files as migration inputs or
-snapshots after `board.json` exists, not as a second live board.
+snapshots after `board.json` exists, not as a second live board. Prefer moving
+the old Markdown file under `.agents/mpi-kanban/legacy/`; if it must remain at
+the old path, keep a strong tombstone/header and never route active boot docs
+through it.
 
 ## Migration From Old Installs
 

@@ -81,6 +81,9 @@ enough to validate shape and source-of-truth mode:
 - `.agents/mpi-kanban/state/index.json`
 - `.agents/mpi-kanban/state/interop.json`
 - legacy `.agents/mpi-kanban/kanban.md` and `.claude/mpi-kanban/kanban.md`
+- startup/boot docs that may route agents to board state: `START-HERE.md`,
+  `AGENTS.md`, `CLAUDE.md`, `README.md`, project memory indexes, and obvious
+  docs under `docs/` that are listed by the profile/index
 
 Skim linked sources; do not deep-load every doc/rule/memory file.
 
@@ -93,11 +96,14 @@ Report findings in these categories:
 - **Knowledge index:** topic pointers, moved files, stale rules, memory pointers,
   missing topics for newly important subsystems.
 - **Rules and docs:** conventions that no longer match repo reality, duplicated
-  or conflicting guidance.
+  or conflicting guidance, especially boot docs that still route active work
+  through `kanban.md` after `board.json` exists.
 - **Board:** JSON schema validity, task folders, linked files, legacy board files
-  still treated as live, orphaned task workspaces.
+  still treated as live, retained legacy `kanban.md` without a tombstone,
+  orphaned task workspaces.
 - **State:** missing or invalid interop mode, stale source-of-truth claims,
-  coordination state pointing at old board paths.
+  coordination state pointing at old board paths, `source_of_truth: file`
+  misread as Markdown instead of JSON/file-backed board state.
 - **Agent entrypoints:** `AGENTS.md` / `CLAUDE.md` pointers missing or stale.
 
 Cap inspection to a sane budget. If the repo is too large, narrow scope with the
@@ -133,7 +139,8 @@ Single message containing:
 3. Mode review or requested mode change.
 4. Missing profile/index creation proposal if the project is partial.
 5. Legacy migration proposal if old board files still need JSON migration or
-   snapshot cleanup.
+   snapshot cleanup, tombstoning, moving under `.agents/mpi-kanban/legacy/`, or
+   boot-doc pointer cleanup.
 6. Newly inspected sources with adoption classification, if any.
 
 End with:
@@ -155,12 +162,20 @@ After approval, in order:
    Bump `last_refresh` to today.
 4. Apply approved mode changes and mode notes.
 5. Apply approved JSON board repairs or legacy migration/snapshot actions.
+   When `board.json` exists, approved cleanup should either move
+   `.agents/mpi-kanban/kanban.md` under `.agents/mpi-kanban/legacy/` or replace
+   it with a tombstone that says `SUPERSEDED - DO NOT EDIT` and points to
+   `board.json`.
 6. Apply approved interop state changes. Do not switch source of truth silently.
+   If `board.json` exists, repair `state/index.json` `board` pointers that
+   still point to `kanban.md`.
 7. Apply approved rule file creations or edits per file.
 8. Apply approved memory pointer edits. Ask before removing or modifying existing
    memory entries.
-9. Apply approved `AGENTS.md` or `CLAUDE.md` pointer edits. Preserve existing
-   content; pointer-first additions only.
+9. Apply approved boot-doc pointer edits. Preserve existing content; prefer
+   small replacements from `kanban.md` to `board.json` / `tasks/<id>/`.
+10. Apply approved `AGENTS.md` or `CLAUDE.md` pointer edits. Preserve existing
+    content; pointer-first additions only.
 
 ### 6. Final report
 
@@ -185,6 +200,8 @@ Refresh applied.
 - Never overwrite user-customized profile/index sections without showing the
   proposed change and getting approval.
 - Never maintain `board.json` and `kanban.md` as competing live boards.
+- Never treat `source_of_truth: file` as permission to read or write
+  `kanban.md` when `board.json` exists.
 - Never switch Nimbalyst/file source-of-truth mode silently.
 
 ## Related invocations

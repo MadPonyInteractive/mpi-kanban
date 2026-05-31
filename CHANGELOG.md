@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-05-31
+
+### Changed
+
+- Tightened post-migration cleanup so JSON-board projects treat legacy
+  `kanban.md` files as moved/tombstoned compatibility artifacts, and refresh
+  validation flags boot docs that still route active work through Markdown.
+
+### Added
+
+- `mpi-show` read-only workflow for natural board-card lookup requests such as
+  "what is MPI-5?" or "show the <title> card".
+
 ## [0.7.0] - 2026-05-31
 
 ### Added
@@ -206,7 +219,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.1
 [0.7.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.0
 [0.6.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.6.1
 [0.6.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.6.0

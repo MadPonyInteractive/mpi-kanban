@@ -14,7 +14,9 @@ or load visible task cards. For the schema, read `_schema.md` first.
    migrate from legacy Markdown, or surface a setup notice.
 
 If both `board.json` and `kanban.md` exist, use `board.json` as canonical.
-Do not write to `kanban.md` as a live board.
+Do not write to `kanban.md` as a live board. Treat `source_of_truth: "file"` as
+the local JSON/file-backed board when `board.json` exists; it is not permission
+to use the old Markdown board.
 
 ---
 
@@ -31,7 +33,9 @@ or an approved migration.
    - Create an empty `<project-root>/.agents/mpi-kanban/events.jsonl`.
    - Create `<project-root>/.agents/mpi-kanban/tasks/`.
 4. If legacy `.agents/mpi-kanban/kanban.md` exists, tell the user it remains
-   a legacy migration source or snapshot. Do not delete or overwrite it.
+   a legacy migration source or snapshot. Propose running `mpi-project-refresh`
+   to move it under `.agents/mpi-kanban/legacy/` or replace it with a tombstone
+   after approval. Do not delete or overwrite it silently.
 
 ---
 

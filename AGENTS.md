@@ -20,6 +20,8 @@ Read these files only as needed:
 - `skills/mpi-lib/` before changing shared references.
 - `docs/plans/2026-05-23-cross-agent-skills-distribution-phase-7.md` for the
   npx-only packaging refactor.
+- `docs/plans/2026-05-31-skill-onboarding-simplification.md` before changing
+  project lifecycle commands or skill surface.
 
 If `SPEC.md` and `PLAN.md` disagree, ask the user before choosing an
 interpretation.

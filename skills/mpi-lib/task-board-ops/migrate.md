@@ -67,15 +67,35 @@ Set `board.next_id` to one higher than the largest assigned ID.
 
 ---
 
-## Legacy Snapshot
+## Post-Migration Legacy Cleanup
 
-Keep the old Markdown board available. Preferred behavior:
+Keep migrated Markdown content available without leaving it as an active board.
+Preferred behavior:
 
 1. Copy the source file to
    `.agents/mpi-kanban/legacy/kanban-<YYYY-MM-DD-HHMMSS>.md`.
-2. Leave the original file in place unless the user explicitly approves moving
-   or deleting it.
-3. Do not write future live task changes to the legacy snapshot.
+2. Move `.agents/mpi-kanban/kanban.md` to that legacy path when the user
+   approves migration cleanup.
+3. If the original path must remain for compatibility, replace it only after
+   approval with a short tombstone:
+
+   ```markdown
+   # SUPERSEDED - DO NOT EDIT
+
+   The active MPI board is `.agents/mpi-kanban/board.json` with task
+   workspaces under `.agents/mpi-kanban/tasks/<id>/`.
+
+   This file is retained only as generated/display compatibility for older
+   tooling. Do not use it as canonical task state.
+   ```
+
+4. Do not write future live task changes to the legacy snapshot or tombstone.
+5. Update `.agents/mpi-kanban/state/index.json` so `board` points at
+   `.agents/mpi-kanban/board.json`.
+6. Check boot docs (`START-HERE.md`, `AGENTS.md`, `CLAUDE.md`, `README.md`,
+   project memory indexes, and profile/index read-first docs) for active
+   `kanban.md` continuation instructions and propose pointer updates in the
+   same migration/refresh pass.
 
 ---
 
@@ -89,6 +109,8 @@ Source: <path>
 Target board: .agents/mpi-kanban/board.json
 Tasks to create: <n>
 Legacy snapshot: <path>
+Legacy source cleanup: <move to legacy | tombstone at old path | retain with warning>
+Boot-doc updates: <n>
 
 Column mapping:
 - BACKLOG -> todo: <n>

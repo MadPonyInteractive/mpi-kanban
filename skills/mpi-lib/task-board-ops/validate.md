@@ -29,6 +29,16 @@ Run these checks against `.agents/mpi-kanban/board.json` when it exists:
   (`events.jsonl`).
 - Event lines parse as one JSON object per line and use
   `schema: "mpi-kanban/event/v1"`.
+- If `.agents/mpi-kanban/state/index.json` exists, its `board` field points at
+  `.agents/mpi-kanban/board.json`.
+- If `.agents/mpi-kanban/state/interop.json` has `source_of_truth: "file"`,
+  treat that as the JSON board and task workspaces, not `kanban.md`.
+- If `.agents/mpi-kanban/kanban.md` still exists, it is either under
+  `.agents/mpi-kanban/legacy/` or has a top-of-file tombstone containing
+  `SUPERSEDED` or `DO NOT EDIT`.
+- Boot docs (`START-HERE.md`, `AGENTS.md`, `CLAUDE.md`, `README.md`, project
+  memory indexes, and profile/index read-first docs) do not route active task
+  continuation through `kanban.md` when `board.json` exists.
 
 For missing linked files, report an actionable warning unless the workflow
 requires that file for the task's current state. Examples:
@@ -36,6 +46,11 @@ requires that file for the task's current state. Examples:
 - `doing` task with no `checklist.md`: warning.
 - task with `attention.required` and no `brief.md`: warning.
 - `done` task with no `validation.md`: warning.
+- retained legacy `kanban.md` without a tombstone: warning.
+- boot docs mention `kanban.md` only as legacy/snapshot/migration context:
+  allowed.
+- boot docs tell agents to read, edit, continue, or boot active work from
+  `kanban.md`: warning or repair finding.
 
 ---
 
@@ -52,6 +67,14 @@ Safe repairs to propose:
 - Update `next_id` to one greater than the largest existing task ID.
 - Fix a task `column` field to match the board when the board placement is
   clearly the intended state.
+- Update `state/index.json` `board` to `.agents/mpi-kanban/board.json` when
+  `board.json` exists.
+- Move a migrated `.agents/mpi-kanban/kanban.md` to
+  `.agents/mpi-kanban/legacy/kanban-<timestamp>.md` after preserving a snapshot.
+- Replace a retained `.agents/mpi-kanban/kanban.md` with a tombstone after
+  approval.
+- Replace active boot-doc pointers from `kanban.md` to `board.json` and
+  `tasks/<id>/` after approval.
 
 Unsafe repairs that require a specific user choice:
 
@@ -60,6 +83,8 @@ Unsafe repairs that require a specific user choice:
 - Overwriting invalid JSON.
 - Moving tasks between columns when task state and board placement disagree.
 - Removing unknown files from task folders.
+- Deleting the only copy of a legacy Markdown board.
+- Silently rewriting user-owned boot docs or memory entries.
 
 ---
 
