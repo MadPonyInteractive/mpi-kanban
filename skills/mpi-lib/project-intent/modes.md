@@ -6,19 +6,20 @@ not a label. Skills read this file when proposing or evaluating project mode.
 
 The active mode for a project is recorded in
 `.agents/mpi-kanban/project-profile.md` under `mode:` with a short
-`mode_rationale:` line. `mpi-project-mode` is the only skill that changes mode.
+`mode_rationale:` line. `mpi-init` records the initial mode and
+`mpi-project-refresh` handles later mode changes.
 
 ## Default mode rule
 
-- **New project, mode not yet asked or unclear:** `mpi-project-setup` asks the
+- **New project, mode not yet asked or unclear:** `mpi-init` asks the
   user explicitly. If the user declines to answer, defaults to
   `scalable-foundation`.
-- **Existing project, no recorded mode:** `mpi-project-setup` and
-  `mpi-project-refresh` announce which mode is being evaluated. Default is
+- **Existing project, no recorded mode:** `mpi-init` and `mpi-project-refresh`
+  announce which mode is being evaluated. Default is
   `scalable-foundation` unless repo evidence or user instruction says
   otherwise (for example, "this is a throwaway prototype" or a clear MVP
   README/CHANGELOG framing).
-- **Mode change without rerunning setup:** use `mpi-project-mode`.
+- **Mode change after initialization:** use `mpi-project-refresh`.
 
 This rule is the single source. Other skills must point here instead of
 restating their own defaults.
@@ -113,7 +114,7 @@ remove more complexity than it adds, and every shortcut must be named.
 
 ## Mode transitions
 
-`mpi-project-mode` handles transitions. The transition does not force a
+`mpi-project-refresh` handles transitions. The transition does not force a
 rewrite. It updates future work behavior and records migration notes in the
 project profile so later sessions know which areas still carry prior-mode
 shortcuts.

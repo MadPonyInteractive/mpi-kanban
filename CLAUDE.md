@@ -57,6 +57,10 @@ If SPEC and PLAN disagree, ask the user before choosing.
 - The pack is all-or-nothing. Every consuming skill must fail clearly when
   `mpi-lib` is missing and tell the user to reinstall with `npx skills add
   MadPonyInteractive/mpi-kanban --all -y -g`.
+- Project onboarding uses `mpi-init`; project maintenance and mode changes use
+  `mpi-project-refresh`. Do not restore separate `mpi-project-setup` or
+  `mpi-project-mode` skills unless the user explicitly reverses the lifecycle
+  simplification decision.
 
 ## Maintenance
 

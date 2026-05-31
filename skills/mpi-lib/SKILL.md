@@ -30,6 +30,9 @@ path as `<mpi-lib-root>`, and read individual reference files only when needed.
 - `project-intent/` - project mode contracts.
 - `project-knowledge/` - project profile and knowledge-index contracts.
 - `templates/board.json` - JSON board bootstrap template.
+- `templates/interop.json` - default source-of-truth mode template.
 - `templates/task.json` - task-card bootstrap template.
+- `templates/project-profile.md` - project profile bootstrap template.
+- `templates/project-knowledge-index.md` - project knowledge index template.
 - `templates/kanban.md` - legacy Markdown board template.
 

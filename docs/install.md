@@ -79,6 +79,12 @@ npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 If a workflow skill reports that it cannot find `mpi-lib`, reinstall with the
 full command above.
 
+After installing in a project, run `mpi-init`. It is the single onboarding
+entrypoint: it creates or migrates the JSON board, writes the project profile
+and knowledge index, records project mode, and can import a freeform backlog.
+Use `mpi-project-refresh` later for maintenance, drift updates, and project
+mode changes.
+
 ## Nimbalyst Interop
 
 Nimbalyst interop uses `.agents/mpi-kanban/state/interop.json` to decide which

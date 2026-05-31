@@ -1,6 +1,6 @@
 # Existing Knowledge Adoption
 
-`mpi-project-setup` and `mpi-project-refresh` must adopt or improve existing
+`mpi-init` and `mpi-project-refresh` must adopt or improve existing
 project knowledge before creating new MPI-managed artifacts. This file
 defines the adoption process and the classification each existing source
 falls into.
@@ -46,7 +46,7 @@ Tag each inspected source with one of:
 
 ## Adoption map
 
-Setup and refresh produce a single adoption map BEFORE writing any files.
+Init and refresh produce a single adoption map BEFORE writing any files.
 The map is shown to the user for approval. Shape:
 
 ```markdown

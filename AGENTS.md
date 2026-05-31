@@ -29,8 +29,7 @@ interpretation.
 - Workflow skills live under `skills/mpi-*/SKILL.md`.
 - `skills/mpi-lib/` is a support skill containing shared reference docs and
   board/task templates.
-- Skill-private templates live inside the consuming skill folder, such as
-  `skills/mpi-project-setup/templates/`.
+- Shared templates live in `skills/mpi-lib/templates/`.
 
 Consuming skills locate `mpi-lib` by checking standard Agent Skills install
 paths such as `~/.agents/skills/mpi-lib`, `.agents/skills/mpi-lib`,

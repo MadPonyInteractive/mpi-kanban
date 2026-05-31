@@ -104,15 +104,15 @@ rather than rewriting prior notes.
 
 ## Update rules
 
-- `mpi-project-setup` writes the initial profile only after the user approves
+- `mpi-init` writes the initial profile only after the user approves
   the proposed content.
 - `mpi-project-refresh` proposes edits when repo reality has drifted. It
   never overwrites user-owned content without approval.
 - `mpi-end-session` proposes a lightweight refresh when implementation
   changed architecture, conventions, commands, or agent guidance. The user
   must approve before the profile is updated.
-- `mpi-project-mode` updates `mode`, `mode_rationale`, `mode_source`, and
-  appends a `## Mode Notes` bullet.
+- `mpi-project-refresh` updates `mode`, `mode_rationale`, `mode_source`, and
+  appends a `## Mode Notes` bullet when the user approves a mode change.
 - Profile edits prefer pointers to existing docs/rules over copying content.
 - Profile edits preserve sections the user has clearly customized.
 

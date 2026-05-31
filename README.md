@@ -9,11 +9,11 @@ plan, continue, parallel execution, handoff, end session, cleanup) so a single
 session or a whole team of agents can pick up work, coordinate file ownership,
 and ship together.
 
-Skills: `mpi-init`, `mpi-project-setup`, `mpi-project-mode`,
-`mpi-project-refresh`, `mpi-brainstorm`, `mpi-create-plan`,
-`mpi-create-large-plan`, `mpi-continue`, `mpi-execute-parallel`,
-`mpi-nimbalyst-sync`, `mpi-handoff`, `mpi-end-session`, `mpi-cleanup`,
-`mpi-archive`, `mpi-brief-rule`, and the support skill `mpi-lib`.
+Skills: `mpi-init`, `mpi-project-refresh`, `mpi-brainstorm`,
+`mpi-create-plan`, `mpi-create-large-plan`, `mpi-continue`,
+`mpi-execute-parallel`, `mpi-nimbalyst-sync`, `mpi-handoff`,
+`mpi-end-session`, `mpi-cleanup`, `mpi-archive`, `mpi-brief-rule`, and the
+support skill `mpi-lib`.
 
 ## Install
 
@@ -45,10 +45,11 @@ Natural language is the intended interface:
 
 ```text
 brainstorm with me
-set up project knowledge
+initialize MPI
 create a plan
 create a large plan
 continue this MPI plan
+refresh MPI
 create an MPI handoff
 MPI end session
 run MPI cleanup
@@ -128,8 +129,10 @@ Mpi-Kanban can maintain durable project knowledge:
 - `.agents/mpi-kanban/project-profile.md`
 - `.agents/mpi-kanban/project-knowledge-index.md`
 
-Run `mpi-project-setup` once per project. Later, use `mpi-project-refresh` to
-audit drift and `mpi-project-mode` to review or change the project mode.
+Run `mpi-init` once per project. It creates or migrates the JSON board,
+establishes project knowledge, and records the project mode. Later, use
+`mpi-project-refresh` to audit drift, update project knowledge, or change the
+project mode.
 
 ## Coordination
 
@@ -174,9 +177,9 @@ npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 ```
 
 For existing projects that used older MPI locations or Markdown boards, run
-`mpi-project-setup` after updating. It detects legacy `.claude/mpi-kanban/` and
-`.agents/mpi-kanban/kanban.md` board files and proposes migration without
-silently overwriting current files or deleting legacy directories.
+`mpi-init` after updating. It detects legacy `.claude/mpi-kanban/` and
+`.agents/mpi-kanban/kanban.md` board files and proposes JSON-board migration
+without silently overwriting current files or deleting legacy directories.
 
 If a workflow skill cannot find `mpi-lib`, reinstall with the full command
 above.

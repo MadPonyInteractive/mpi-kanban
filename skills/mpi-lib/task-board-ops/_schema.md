@@ -146,6 +146,8 @@ Initial event types:
 - `attention.required`
 - `attention.cleared`
 - `checklist.updated`
+- `checklist.item_checked`
+- `checklist.item_unchecked`
 - `validation.updated`
 - `migration.started`
 - `migration.task_imported`

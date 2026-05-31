@@ -124,8 +124,11 @@ def validate_mpi_lib_present() -> None:
         "project-knowledge/indexing.md",
         "docs/coordination/README.md",
         "templates/board.json",
+        "templates/interop.json",
         "templates/task.json",
         "templates/kanban.md",
+        "templates/project-profile.md",
+        "templates/project-knowledge-index.md",
     )
     for rel in required:
         if not (mpi_lib / rel).exists():
@@ -344,23 +347,31 @@ def validate_task_board_tree() -> None:
     validate_event_log(board_root / "events.jsonl", ".agents/mpi-kanban/events.jsonl")
 
 
-def validate_interop_state() -> None:
-    path = ROOT / ".agents" / "mpi-kanban" / "state" / "interop.json"
-    if not path.exists():
-        fail("missing .agents/mpi-kanban/state/interop.json")
-        return
+def validate_interop_state_file(path: Path, label: str) -> None:
     data = json.loads(path.read_text(encoding="utf-8"))
     if data.get("schema") != "mpi-kanban/interop/v1":
-        fail("interop.json must use schema mpi-kanban/interop/v1")
+        fail(f"{label} must use schema mpi-kanban/interop/v1")
     if data.get("source_of_truth") not in {"file", "nimbalyst"}:
-        fail("interop.json source_of_truth must be file or nimbalyst")
+        fail(f"{label} source_of_truth must be file or nimbalyst")
     detected = data.get("last_detected_environment")
     if not isinstance(detected, dict):
-        fail("interop.json last_detected_environment must be an object")
+        fail(f"{label} last_detected_environment must be an object")
     elif detected.get("kind") not in {"generic", "nimbalyst", "unknown"}:
-        fail("interop.json last_detected_environment.kind must be generic, nimbalyst, or unknown")
+        fail(f"{label} last_detected_environment.kind must be generic, nimbalyst, or unknown")
     if not isinstance(data.get("id_mappings"), list):
-        fail("interop.json id_mappings must be a list")
+        fail(f"{label} id_mappings must be a list")
+
+
+def validate_interop_state() -> None:
+    template = ROOT / "skills" / "mpi-lib" / "templates" / "interop.json"
+    if not template.exists():
+        fail("missing skills/mpi-lib/templates/interop.json")
+    else:
+        validate_interop_state_file(template, "templates/interop.json")
+
+    local_state = ROOT / ".agents" / "mpi-kanban" / "state" / "interop.json"
+    if local_state.exists():
+        validate_interop_state_file(local_state, ".agents/mpi-kanban/state/interop.json")
 
 
 def validate_no_stale_runtime_refs() -> None:

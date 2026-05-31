@@ -38,11 +38,10 @@ Old users must reinstall through the npx command above.
 
 ## 3. Skill Set
 
-- `mpi-init` - bootstrap/import a board.
-- `mpi-project-setup` - establish project mode and durable project knowledge.
-- `mpi-project-mode` - review, reaffirm, or change project mode.
+- `mpi-init` - initialize/adopt a project, including JSON board bootstrap or
+  migration, project mode, durable project knowledge, and backlog import.
 - `mpi-project-refresh` - audit drift between project knowledge and repo
-  reality.
+  reality, maintain board/state consistency, and handle project mode changes.
 - `mpi-brainstorm` - explore an idea and capture a `todo` task.
 - `mpi-create-plan` - create a compact/default plan.
 - `mpi-create-large-plan` - create an adaptive, investigation-backed large
@@ -106,11 +105,11 @@ Legacy projects may still contain:
 <project-root>/.claude/mpi-kanban/kanban.md
 ```
 
-`mpi-project-setup` and the future board migration flow are responsible for
-proposing migration of legacy board files. Migration must list files to move or
-snapshot, preserve unknown files, and ask before overwriting an existing target
-or deleting a legacy directory. Skills must not maintain both `board.json` and
-`kanban.md` as competing live sources of truth.
+`mpi-init` is responsible for proposing migration of legacy board files during
+project adoption. Migration must list files to move or snapshot, preserve
+unknown files, and ask before overwriting an existing target or deleting a
+legacy directory. Skills must not maintain both `board.json` and `kanban.md` as
+competing live sources of truth.
 
 Fixed JSON board columns:
 
@@ -204,7 +203,8 @@ Each line is one JSON object:
 
 Supported initial event types are `task.created`, `task.updated`,
 `task.moved`, `task.deleted`, `attention.required`, `attention.cleared`,
-`checklist.updated`, `validation.updated`, `migration.started`,
+`checklist.updated`, `checklist.item_checked`,
+`checklist.item_unchecked`, `validation.updated`, `migration.started`,
 `migration.task_imported`, and `migration.completed`. Events are an audit trail
 and future protocol shape only; this release does not require a daemon, broker,
 or live message bus.
@@ -283,8 +283,9 @@ maps task topics to specific docs/rules/memory pointers.
 Mode contracts and schemas live under `skills/mpi-lib/project-intent/` and
 `skills/mpi-lib/project-knowledge/`.
 
-`mpi-project-setup`, `mpi-project-mode`, and `mpi-project-refresh` own this
-layer. Other skills consume it without duplicating content.
+`mpi-init` owns first-time project knowledge creation. `mpi-project-refresh`
+owns maintenance and later project mode changes. Other skills consume project
+knowledge without duplicating content.
 
 ## 8. Plan Model
 
@@ -383,7 +384,7 @@ It never deletes active files and never deletes archives by default.
 
 ## 14. Cross-Agent Skill Distribution
 
-Mpi-Kanban is a 16-skill pack distributed through skills.sh. The install
+Mpi-Kanban is a 14-skill pack distributed through skills.sh. The install
 command always uses `--all`; missing `mpi-lib` is a user installation error.
 
 The pack intentionally accepts a non-standard shared support skill to avoid
@@ -398,14 +399,14 @@ Validation must check:
 - skill names/descriptions satisfy Agent Skills limits;
 - `skills/mpi-lib/SKILL.md` exists;
 - consuming skills include the `mpi-lib` discovery block;
-- interop mode state and references are present;
+- interop mode templates and references are present;
 - no `${CLAUDE_PLUGIN_ROOT}` references remain;
 - `skills.sh.json` lists real skills.
 
 ## 15. Acceptance Criteria
 
 - `npx skills add MadPonyInteractive/mpi-kanban --all -y -g` installs the pack.
-- `npx skills add MadPonyInteractive/mpi-kanban -l` lists all 16 skills.
+- `npx skills add MadPonyInteractive/mpi-kanban -l` lists all 14 skills.
 - Claude, Codex, and Kilo can invoke one workflow skill after npx install.
 - Workflow skills resolve `mpi-lib` and read shared references successfully.
 - Task board schema uses locked JSON columns `todo`, `doing`, and `done`.
@@ -413,7 +414,7 @@ Validation must check:
 - Legacy Markdown boards remain readable for migration and compatibility.
 - Coordination state remains under `.agents/mpi-kanban/state/`.
 - Project profile/index remain under `.agents/mpi-kanban/`.
-- `mpi-project-setup` can migrate legacy `.claude/mpi-kanban/` board files to
+- `mpi-init` can migrate legacy `.claude/mpi-kanban/` board files to
   `.agents/mpi-kanban/` with explicit approval and no silent overwrites.
 - Validator passes.
 

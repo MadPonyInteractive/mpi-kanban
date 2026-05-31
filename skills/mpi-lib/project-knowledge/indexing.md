@@ -24,7 +24,7 @@ delegate to the profile + index when both exist.
 
 Fall back to existing behavior: `AGENTS.md`/`CLAUDE.md` entrypoints,
 `README.md`, and the smallest set of files the task obviously touches.
-Recommend `mpi-project-setup` to the user when the lack of profile/index is
+Recommend `mpi-init` to the user when the lack of profile/index is
 costing time.
 
 ## When profile/index exist but seem stale

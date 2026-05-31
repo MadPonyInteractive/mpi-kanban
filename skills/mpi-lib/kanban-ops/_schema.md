@@ -51,7 +51,7 @@ A board is "shape-drifted" when any of these is true:
 - Columns appear out of order.
 - An unknown H2 column is present.
 
-`mpi-project-setup` and `mpi-project-refresh` MUST detect this and propose
+`mpi-init` and `mpi-project-refresh` MUST detect this and propose
 migration. The migration proposal lists the columns currently present, the
 columns to insert, and the insertion positions. It never reorders user entries
 across columns. It only:

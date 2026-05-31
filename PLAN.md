@@ -155,7 +155,7 @@ skills.sh distribution path.
   `validate_kilo_skill_limits()`, additive beside the Codex marketplace bundle
   validation committed in `eb0362e`.
 - [ ] Append Phase 6 SPEC section and project-profile architecture note.
-- [ ] Release `0.6.0` after all sub-phases complete.
+- [x] Superseded by Phase 7 before release; no Phase 6 release tag.
 
 ## Cross-agent skills distribution Phase 7
 
@@ -174,4 +174,21 @@ Plan file: `docs/plans/2026-05-23-cross-agent-skills-distribution-phase-7.md`.
 - [x] Rewrite validator for the universal skill pack.
 - [x] Run validator and contradiction sweeps.
 - [ ] Smoke test npx install and one workflow skill in Claude, Kilo, and Codex.
-- [ ] Release `0.6.0`.
+- [ ] Release `0.7.0`.
+
+## Skill onboarding simplification and release readiness
+
+Plan file: `docs/plans/2026-05-31-skill-onboarding-simplification.md`.
+
+- [x] Re-evaluate `mpi-init`, `mpi-project-setup`, `mpi-project-refresh`, and
+  `mpi-project-mode` before changing behavior.
+- [x] Consolidate project onboarding around one clear init/adoption skill and
+  one clear refresh/update skill.
+- [x] Fix clean-checkout validator behavior.
+- [x] Align README, install docs, SPEC, skill metadata, and changelog with the
+  consolidated lifecycle model.
+- [x] Sync event type docs with the VS Code extension.
+- [x] Run validator and contradiction searches.
+- [x] Run changelog extraction.
+- [x] Run local `npx skills add . --all -y -g` and `npx skills add . -l`
+  smoke tests.

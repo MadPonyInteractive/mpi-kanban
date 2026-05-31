@@ -1,6 +1,6 @@
 ---
 name: mpi-init
-description: MPI workflow pack - Initialize the MPI JSON task board or import a freeform to-do / backlog / ideas markdown file into JSON task cards. Use ONLY when the user explicitly asks to "MPI init", "set up the kanban", "initialize kanban", "import backlog", "convert this file to kanban", "build the kanban from <file>", "$mpi-init", or hands over markdown to-dos. Do NOT use for a single new idea, creating a plan, or normal board mutation.
+description: MPI workflow pack - Initialize or adopt Mpi-Kanban in a new or existing project. Creates or migrates the JSON task board, establishes project profile and knowledge index, records project mode, and can import freeform backlog files. Use when the user says "MPI init", "initialize MPI", "set up MPI", "set up the kanban", "adopt this project", "set up project knowledge", "import backlog", "convert this file to kanban", "$mpi-init", or hands over markdown to-dos.
 ---
 
 # mpi-init Skill
@@ -18,173 +18,208 @@ Cache that root path for the rest of this session. All references below resolve 
 
 `npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 
-Turn a freeform to-do / backlog / ideas markdown file into properly structured
-tasks on `.agents/mpi-kanban/board.json` with task workspaces under
-`.agents/mpi-kanban/tasks/<id>/`.
+## Purpose
+
+Onboard a project into Mpi-Kanban. This is the single entrypoint for new
+projects, existing projects, legacy MPI installs, project knowledge creation,
+project mode selection, JSON board bootstrap, and backlog import.
 
 Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
-This is the on-ramp skill. It exists so a user can hand over any informal
-to-do file ("backlog.md", "todo.md", "ideas.md", a section of a README) and
-get a working JSON task board without the agent guessing the plugin internals.
+`mpi-init` replaces the old separate project setup flow. Do not tell users to
+run a separate setup skill.
 
 <HARD-GATE>
-Only ask for confirmation when importing into an EXISTING
-`.agents/mpi-kanban/board.json` (risk of appending unwanted tasks): show the
-parsed task list, get approval, then write.
+Do not overwrite existing project knowledge, rule files, memory entries, legacy
+boards, or existing `board.json` tasks without showing a proposal and getting
+explicit approval.
 
-Fresh-board creation and empty-template bootstrap: write directly, no
-confirmation. Same for the source-file relocation step (moving the freeform
-to-do file into `.agents/mpi-kanban/`): just do it.
+Fresh empty-board creation is safe to write directly when no board exists and
+no legacy board needs migration. Everything else that changes existing project
+state requires an approval proposal.
 </HARD-GATE>
 
-## Inputs
+## Required reading
 
-- A path to a markdown source file (the user usually pastes it inline or
-  references it). If the user says "this file" without naming one, ask which
-  file. Common candidates: `backlog.md`, `todo.md`, `TODO.md`, `ideas.md`,
-  `notes.md`, a `## Backlog` section inside `README.md` or `CLAUDE.md`.
-- If the user gives no file at all but asks to "set up the kanban", create
-  the empty JSON board from the template and stop. There is nothing to import.
-
-## Checklist
-
-Lib pointers, read each only when its recipe is needed in the steps below:
+Read only the references needed for the path being executed:
 
 - `<mpi-lib-root>/task-board-ops/_schema.md` - JSON board and task-card shape.
 - `<mpi-lib-root>/task-board-ops/read.md` - `findBoard`, `ensureBoard`.
 - `<mpi-lib-root>/task-board-ops/mutate.md` - `createTask`.
-- `<mpi-lib-root>/task-board-ops/migrate.md` - only when the user explicitly
-  asks to migrate an existing legacy Markdown board.
+- `<mpi-lib-root>/task-board-ops/migrate.md` - legacy Markdown board migration.
+- `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode state.
+- `<mpi-lib-root>/project-intent/modes.md` - mode contracts and defaults.
+- `<mpi-lib-root>/project-knowledge/profile-schema.md` - profile shape.
+- `<mpi-lib-root>/project-knowledge/index-schema.md` - index shape.
+- `<mpi-lib-root>/project-knowledge/adoption.md` - source inspection and
+  adoption map.
+- `<mpi-lib-root>/project-knowledge/updates.md` - approval and preservation
+  rules.
 
-Steps:
+## Inputs
 
-1. **Read source file.** Use `Read`. If it does not exist, ask the user for
-   the right path. Do not guess.
-2. **Parse the source** per "Parsing rules" below into a list of task
-   candidates: `{title, description, done}`.
-3. **Check if `board.json` already exists.** Read
-   `<mpi-lib-root>/task-board-ops/read.md` for `findBoard` and `ensureBoard`.
-   - **Does NOT exist (fresh board):** call `ensureBoard()` to create
-     `.agents/mpi-kanban/board.json`, `.agents/mpi-kanban/events.jsonl`, and
-     `.agents/mpi-kanban/tasks/`, then go to step 5. No preview, no approval.
-   - **Exists (existing board):** show parsed tasks (table or bullet list,
-     grouped by target column, with title and short description) and ask:
-     "Write these N tasks to the existing JSON task board?" Wait for approval.
-     On approval, continue to step 5.
-4. (folded into step 3)
-5. **Write tasks**: read `<mpi-lib-root>/task-board-ops/mutate.md` for
-   `createTask`. For each parsed candidate in source order, call
-   `createTask(input)` with:
-   - `column: "todo"`, `maturity: "idea"`, `status: "active"` when `done`
-     is false.
-   - `column: "done"`, `maturity: "complete"`, `status: "accepted"` when
-     `done` is true.
-   - `position: "bottom"` so source order is preserved within each target
-     column.
-   The recipe allocates `MPI-*` IDs; never accept task IDs from the source text.
-6. **Confirm** with a clickable board link:
-   `[board.json](.agents/mpi-kanban/board.json)` and a one-line summary such
-   as `Imported 5 To do, 2 Done.`
+- No source file: initialize or adopt the project.
+- A freeform markdown source file: import to-do/backlog/idea items into the JSON
+  task board after initialization.
+- An existing legacy board: migrate `.agents/mpi-kanban/kanban.md` or
+  `.claude/mpi-kanban/kanban.md` to the JSON task board after approval.
 
-If legacy `.agents/mpi-kanban/kanban.md` or `.claude/mpi-kanban/kanban.md`
-exists, tell the user it remains available as a legacy migration source or
-snapshot. Do not write it as the live board.
+If the user says "this file" without naming one, ask which file. Common
+candidates are `backlog.md`, `todo.md`, `TODO.md`, `ideas.md`, `notes.md`, or a
+`## Backlog` section inside `README.md` or `CLAUDE.md`.
 
-## Parsing rules
+## Process
 
-The source file is freeform. The skill must be permissive but never invent
-content the source did not contain.
+### 1. Detect project state
 
-### Sections to task kind hints
+Inspect these paths, without deep-loading the entire repo:
 
-H2 headings in the source provide a hint for the task description:
+- `.agents/mpi-kanban/board.json`
+- `.agents/mpi-kanban/tasks/`
+- `.agents/mpi-kanban/project-profile.md`
+- `.agents/mpi-kanban/project-knowledge-index.md`
+- `.agents/mpi-kanban/state/interop.json`
+- `.agents/mpi-kanban/kanban.md`
+- `.claude/mpi-kanban/kanban.md`
+- `.claude/mpi-kanban/archived*.md`
+- `AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/`, `.agents/rules/`
 
-| Source heading (case-insensitive)       | Kind hint   |
-|-----------------------------------------|-------------|
-| `BUGS`, `BUG`, `ISSUES`                 | bug         |
-| `FEATURES`, `FEATURE`                   | feature     |
-| `IDEAS`, `IDEA`                         | idea        |
-| `PLANS`, `PLAN`                         | plan        |
-| `TASKS`, `TODO`, `TODOS`, `TO-DO`       | task        |
-| `DECISIONS`, `NOTES`                    | idea        |
-| Anything else / no heading              | idea        |
+Classify the project:
 
-If a line begins with a `kind: title` prefix (e.g. `bug:`, `issue:`,
-`feature:`, `refactor:`), that prefix overrides the section hint and is
-stripped from the title.
+- **fresh:** no MPI files exist.
+- **legacy:** Markdown board or old `.claude/mpi-kanban/` files exist.
+- **partial:** some MPI files exist but board/profile/index/state are missing.
+- **initialized:** JSON board, profile, index, and interop mode are present.
 
-### Items to tasks
+If the project is already initialized and the user did not provide a backlog
+file, say it is already initialized and suggest `mpi-project-refresh` for
+maintenance. Do not rewrite files.
 
-Recognized item shapes (any of these counts as one task):
+### 2. Ask or infer project mode
+
+Read `<mpi-lib-root>/project-intent/modes.md`.
+
+For fresh or partial projects, ask:
+
+```text
+What project mode should this be?
+- prototype (throwaway, exploratory)
+- mvp (first real version, correctness over polish)
+- scalable-foundation (intended to grow; default)
+```
+
+Default to `scalable-foundation` if the user declines to answer. For existing
+projects, briefly note repo evidence only when it meaningfully suggests a
+different mode.
+
+Record mode in `.agents/mpi-kanban/project-profile.md` as `mode`,
+`mode_rationale`, and `mode_source`.
+
+### 3. Build the adoption proposal
+
+For existing or partial projects, read
+`<mpi-lib-root>/project-knowledge/adoption.md` and inspect the conventional
+sources within the listed budget.
+
+The proposal must include:
+
+1. Detected project state.
+2. Project mode and rationale.
+3. Board action:
+   - create empty `board.json`;
+   - migrate legacy `kanban.md` to JSON task workspaces;
+   - import a freeform backlog into existing JSON board;
+   - leave existing JSON board unchanged.
+4. Project knowledge action:
+   - create profile/index;
+   - update missing profile/index pointers;
+   - leave existing profile/index unchanged.
+5. Interop action:
+   - create default `state/interop.json` in `file` mode;
+   - preserve existing source-of-truth mode;
+   - surface a Nimbalyst conflict for explicit user direction.
+6. Agent entrypoint changes, if any, limited to short pointer additions.
+7. Rule or memory changes, if any, with per-file approval requirements.
+
+End with:
+
+```text
+Approve this MPI init proposal? Reply "yes" to apply all, "yes except <list>" to skip some, "change <item>" to adjust, or "no" to discard.
+```
+
+For a truly fresh empty board with no source file and no existing knowledge,
+the proposal can be compact, but still show the project mode and files to
+create before writing profile/index.
+
+### 4. Apply approved initialization
+
+After approval, apply only approved changes:
+
+1. Create `.agents/mpi-kanban/` and `.agents/mpi-kanban/state/` when needed.
+2. Create or migrate `.agents/mpi-kanban/board.json`, `events.jsonl`, and
+   `tasks/`:
+   - use `ensureBoard()` for empty boards;
+   - use `<mpi-lib-root>/task-board-ops/migrate.md` for legacy boards;
+   - preserve legacy snapshots and never delete legacy directories without
+     explicit approval.
+3. Create `.agents/mpi-kanban/state/interop.json` from
+   `<mpi-lib-root>/templates/interop.json` when missing. Default
+   `source_of_truth` is `file`.
+4. Create or update `.agents/mpi-kanban/project-profile.md` from
+   `<mpi-lib-root>/templates/project-profile.md`.
+5. Create or update `.agents/mpi-kanban/project-knowledge-index.md` from
+   `<mpi-lib-root>/templates/project-knowledge-index.md`.
+6. Apply approved `AGENTS.md` / `CLAUDE.md` pointer additions only.
+7. Apply approved rule-file or memory-pointer changes per
+   `<mpi-lib-root>/project-knowledge/updates.md`.
+8. If a backlog source was provided, import parsed tasks after the board exists.
+
+### 5. Import freeform tasks
+
+If a source file was provided, parse it permissively but do not invent content.
+
+Recognized item shapes:
 
 - `[ ] text` or `[x] text`
 - `- [ ] text` or `- [x] text`
-- `* text` or `- text` (no checkbox: treat as not-done)
-- A standalone non-empty line under a section that isn't itself a heading
+- `* text` or `- text`
+- a standalone non-empty line under a recognized to-do/backlog/idea section
 
-`[x]` (lowercase or uppercase) maps to column `done`. Otherwise map to
-column `todo`.
+`[x]` maps to `done`; everything else maps to `todo`.
 
-### Title
+For each parsed task:
 
-- Strip checkbox marker (`[ ]` / `[x]`) and any leading bullet (`-`, `*`).
-- Strip `kind:` prefix if present (`bug:`, `issue:`, etc.) AFTER capturing it
-  for the kind hint.
-- Trim trailing punctuation (`.`).
-- Shorten to 2-6 words for the task title. Keep the full original line as the
-  description so context is not lost. Example:
-  - Source: `[x] bug: Disabling plug-ins in global settings doesn't give a visual representation in the project page.`
-  - Title: `Disabled plug-ins not shown`
-  - Description: `bug: Disabling plug-ins in global settings doesn't give a visual representation in the project page.`
-- If two tasks collapse to the same title, append a numeric suffix
-  (`Disabled plug-ins not shown (2)`).
+- title: short 2-6 word title derived from the source line;
+- description: original source line, minus checkbox/bullet prefix;
+- `column: "todo"`, `maturity: "idea"`, `status: "active"` when not done;
+- `column: "done"`, `maturity: "complete"`, `status: "accepted"` when done;
+- `position: "bottom"` to preserve source order.
 
-### Description
+When importing into an existing `board.json`, show parsed tasks and get
+approval before writing. Never accept task IDs from source text.
 
-Use the original source line, minus the checkbox/bullet prefix. Include a
-short kind hint only when it came from the source heading or prefix. If the
-source had multi-line context (an indented sub-bullet or a paragraph after the
-item), include a concise summary rather than embedding a long note in
-`task.json`; longer context belongs in the task workspace after planning.
+### 6. Final report
 
-### Priority and metadata
+Report:
 
-The JSON task-card schema does not have priority, tag, workload, or
-default-expanded fields. Do not invent them. If the source line contains
-words like `urgent`, `critical`, `p0`, `blocker`, or `asap`, keep that wording
-in the short description so a human can still see it on the card.
-
-### Skip rules
-
-- Skip empty lines.
-- Skip H1 headings.
-- Skip H2 headings (they are section markers, already consumed for kind hints).
-- Skip lines that are just commentary (no checkbox, not under a recognized
-  section, look like prose). Heuristic: if the line is > 25 words and contains
-  no `:` or imperative verb, treat as prose and skip with a note in the
-  preview ("Skipped 1 prose line").
-
-## Empty-board case
-
-If the user invokes the skill without a source file (e.g. "set up the kanban
-for this project"):
-
-1. Call `ensureBoard()` to create the empty JSON board from the template.
-2. Confirm with the board link + Mpi-Kanban extension link.
-3. Do NOT prompt for further input. The user will populate the board via
-   `mpi-brainstorm`, `mpi-create-plan`, `mpi-create-large-plan`, or by
-   re-invoking `mpi-init` with a source file.
+```text
+MPI initialized.
+- Mode: <mode> (<source>).
+- Board: <created | migrated | unchanged>. [board.json](.agents/mpi-kanban/board.json)
+- Profile: <created | updated | unchanged>.
+- Knowledge index: <created | updated | unchanged>.
+- Interop mode: <file | nimbalyst>.
+- Imported tasks: <count or "none">.
+Next: use `mpi-brainstorm`, `mpi-create-plan`, or `mpi-continue`.
+```
 
 ## Hard rules
 
-- When importing into an EXISTING `board.json`, get user approval on the
-  parsed task list before writing. Fresh-board creation, empty-template
-  bootstrap, and source-file relocation: write directly without asking.
-- Never invent metadata fields beyond the schema in
-  `<mpi-lib-root>/task-board-ops/_schema.md`.
-- Never delete an existing task. If the board already has tasks with matching
-  titles, surface the conflict and ask whether to skip, suffix, or abort.
-- Preserve source order within each target column.
-- Legacy `kanban.md` files are migration inputs or snapshots after
-  `board.json` exists. Do not update them as the primary live board.
+- `mpi-init` is the only onboarding/adoption skill. Do not route to a separate
+  setup flow.
+- `mpi-init` may create the initial profile/index and record project mode.
+- Mode changes after initialization are handled by `mpi-project-refresh`.
+- Never maintain `board.json` and `kanban.md` as competing live boards.
+- Never overwrite existing profile/index/rules/memory without approval.
+- Never create task-card fields beyond `<mpi-lib-root>/task-board-ops/_schema.md`.
+- Never delete legacy MPI files automatically.

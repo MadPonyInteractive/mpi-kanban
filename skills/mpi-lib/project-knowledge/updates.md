@@ -1,9 +1,8 @@
 # Profile and Index Maintenance Rules
 
-`mpi-project-setup`, `mpi-project-refresh`, `mpi-project-mode`, and
-`mpi-end-session` may propose updates to the project profile, knowledge
-index, rules, and memory pointers. This file is the single source for how
-those updates behave.
+`mpi-init`, `mpi-project-refresh`, and `mpi-end-session` may propose updates to
+the project profile, knowledge index, rules, and memory pointers. This file is
+the single source for how those updates behave.
 
 ## Approval
 
@@ -14,7 +13,7 @@ All writes require explicit user approval, except where called out below.
 - **Edits to an existing profile or index:** the proposal shows current
   content vs proposed content per section. The skill writes only after the
   user approves each section change.
-- **Rule files (`.agents/rules/*.md`):** setup and refresh may propose new
+- **Rule files (`.agents/rules/*.md`):** init and refresh may propose new
   rule files or edits to existing rule files when reusable project-specific
   conventions need a dedicated home. ASK per file. Cardinal rule, same as
   `mpi-end-session`. Never create or edit a rule without explicit approval.
@@ -22,7 +21,7 @@ All writes require explicit user approval, except where called out below.
   propose new or changed memory entries when the user agrees the knowledge
   belongs in memory and not in the profile/index/rules. Use
   `AskUserQuestion` before removing or modifying existing memory entries.
-- **Edits to `AGENTS.md`:** project setup may create or update `AGENTS.md`
+- **Edits to `AGENTS.md`:** init may create or update `AGENTS.md`
   directly after the user approves the setup proposal. Prefer the
   pointer-first strategy: keep existing agent entrypoints concise and point
   at MPI profile/index files instead of duplicating project knowledge.
@@ -63,10 +62,9 @@ Report drift findings in a single proposal. Do not auto-fix.
 
 ## Frequency
 
-- `mpi-project-setup` runs once when the project adopts MPI.
-- `mpi-project-mode` runs on demand when mode changes.
+- `mpi-init` runs when the project adopts MPI.
 - `mpi-project-refresh` runs on demand or when the user signals the profile
-  is stale.
+  is stale, including project mode changes after initialization.
 - `mpi-end-session` always runs the lightweight pass for the current
   session's touched files. It surfaces nothing when nothing has drifted.
 

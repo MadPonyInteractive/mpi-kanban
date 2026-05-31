@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-31
+
 ### Added
 
 - JSON task board contract with `.agents/mpi-kanban/board.json`,
@@ -14,17 +16,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `.agents/mpi-kanban/tasks/<id>/`.
 - Shared `mpi-lib/task-board-ops/` references for JSON board schema, read,
   mutation, migration, and validation behavior.
+- `mpi-nimbalyst-sync` for Nimbalyst source-of-truth mode, detection, and
+  explicit import/export snapshot boundaries.
 - Validator coverage for JSON board templates and live board/task workspace
   consistency.
 
 ### Changed
 
+- `mpi-init` is now the single project onboarding/adoption skill. It owns JSON
+  board bootstrap or migration, profile/index creation, project mode selection,
+  interop mode initialization, and freeform backlog import.
+- `mpi-project-refresh` is now the existing-project maintenance skill. It owns
+  project knowledge drift checks, board/state consistency, and later project
+  mode changes.
 - Workflow skills now treat `board.json` as the primary human board once it
   exists, with fixed `To do`, `Doing`, and `Done` columns.
 - Legacy Markdown boards remain readable as migration inputs or snapshots, not
   competing live sources of truth after JSON-board migration.
 - Nimbalyst interop docs and workflow references map tracker state into the
   JSON board model instead of restoring legacy MPI lifecycle columns.
+- Validator interop checks now use tracked templates rather than ignored local
+  `.agents/` state, so release validation is reproducible from a clean checkout.
+
+### Removed
+
+- Retired separate `mpi-project-setup` and `mpi-project-mode` skills before
+  release; their behavior is folded into `mpi-init` and `mpi-project-refresh`.
 
 ## [0.6.1] - 2026-05-24
 
@@ -189,7 +206,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.0
 [0.6.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.6.1
 [0.6.0]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.6.0
 [0.5.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.5.1

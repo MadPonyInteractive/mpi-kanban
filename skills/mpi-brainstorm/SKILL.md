@@ -113,16 +113,17 @@ Steps:
 
 If this brainstorm is about a brand-new project (no `README.md` content,
 no source tree, no `AGENTS.md`/`CLAUDE.md`, or the user explicitly said
-"new project"), recommend `mpi-project-setup` after the todo task is
+"new project"), recommend `mpi-init` after the todo task is
 captured:
 
 ```text
-This looks like a new project. Run `mpi-project-setup` to establish project mode and
-knowledge before planning?
+This looks like a new project. Run `mpi-init` to establish project mode,
+knowledge, and the JSON task board before planning?
 ```
 
-Do not invoke setup automatically. The user chooses whether to set up
-project knowledge before planning, or proceed directly to a plan.
+Do not invoke initialization automatically. The user chooses whether to set up
+project knowledge and board state before planning, or proceed directly to a
+plan.
 
 ## End state
 
