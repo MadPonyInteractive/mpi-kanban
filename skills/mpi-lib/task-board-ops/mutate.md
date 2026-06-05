@@ -6,6 +6,31 @@ state. For schema details, read `_schema.md`.
 
 ---
 
+## Maturity is a fixed enum (read before any write)
+
+`maturity` accepts ONLY: `idea`, `planned`, `in-progress`, `validating`,
+`complete`. Do not guess, invent, or copy another field's value into it.
+
+Column coherence is mandatory:
+
+- `todo` -> `idea` or `planned`
+- `doing` -> `in-progress` or `validating`
+- `done` -> `complete`
+
+Reject these common mistakes. They are NOT maturity values:
+
+- `active`, `accepted`, `done` -> these are `status` values, not maturity.
+- `deferred` -> deferral is intent; keep the card in `todo` with `planned`
+  (or `idea`) and record the deferral in the description or brief.
+- `implementing`, `implementation` -> Nimbalyst phrasing; the MPI value is
+  `in-progress`.
+
+Any other `maturity` value renders as a red invalid card in the VS Code board.
+A `doing` card that should show yellow uses `in-progress`, never
+`implementation` or `idea`.
+
+---
+
 ## `createTask(input)`
 
 Required input:
