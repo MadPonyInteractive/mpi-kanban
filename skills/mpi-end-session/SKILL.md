@@ -163,6 +163,19 @@ Skipping task-board close-out; use mpi-nimbalyst-sync for a board snapshot."
    implementation remains incomplete, leave the card in place and include
    `Note: session ended mid-implementation; task "<id>" still has open
    implementation work.` in the commit body when appropriate.
+
+   Skipped-Doing auto-correct: if the card is in `todo` but real implementation
+   work exists for it (checked items in `checklist.md`, OR changed files in this
+   session's `git diff --stat HEAD` that belong to this task's plan), the Doing
+   phase was skipped. Before any `done` move, call
+   `beginImplementation(id, actor, planPath, sessionTitle)` from
+   `<mpi-lib-root>/task-board-ops/mutate.md` to backfill `todo -> doing`, set
+   `maturity: "in-progress"`, and derive the checklist, then continue with the
+   normal completion gate below. Print one line:
+   `Note: card "<id>" skipped the Doing phase; auto-corrected through doing before done.`
+   A card with no implementation work keeps moving `todo -> done` with no
+   warning. The lifecycle is always `To do -> Doing -> Done`, never
+   `To do -> Done` for implemented work.
 5. If validation is represented and the user explicitly approved final
    completion in the current request, call `moveTask(id, "done", actor,
    reason)` and update concise status/badges with `writeTask` if useful.

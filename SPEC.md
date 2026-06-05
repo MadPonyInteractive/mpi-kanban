@@ -251,14 +251,13 @@ Supported initial event types are `task.created`, `task.updated`,
 and task-board history. They are not a live interruption channel and do not
 require a daemon, broker, remote service, or real-time delivery.
 
-Legacy Markdown boards use the old five-column lifecycle `BACKLOG`,
-`PLANNING`, `IMPLEMENTING`, `VALIDATING`, and `COMPLETED` with the locked
-metadata fields `due`, `tags`, `priority`, `workload`, `defaultExpanded`, and
-`steps`. Skills may read `kanban.md` for migration or compatibility. Once
-`board.json` exists, normal board creation, movement, and status updates must
-use the JSON task board. Compatibility reads must first prefer `board.json`;
-they may inspect `kanban.md` only as legacy migration material, a tombstoned
-snapshot, or an explicitly requested compatibility artifact.
+Legacy Markdown boards are migration inputs only. Their column/field shape is
+documented in `skills/mpi-lib/kanban-ops/_schema.md`; skills read `kanban.md`
+solely for migration or compatibility. Once `board.json` exists, normal board
+creation, movement, and status updates must use the JSON task board.
+Compatibility reads must first prefer `board.json`; they may inspect `kanban.md`
+only as legacy migration material, a tombstoned snapshot, or an explicitly
+requested compatibility artifact.
 
 ## 6. Coordination State
 

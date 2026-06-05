@@ -221,11 +221,11 @@ skills no longer exist. Use `mpi-init` for onboarding/adoption and
 `mpi-project-refresh` for maintenance and mode changes. Update any saved
 commands or scripts that referenced the old skill names.
 
-**Projects not yet on Mpi-Kanban.** For a project that only has older MPI
-locations or a Markdown board and was never adopted into the JSON board, run
-`mpi-init` after updating. It detects legacy `.claude/mpi-kanban/` and
-`.agents/mpi-kanban/kanban.md` board files and proposes JSON-board migration
-without silently overwriting current files or deleting legacy directories.
+**Projects not yet on Mpi-Kanban.** For a project never adopted into the JSON
+board, run `mpi-init` after updating. (If the project still has a legacy
+`.claude/mpi-kanban/` or `.agents/mpi-kanban/kanban.md` Markdown board,
+`mpi-init` proposes a one-time JSON migration without overwriting current files
+or deleting legacy directories.)
 
 **Projects already on the JSON board.** For a project that already has a
 `board.json` but still carries legacy drift (old `kanban.md` snapshots, stale

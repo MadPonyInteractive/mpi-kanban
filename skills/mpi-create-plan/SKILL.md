@@ -140,12 +140,17 @@ Confirm:
 
 ```text
 Task: <id> "<title>" -> <To do | Doing>, planned. Plan: .agents/mpi-kanban/tasks/<id>/plan.md
-Next: say "continue this plan" to start implementation.
+Next: say "continue this plan" to start implementation. Implementation runs
+through `mpi-continue`, which moves the card To do -> Doing before any edits.
 ```
 
 ## Hard rules
 
 - Do not implement.
+- Do not let implementation begin from a `todo` card. Implementation must run
+  through `mpi-continue`, which calls `beginImplementation` to move the card
+  `To do -> Doing` and derive the checklist first. The lifecycle is always
+  `To do -> Doing -> Done`; never `To do -> Done`.
 - Do not create a large multi-step checklist in this skill.
 - Do not add `## Parallel Batch` syntax to a compact plan.
 - If the work obviously needs phased investigation, or splits into independent

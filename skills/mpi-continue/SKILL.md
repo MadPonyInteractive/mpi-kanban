@@ -352,6 +352,13 @@ Context getting large? Run `mpi-handoff` before starting a new session.
 ## Hard rules
 
 - Approval before implementation is mandatory.
+- The card must be in `doing` before any implementation edit. In `file` mode,
+  `beginImplementation` must have moved the card `todo -> doing`, set
+  `maturity: "in-progress"`, and derived the checklist before you edit any
+  file. Never implement a `todo` card in place; the lifecycle is always
+  `To do -> Doing -> Done`, never `To do -> Done`. This applies on every entry
+  path (direct continue, post-plan, or resumed handoff), not only the
+  session-setup flow above.
 - Post-implementation verification choice is mandatory.
 - Do not commit or push; committing is `mpi-end-session`'s responsibility.
 - Do not force stale plan tasks. Update the plan when reality has changed.

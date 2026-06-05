@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-06-05
+
+### Changed
+
+- `mpi-create-plan`, `mpi-continue`, and `mpi-lib/task-board-ops/mutate.md` now
+  enforce the `To do -> Doing -> Done` lifecycle: implementation must run through
+  `mpi-continue`/`beginImplementation`, which moves a card into `Doing` before
+  any edit. Inline implementation from a `todo` card is no longer allowed
+  (MPI-18).
+- `mpi-end-session` auto-corrects a `todo` card that carries real implementation
+  work through `Doing` (with a one-line warning) before moving it to `Done`,
+  instead of skipping the `Doing` phase (MPI-18).
+- Retired legacy Markdown from the main product surface: `README.md`, `SPEC.md`,
+  and `mpi-init` now present `kanban.md` only as a brief migration/compatibility
+  note, not a primary workflow (MPI-15).
+
 ## [0.8.0] - 2026-05-31
 
 ### Added
@@ -248,7 +264,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.2
 [0.7.1]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.1

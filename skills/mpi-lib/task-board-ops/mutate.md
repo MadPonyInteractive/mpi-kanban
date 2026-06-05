@@ -131,6 +131,14 @@ Use this recipe when a workflow starts implementation for a JSON task card. It
 prevents partial state such as a card in `doing` with `maturity: "planned"` or
 missing checklist items.
 
+Lifecycle contract: every card with real implementation work must pass through
+`doing`. The canonical lifecycle is `To do -> Doing -> Done`, never
+`To do -> Done`. Any workflow that is about to edit files for a `todo` card must
+call `beginImplementation` first so the card enters `doing` with a derived
+checklist. `mpi-end-session` enforces this on close-out: a `todo` card carrying
+implementation work is auto-corrected through `doing` (with a warning) rather
+than moved straight to `done`.
+
 1. Read `read.md`, `_schema.md`, and `plan-ops/derive.md`.
 2. Load the task with `loadTask(id)` and read `board.json`.
 3. If the task is in `todo`, call `moveTask(id, "doing", actor,

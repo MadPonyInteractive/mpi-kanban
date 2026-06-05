@@ -61,8 +61,11 @@ Read only the references needed for the path being executed:
 - No source file: initialize or adopt the project.
 - A freeform markdown source file: import to-do/backlog/idea items into the JSON
   task board after initialization.
-- An existing legacy board: migrate `.agents/mpi-kanban/kanban.md` or
-  `.claude/mpi-kanban/kanban.md` to the JSON task board after approval.
+
+Legacy compatibility: if the project still carries a Markdown board
+(`.agents/mpi-kanban/kanban.md` or `.claude/mpi-kanban/kanban.md`), propose a
+one-time migration to the JSON task board after approval. This is a migration
+input, not a primary onboarding path.
 
 If the user says "this file" without naming one, ask which file. Common
 candidates are `backlog.md`, `todo.md`, `TODO.md`, `ideas.md`, `notes.md`, or a
