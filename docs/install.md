@@ -12,6 +12,13 @@ npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 The `--all` flag is required. The workflow skills depend on the `mpi-lib`
 support skill; partial installs are unsupported.
 
+> **Expected output:** `--all` targets every agent the `skills` CLI knows
+> about. Some agents (for example `PromptScript`) reject the `-g` global flag
+> and show a red `Failed to install` line for each skill. This is normal — the
+> pack still installs correctly for every compatible agent. Confirm success by
+> checking that the skill folders exist under `~/.agents/skills/` (or, when an
+> agent symlinks, `~/.claude/skills/`).
+
 ## Update
 
 Run the same command again:

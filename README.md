@@ -27,6 +27,11 @@ The `--all` flag is required. The workflow skills locate shared reference
 docs through the sibling `mpi-lib` support skill; partial installs are
 unsupported.
 
+> **Red `Failed to install` lines are expected.** `--all` targets every agent
+> the `skills` CLI knows about, and some (e.g. `PromptScript`) reject the `-g`
+> global flag. The pack still installs for every compatible agent — verify the
+> skill folders exist under `~/.agents/skills/`.
+
 More detail: [docs/install.md](docs/install.md).
 
 ## Update
