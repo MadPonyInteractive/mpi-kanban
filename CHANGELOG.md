@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-06-05
+
+### Changed
+
+- Surface the `maturity` enum at write time so agents stop guessing it.
+  `mpi-lib/task-board-ops/mutate.md` now opens with the allowed values
+  (`idea`, `planned`, `in-progress`, `validating`, `complete`), the column
+  coherence rules, and an explicit reject-list: `active`, `accepted`, `done`,
+  `deferred`, `implementing`, and `implementation` are not maturity values.
+- `mpi-lib/templates/project-profile.md` gains a "Task Board Card Contract"
+  section with the maturity-by-column table, so the enum is visible in a
+  read-first doc without opening the shared library.
+- `mpi-end-session` now auto-corrects an invalid or column-incoherent
+  `maturity` on a touched card before any board move, printing a one-line note.
+
+### Fixed
+
+- Cards that agents marked with non-enum maturity values (for example
+  `deferred`, `active`, or `implementation`) rendered as red invalid cards in
+  the VS Code board. The guidance above prevents those writes; a `doing` card
+  under active work is `in-progress` (yellow), not `implementation` or `idea`.
+
 ## [0.8.1] - 2026-06-05
 
 ### Changed

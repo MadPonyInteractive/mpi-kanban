@@ -33,6 +33,22 @@ Detail: <pointer to an architecture doc, or remove this line>.
 
 - `README.md`
 
+## Task Board Card Contract
+
+`maturity` is a fixed enum. Never invent values and never copy a `status` or
+intent word into it. Allowed values, by column:
+
+| Column  | Allowed `maturity`        |
+| ------- | ------------------------- |
+| `todo`  | `idea`, `planned`         |
+| `doing` | `in-progress`, `validating` |
+| `done`  | `complete`                |
+
+`status` is a separate field (e.g. `active`, `accepted`). Words like `active`,
+`deferred`, `done`, `implementing`, and `implementation` are NOT maturity
+values. A `doing` card under active work is `in-progress` (renders yellow), not
+`implementation` or `idea`. Any other `maturity` renders as a red invalid card.
+
 ## Open Gaps
 
 - None recorded yet.
