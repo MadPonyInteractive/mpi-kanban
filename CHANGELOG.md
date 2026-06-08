@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-06-08
+
+### Changed
+
+- Tightened the task-card maturity contract for labels agents were still
+  inventing, including `Validated`, `validated`, `validation`, `spec`, and
+  other process words. `moveTask` now documents column movement as maturity
+  reconciliation, `read.md` reports invalid maturity drift, and refresh/repair
+  guidance calls these out as board repair findings.
+- Added validator coverage to keep the maturity enum and common invalid
+  examples documented in the spec, shared task-board references, and default
+  project profile template.
+
 ## [0.8.2] - 2026-06-05
 
 ### Changed
@@ -286,7 +299,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.3...HEAD
+[0.8.3]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.2...v0.8.3
+[0.8.2]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.7.2...v0.8.0
 [0.7.2]: https://github.com/MadPonyInteractive/mpi-kanban/releases/tag/v0.7.2

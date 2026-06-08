@@ -59,8 +59,15 @@ Never accept a user-supplied task ID for a new task.
 3. Parse JSON and confirm:
    - `schema` is `mpi-kanban/task-card/v1`;
    - `id` matches the folder and requested ID;
-   - `column` is `todo`, `doing`, or `done`.
+   - `column` is `todo`, `doing`, or `done`;
+   - when present, `maturity` is exactly `idea`, `planned`, `in-progress`,
+     `validating`, or `complete`, and matches the task's column.
 4. Return the parsed task plus paths to linked workspace files.
+
+If `maturity` is invalid or incoherent, report it as board drift before using
+the task. Do not preserve labels such as `Validated`, `spec`, `active`, `done`,
+`implementing`, or `implementation` as maturity values during the next write;
+use `<mpi-lib-root>/task-board-ops/mutate.md` to correct them.
 
 ---
 

@@ -27,6 +27,10 @@ Run these checks against `.agents/mpi-kanban/board.json` when it exists:
 - Task `maturity` matches the board column: `todo` allows `idea` or
   `planned`; `doing` allows `in-progress` or `validating`; `done` allows
   `complete`.
+- Task `maturity` does not contain process/status labels such as `Validated`,
+  `validated`, `validation`, `spec`, `active`, `accepted`, `done`, `deferred`,
+  `implementing`, or `implementation`. These are invalid even if they describe
+  real work state.
 - A `done` task card should not keep `status: "active"` after completion is
   accepted.
 - Required fields exist: `id`, `title`, `column`, `created_at`,
@@ -82,6 +86,10 @@ Safe repairs to propose:
 - Update `next_id` to one greater than the largest existing task ID.
 - Fix a task `column` field to match the board when the board placement is
   clearly the intended state.
+- Replace an invalid or incoherent task `maturity` with the column-coherent MPI
+  value after preserving the old label in a repair note when useful:
+  `todo` -> `planned` or `idea`, `doing` -> `in-progress` or `validating`,
+  `done` -> `complete`.
 - Update `state/index.json` `board` to `.agents/mpi-kanban/board.json` when
   `board.json` exists.
 - Remove `closed` coordination task records from `active_tasks`.

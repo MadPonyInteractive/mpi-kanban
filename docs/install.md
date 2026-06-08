@@ -69,6 +69,11 @@ The fixed human columns are `To do`, `Doing`, and `Done`, stored in JSON as
 work. Read-only card questions such as `what is MPI-42?` route through
 `mpi-continue` without starting implementation.
 
+Task-card `maturity` is also fixed: `idea`, `planned`, `in-progress`,
+`validating`, and `complete`. Do not use process labels such as `Validated`,
+`spec`, `active`, `done`, or `implementing` as maturity values; the VS Code
+board treats unknown values as invalid cards.
+
 Legacy projects may still contain `.agents/mpi-kanban/kanban.md` or
 `.claude/mpi-kanban/kanban.md`. Treat those files as migration inputs or
 snapshots after `board.json` exists, not as a second live board. Prefer moving

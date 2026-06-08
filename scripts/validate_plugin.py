@@ -13,6 +13,17 @@ DESCRIPTION_MAX = 1024
 TASK_ID = re.compile(r"^MPI-[1-9][0-9]*$")
 TASK_COLUMNS = ("todo", "doing", "done")
 TASK_MATURITIES = {"idea", "planned", "in-progress", "validating", "complete"}
+INVALID_MATURITY_EXAMPLES = {
+    "active",
+    "accepted",
+    "done",
+    "deferred",
+    "implementing",
+    "implementation",
+    "validated",
+    "validation",
+    "spec",
+}
 MESSAGE_STATUSES = {"open", "acknowledged", "replied", "resolved", "superseded", "closed"}
 OPEN_MESSAGE_STATUSES = {"open", "acknowledged", "replied"}
 MESSAGE_SELECTORS = {"session", "agent", "role", "task", "file", "workspace", "user"}
@@ -244,6 +255,29 @@ def validate_task_board_templates() -> None:
             fail("templates/task.json links must be an object")
 
 
+def validate_maturity_contract_docs() -> None:
+    required_paths = [
+        ROOT / "SPEC.md",
+        ROOT / "skills" / "mpi-lib" / "task-board-ops" / "_schema.md",
+        ROOT / "skills" / "mpi-lib" / "task-board-ops" / "mutate.md",
+        ROOT / "skills" / "mpi-lib" / "task-board-ops" / "validate.md",
+        ROOT / "skills" / "mpi-lib" / "templates" / "project-profile.md",
+    ]
+    enum_values = TASK_MATURITIES
+    for path in required_paths:
+        if not path.exists():
+            fail(f"missing maturity contract doc: {path.relative_to(ROOT)}")
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        lower = text.lower()
+        for value in enum_values:
+            if value not in text:
+                fail(f"{path.relative_to(ROOT)} does not document maturity value {value!r}")
+        for value in INVALID_MATURITY_EXAMPLES:
+            if value not in lower:
+                fail(f"{path.relative_to(ROOT)} does not reject invalid maturity example {value!r}")
+
+
 def validate_event_log(path: Path, label: str, *, require_task_id: bool = False) -> None:
     if not path.exists():
         return
@@ -349,7 +383,8 @@ def validate_task_board_tree() -> None:
             if maturity not in TASK_MATURITIES:
                 fail(
                     f"{task_json.relative_to(ROOT)} maturity must be one of "
-                    "idea, planned, in-progress, validating, complete"
+                    "idea, planned, in-progress, validating, complete; "
+                    f"got {maturity!r}, which renders as an invalid card"
                 )
             elif maturity not in TASK_MATURITY_BY_COLUMN[column]:
                 fail(f"{task_json.relative_to(ROOT)} maturity {maturity!r} is invalid for column {column}")
@@ -588,6 +623,7 @@ def main() -> int:
     validate_mpi_lib_present()
     validate_kanban_templates()
     validate_task_board_templates()
+    validate_maturity_contract_docs()
     validate_task_board_tree()
     validate_coordination_messages()
     validate_interop_state()

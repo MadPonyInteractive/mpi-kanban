@@ -141,6 +141,12 @@ Column and maturity must stay coherent:
 Nimbalyst `implementing` maps to MPI `in-progress`; it is not a valid
 task-card maturity value.
 
+Do not invent process-specific maturity values. Labels such as `active`,
+`accepted`, `done`, `deferred`, `implementing`, `implementation`, `validated`,
+`Validated`, `validation`, `spec`, `scoped`, `designed`, and `review` are not
+valid task-card maturity values. Preserve that meaning in `status`,
+`attention`, `description`, or linked task workspace files instead.
+
 `attention.state` is `required` or `cleared` when present.
 
 ---

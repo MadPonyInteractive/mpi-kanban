@@ -3,7 +3,7 @@ name: mpi-lib
 description: MPI workflow pack - shared reference library for the mpi-kanban skills. Install with the full MPI workflow pack; do not invoke directly.
 metadata:
   author: Mad Pony Interactive
-  version: "0.6.0"
+  version: "0.8.3"
 ---
 
 # mpi-lib Support Skill

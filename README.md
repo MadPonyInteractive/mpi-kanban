@@ -94,6 +94,11 @@ Task folders keep the card compact: `task.json` stores the visible metadata,
 while `brief.md`, `plan.md`, `checklist.md`, `validation.md`, `files.json`,
 `events.jsonl`, `handoffs/`, and `research/` hold the work detail.
 
+Task-card `maturity` is a fixed enum: `idea`, `planned`, `in-progress`,
+`validating`, and `complete`. Values like `Validated`, `spec`, `active`,
+`done`, or `implementing` are not maturity values and will render as invalid
+cards; keep that detail in the task workspace or `status` instead.
+
 Ask `what is MPI-42?`, `show MPI-42`, or `look at the <title> card` to trigger
 `mpi-continue`'s read-only mode. It reads one card and its direct task-folder
 context without starting implementation.

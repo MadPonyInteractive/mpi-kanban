@@ -179,8 +179,9 @@ Skipping task-board close-out; use mpi-nimbalyst-sync for a board snapshot."
    Maturity auto-correct: before any move, read the card's `maturity` and check
    it against the enum (`idea`, `planned`, `in-progress`, `validating`,
    `complete`) and its column. If the value is invalid (e.g. `active`,
-   `deferred`, `done`, `implementing`, `implementation`) or incoherent with the
-   column, call `writeTask(id, { "maturity": "<corrected>" }, actor)` to set the
+   `accepted`, `deferred`, `done`, `Validated`, `validated`, `validation`,
+   `spec`, `implementing`, `implementation`) or incoherent with the column,
+   call `writeTask(id, { "maturity": "<corrected>" }, actor)` to set the
    coherent value (`todo` -> `planned` or `idea`; `doing` -> `in-progress` or,
    when validation is represented, `validating`; `done` -> `complete`). Print:
    `Note: card "<id>" had invalid maturity "<old>"; corrected to "<new>".`

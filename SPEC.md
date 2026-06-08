@@ -219,6 +219,10 @@ Canonical task-card `maturity` values are `idea`, `planned`, `in-progress`,
 column names or Nimbalyst phase names as maturity values. In particular,
 Nimbalyst `implementing` maps to MPI `maturity: "in-progress"` on a `doing`
 card; `implementing` is not a task-card maturity value.
+Process labels such as `Validated`, `validated`, `validation`, `spec`,
+`scoped`, `review`, `active`, `accepted`, `deferred`, `done`,
+`implementing`, or `implementation` are not maturity values; represent them in
+`status`, `attention`, `description`, or linked task workspace files.
 
 Column and maturity must stay coherent:
 
@@ -650,5 +654,3 @@ Validation must check:
 - `mpi-init` can migrate legacy `.claude/mpi-kanban/` board files to
   `.agents/mpi-kanban/` with explicit approval and no silent overwrites.
 - Validator passes.
-
-

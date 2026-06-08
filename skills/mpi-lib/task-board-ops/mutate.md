@@ -24,10 +24,30 @@ Reject these common mistakes. They are NOT maturity values:
   (or `idea`) and record the deferral in the description or brief.
 - `implementing`, `implementation` -> Nimbalyst phrasing; the MPI value is
   `in-progress`.
+- `validated`, `Validated`, `validation` -> validation state is represented by
+  `maturity: "validating"` while the card is in `doing`, then
+  `maturity: "complete"` when it moves to `done`.
+- `spec`, `scoped`, `designed`, `review`, or other process labels -> keep that
+  detail in `brief.md`, `plan.md`, `validation.md`, or `description`; do not
+  put it in `maturity`.
 
 Any other `maturity` value renders as a red invalid card in the VS Code board.
 A `doing` card that should show yellow uses `in-progress`, never
 `implementation` or `idea`.
+
+Before every write, derive the maturity from the destination column unless the
+workflow has an explicitly allowed value:
+
+| Column | Allowed `maturity` | Default when unsure |
+|---|---|---|
+| `todo` | `idea`, `planned` | `planned` for planned/reopened work; `idea` for raw backlog ideas |
+| `doing` | `in-progress`, `validating` | `in-progress`; use `validating` only after validation state exists |
+| `done` | `complete` | `complete` |
+
+If an existing card already has an invalid or incoherent maturity, correct it
+with the same task-board write that changes or confirms its column. Do not
+preserve invalid maturity for history; preserve the old label in an event,
+brief, plan note, or validation note if it matters.
 
 ---
 
@@ -58,6 +78,9 @@ Recipe:
 4. Write `task.json` using `templates/task.json` as the field baseline.
 5. Set `id`, `title`, `description`, `column`, `maturity`, `status`,
    timestamps, and links. Use relative links only.
+   Reject the input if `maturity` is not one of the fixed enum values above or
+   does not match `column`; normalize before writing rather than writing a red
+   invalid card.
 6. Add the ID to the target column array in `board.json`: prepend for
    `position: "top"` and append for `position: "bottom"`.
 7. Append `task.created` to the global event log and task event log.
@@ -74,7 +97,13 @@ New ideas default to `todo`.
 3. Remove the ID from the old column and insert it at the top of `toColumn`
    unless the caller provides a specific insertion index.
 4. Read `tasks/<id>/task.json`.
-5. Update `column` and `updated_at`.
+5. Update `column`, `maturity`, and `updated_at` together. Column movement is
+   also maturity reconciliation:
+   - `toColumn: "todo"` -> keep existing `idea` or `planned` when coherent;
+     otherwise set `planned`.
+   - `toColumn: "doing"` -> keep existing `validating` only when validation
+     state is already represented; otherwise set `in-progress`.
+   - `toColumn: "done"` -> set `complete`.
 6. If the move implies agent reconciliation, set:
 
    ```json
@@ -111,6 +140,18 @@ Allowed direct task-card updates:
 - `links`
 
 Always update `updated_at` and append `task.updated`.
+
+If `patch.maturity` is present, validate it before writing:
+
+- It must be exactly `idea`, `planned`, `in-progress`, `validating`, or
+  `complete`.
+- It must match the task's current `column`.
+- It must not be copied from `status`, legacy Markdown columns, Nimbalyst
+  phases, tracker states, or freeform process labels.
+
+If the caller asks for `maturity: "Validated"`, `maturity: "spec"`, or any
+other non-enum value, stop and map it to the coherent MPI value or ask for
+direction before writing.
 
 Do not embed long plans, handoffs, validation notes, research, or file lists in
 `task.json`; use linked workspace files.

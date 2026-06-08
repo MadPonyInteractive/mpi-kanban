@@ -100,7 +100,11 @@ Report findings in these categories:
   through `kanban.md` after `board.json` exists.
 - **Board:** JSON schema validity, task folders, linked files, legacy board files
   still treated as live, retained legacy `kanban.md` without a tombstone,
-  orphaned task workspaces.
+  orphaned task workspaces, and task-card `maturity` values outside the fixed
+  enum (`idea`, `planned`, `in-progress`, `validating`, `complete`) or
+  incoherent with their column. Treat values such as `Validated`, `spec`,
+  `active`, `done`, `implementing`, and `implementation` as repair findings,
+  not as new states.
 - **State:** missing or invalid interop mode, stale source-of-truth claims,
   coordination state pointing at old board paths, `source_of_truth: file`
   misread as Markdown instead of JSON/file-backed board state, `active_tasks`

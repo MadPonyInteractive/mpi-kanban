@@ -46,8 +46,10 @@ intent word into it. Allowed values, by column:
 
 `status` is a separate field (e.g. `active`, `accepted`). Words like `active`,
 `deferred`, `done`, `implementing`, and `implementation` are NOT maturity
-values. A `doing` card under active work is `in-progress` (renders yellow), not
-`implementation` or `idea`. Any other `maturity` renders as a red invalid card.
+values. Words like `Validated`, `validated`, `validation`, `spec`, `scoped`,
+`designed`, and `review` are also NOT maturity values. A `doing` card under
+active work is `in-progress` (renders yellow), not `implementation`, `spec`, or
+`idea`. Any other `maturity` renders as a red invalid card.
 
 ## Open Gaps
 

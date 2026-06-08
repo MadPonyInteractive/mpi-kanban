@@ -124,9 +124,13 @@ finish:
 7. After user verifies, mark the batch tasks complete in the plan, update the
    active task workspace checklist/validation files, append
    `checklist.updated` or `validation.updated` events when meaningful, and use
-   JSON task-board operations for any card status or column change. Move the
-   card to `done` only after validation state is represented. For unmigrated
-   legacy projects, update the relevant kanban step as compatibility behavior.
+   `moveTask` / `writeTask` from `<mpi-lib-root>/task-board-ops/mutate.md` for
+   any card status, maturity, or column change. Never write invented maturity
+   values such as `Validated`, `spec`, `implementing`, or `done`; the only
+   allowed values are `idea`, `planned`, `in-progress`, `validating`, and
+   `complete`, matched to the card column. Move the card to `done` only after
+   validation state is represented. For unmigrated legacy projects, update the
+   relevant kanban step as compatibility behavior.
 
 ## Hard rules
 
