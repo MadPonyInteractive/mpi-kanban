@@ -53,6 +53,7 @@ brainstorm with me
 initialize MPI
 what is MPI-5?
 show the Agent Message Bus card
+set MPI-5 to validating
 create a plan
 create a large plan
 continue this MPI plan
@@ -102,6 +103,13 @@ cards; keep that detail in the task workspace or `status` instead.
 Ask `what is MPI-42?`, `show MPI-42`, or `look at the <title> card` to trigger
 `mpi-continue`'s read-only mode. It reads one card and its direct task-folder
 context without starting implementation.
+
+Ask `move MPI-42 to doing`, `set MPI-42 to validating`, or `mark MPI-42 done`
+to trigger `mpi-continue`'s direct card-state update mode. The skill reads the
+task-board schema before writing; `validating` means the card stays in `Doing`,
+`validation.md` is written or updated first, and `maturity` becomes
+`validating`. `Done` still requires represented validation state and explicit
+final-completion approval.
 
 The companion **Mpi-Kanban** VS Code extension renders the board as an
 interactive task surface:

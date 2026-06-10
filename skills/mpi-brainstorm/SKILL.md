@@ -148,6 +148,10 @@ After the todo task is captured:
 ## Hard rules
 
 - No design or code work before the user approves the design.
+- Card-write preflight is mandatory before creating or updating a JSON task:
+  read `<mpi-lib-root>/task-board-ops/_schema.md` and
+  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  existing cards.
 - The todo task is created by THIS skill, not by the user and not by the next
   skill in the chain.
 - New ideas create JSON task-board tasks in `todo` with system-assigned

@@ -1,6 +1,6 @@
 ---
 name: mpi-continue
-description: MPI workflow pack - Continue active MPI work or show/read one board task. Use when the user says "continue this MPI plan", "MPI continue", "continue", "resume", "keep going", "pick this back up", "read a handoff and continue", "what is MPI-5", "tell me about MPI-5", "show MPI-5", "open MPI-5", "read MPI-5", "what is this card", "look at the <title> card", "$mpi-continue", or wants implementation to proceed from an MPI plan/handoff.
+description: MPI workflow pack - Continue active MPI work, show/read one board task, or update one task-card state. Use when the user says "continue this MPI plan", "MPI continue", "continue", "resume", "keep going", "pick this back up", "read a handoff and continue", "what is MPI-5", "show/read/open MPI-5", "move/update/set MPI-5 to doing/validating/done", "mark the card validating", "$mpi-continue", or wants implementation to proceed from an MPI plan/handoff.
 ---
 
 # mpi-continue Skill
@@ -30,6 +30,12 @@ It also owns the read-only board-entry lookup path. When the user asks "what is
 MPI-5?", "show MPI-5", "open MPI-5", "read MPI-5", "what is this card?", or
 "look at the <title> card", run the read-only mode below instead of starting
 implementation.
+
+It also owns bounded direct card-state updates when the user asks to move or
+set one JSON task card, for example "move MPI-42 to doing", "set MPI-42 to
+validating", or "mark the current card done". These updates use the same
+task-board mutation references as implementation flow; do not infer legal
+values by grepping existing cards.
 
 When shared coordination state exists, `mpi-continue` also reads
 `.agents/mpi-kanban/state/index.json` first and follows its pointers only as
@@ -101,6 +107,48 @@ Next useful action:
 After reporting, stop. Do not mutate board, task, state, memory, docs, or plan
 files. `source_of_truth: "file"` means the JSON board and task workspaces when
 `board.json` exists; it does not mean `kanban.md`.
+
+## Direct card update mode
+
+Use this mode when the user explicitly asks to move or set one task card's
+board state without asking to implement code.
+
+1. Resolve `<mpi-lib-root>`, then read
+   `<mpi-lib-root>/task-board-ops/_schema.md`,
+   `<mpi-lib-root>/task-board-ops/read.md`, and
+   `<mpi-lib-root>/task-board-ops/mutate.md` before writing anything. Do not
+   derive allowed `column`, `maturity`, or `status` values from existing
+   cards.
+2. Read `.agents/mpi-kanban/state/interop.json` when present. If
+   `source_of_truth` is `nimbalyst`, do not mutate the JSON board; report the
+   Nimbalyst state change the user should make or run `mpi-nimbalyst-sync` for
+   a snapshot boundary.
+3. Locate exactly one JSON task by `MPI-*` ID or unambiguous title. If
+   `board.json` is absent, stop and report that direct card-state updates
+   require the JSON task board; legacy Markdown updates are handled only by the
+   legacy compatibility paths in workflow close-out.
+4. Map the user's requested state through the card contract:
+   - `todo`, `to do`, `backlog`, `planned`, `reopen` -> `moveTask(id, "todo",
+     actor, reason)` and coherent `maturity: "planned"` unless it is a raw
+     idea.
+   - `doing`, `in progress`, `implementing`, `implementation started` ->
+     `beginImplementation(id, actor, planPath, sessionTitle)` when work is
+     starting or the card is in `todo`; otherwise `moveTask(id, "doing", actor,
+     reason)` and `writeTask` only if a concise badge/status change is needed.
+   - `validating`, `needs validation`, `ready for validation`, yellow card ->
+     ensure `validation.md` and `events.jsonl` exist, write or update
+     `validation.md` with a short validation-state note if none exists, append
+     `validation.updated`, keep/move the card in `doing`, then call
+     `writeTask(id, { "maturity": "validating", "status": "active" }, actor)`.
+   - `done`, `complete`, `completed` -> move to `done` only when
+     `validation.md` exists and final completion is explicitly approved in the
+     user's current request; otherwise keep/move the card in `doing`, set
+     `maturity: "validating"`, and require validation attention.
+5. Append/verify the required events through `mutate.md` recipes. Meaningful
+   card updates append to both `.agents/mpi-kanban/tasks/<id>/events.jsonl`
+   and `.agents/mpi-kanban/events.jsonl`.
+6. Report the resulting `column`, `maturity`, `status`, and linked task file
+   touched, then stop. Do not inspect unrelated tasks or sibling repositories.
 
 ## Pre-conditions
 
@@ -352,6 +400,10 @@ Context getting large? Run `mpi-handoff` before starting a new session.
 ## Hard rules
 
 - Approval before implementation is mandatory.
+- Card-write preflight is mandatory before any `column`, `maturity`, or
+  `status` write: read `<mpi-lib-root>/task-board-ops/_schema.md` and
+  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  existing cards.
 - The card must be in `doing` before any implementation edit. In `file` mode,
   `beginImplementation` must have moved the card `todo -> doing`, set
   `maturity: "in-progress"`, and derived the checklist before you edit any
@@ -367,6 +419,5 @@ Context getting large? Run `mpi-handoff` before starting a new session.
   only worker-spawning implementation path.
 - In read-only board entry mode, read one named task/card only and do not
   search sibling repositories or unrelated board surfaces.
-
 
 

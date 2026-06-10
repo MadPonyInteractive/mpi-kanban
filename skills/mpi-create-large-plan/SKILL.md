@@ -184,6 +184,10 @@ Next: say "continue this plan" to start, or "create a handoff" if you want a fre
 ## Hard rules
 
 - Do not execute implementation work.
+- Card-write preflight is mandatory before any `column`, `maturity`, or
+  `status` write: read `<mpi-lib-root>/task-board-ops/_schema.md` and
+  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  existing cards.
 - Do not add implementation checklist steps yet; `mpi-continue` derives
   lifecycle/phase checklists when implementation starts.
 - Do not create parallel batches without explicit ownership for every task.

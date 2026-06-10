@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-06-10
+
+### Changed
+
+- Added direct task-card state update triggers to `mpi-continue` so requests
+  such as `set MPI-42 to validating` load the right workflow instead of
+  relying on agents to rediscover board rules from memory or grep.
+- Promoted the card-write preflight into the card-writing workflows and
+  `task-board-ops/mutate.md`: agents must read `_schema.md` and `mutate.md`
+  before writing `column`, `maturity`, or `status`, and must write
+  `validation.md` before setting `maturity: "validating"`.
+- Clarified that `mpi-lib` reference files are safe for agents to read
+  directly, even though `mpi-lib` itself is not a user workflow.
+
 ## [0.8.3] - 2026-06-08
 
 ### Changed
@@ -299,7 +313,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.3...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.4...HEAD
+[0.8.4]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.0...v0.8.1

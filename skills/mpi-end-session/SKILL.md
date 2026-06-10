@@ -239,6 +239,10 @@ items explicitly.
 - Never auto-overwrite or delete a memory entry; ask first.
 - Never push (`git push`); committing is enough, and the user pushes when ready.
 - Never commit over another fresh active writer's claim.
+- Card-write preflight is mandatory before any `column`, `maturity`, or
+  `status` write: read `<mpi-lib-root>/task-board-ops/_schema.md` and
+  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  existing cards.
 - Never treat task-card badges, attention, or legacy kanban tags as
   coordination authority; reread `.agents/mpi-kanban/state/`.
 - Never move a JSON task card to `done` unless validation state is represented

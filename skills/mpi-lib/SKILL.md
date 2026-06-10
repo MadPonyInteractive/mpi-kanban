@@ -1,15 +1,17 @@
 ---
 name: mpi-lib
-description: MPI workflow pack - shared reference library for the mpi-kanban skills. Install with the full MPI workflow pack; do not invoke directly.
+description: MPI workflow pack - shared reference library for the mpi-kanban skills. Agents may read its reference files directly for card/task-board rules; do not run it as a user workflow.
 metadata:
   author: Mad Pony Interactive
-  version: "0.8.3"
+  version: "0.8.4"
 ---
 
 # mpi-lib Support Skill
 
 This is a support skill for the all-or-nothing MPI workflow pack, not a user
-workflow. Do not invoke it directly.
+workflow. Agents may read its reference files directly when they need MPI
+task-board, coordination, or workflow rules; do not run `mpi-lib` itself as the
+workflow.
 
 Other `mpi-*` skills locate this sibling skill at first use, cache its root
 path as `<mpi-lib-root>`, and read individual reference files only when needed.

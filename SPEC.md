@@ -57,7 +57,9 @@ Old users must reinstall through the npx command above.
 - `mpi-create-large-plan` - create an adaptive, investigation-backed large
   plan.
 - `mpi-continue` - resume/implement from the active task, plan, handoff, and
-  current repo state.
+  current repo state; show one task card; or perform a bounded direct
+  task-card state update such as moving one `MPI-*` card to `doing`,
+  `validating`, or `done`.
 - `mpi-execute-parallel` - execute explicit safe `## Parallel Batch` sections.
 - `mpi-message` - send, read, acknowledge, reply to, resolve, and explicitly
   route same-filesystem async coordination messages.
@@ -254,6 +256,11 @@ Supported initial event types are `task.created`, `task.updated`,
 `migration.task_imported`, and `migration.completed`. Events are an audit trail
 and task-board history. They are not a live interruption channel and do not
 require a daemon, broker, remote service, or real-time delivery.
+
+Task-card events are appended to both
+`.agents/mpi-kanban/tasks/<id>/events.jsonl` and
+`.agents/mpi-kanban/events.jsonl`. The task log gives local card history; the
+global log gives board-wide history.
 
 Legacy Markdown boards are migration inputs only. Their column/field shape is
 documented in `skills/mpi-lib/kanban-ops/_schema.md`; skills read `kanban.md`
@@ -551,6 +558,16 @@ matches the written plan.
     represented in the task workspace.
 
 `mpi-continue` does not commit or push.
+
+`mpi-continue` also owns direct JSON task-card state updates when the user asks
+to move or set one visible card without asking for code implementation. That
+path must read `skills/mpi-lib/task-board-ops/_schema.md` and
+`skills/mpi-lib/task-board-ops/mutate.md` before writing card state. It must
+not infer legal `column`, `maturity`, or `status` values from existing cards.
+Requests such as "set MPI-42 to validating" map to `column: "doing"` plus
+`maturity: "validating"` only after `validation.md` exists or is written with
+validation state. Requests to mark a card done require represented validation
+state and explicit final-completion approval in the current request.
 
 ## 10. Parallel Execution
 

@@ -236,6 +236,10 @@ Next: use `mpi-brainstorm`, `mpi-create-plan`, or `mpi-continue`.
 
 - `mpi-init` is the only onboarding/adoption skill. Do not route to a separate
   setup flow.
+- Card-write preflight is mandatory before creating or importing JSON tasks:
+  read `<mpi-lib-root>/task-board-ops/_schema.md` and
+  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  existing cards or legacy Markdown entries.
 - `mpi-init` may create the initial profile/index and record project mode.
 - Mode changes after initialization are handled by `mpi-project-refresh`.
 - Never maintain `board.json` and `kanban.md` as competing live boards.

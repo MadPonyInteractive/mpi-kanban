@@ -178,5 +178,7 @@ Initial event types:
 - `migration.completed`
 
 Append card-specific events to `tasks/<id>/events.jsonl`. Also append
-board-level creation, move, deletion, and migration events to
-`.agents/mpi-kanban/events.jsonl`.
+matching task-card events to `.agents/mpi-kanban/events.jsonl`, including
+creation, movement, deletion, `task.updated`, attention, checklist, validation,
+and migration events. The task log gives local card history; the global log
+gives board-wide history.

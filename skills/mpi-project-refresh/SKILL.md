@@ -207,6 +207,11 @@ Refresh applied.
 - Inspect first, propose second, write third.
 - Do not bootstrap a brand-new project; route to `mpi-init`.
 - Do not route to separate setup or mode skills; those flows are retired.
+- Card-write preflight is mandatory before any approved board repair that
+  writes `column`, `maturity`, or `status`: read
+  `<mpi-lib-root>/task-board-ops/_schema.md` and
+  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  existing cards.
 - Never create or edit a rule file without explicit per-file approval.
 - Never auto-delete or auto-overwrite a memory entry.
 - Never overwrite user-customized profile/index sections without showing the

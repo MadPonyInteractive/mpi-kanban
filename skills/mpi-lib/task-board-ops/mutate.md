@@ -6,7 +6,14 @@ state. For schema details, read `_schema.md`.
 
 ---
 
-## Maturity is a fixed enum (read before any write)
+## Card-write preflight (read before any write)
+
+Before writing `column`, `maturity`, `status`, `attention`, or any linked
+task-board state, read `_schema.md` in this directory. Do not infer legal
+values from existing cards, old Markdown boards, tracker phases, or nearby
+examples. Existing cards can be stale or invalid.
+
+Use this contract for every card write:
 
 `maturity` accepts ONLY: `idea`, `planned`, `in-progress`, `validating`,
 `complete`. Do not guess, invent, or copy another field's value into it.
@@ -16,6 +23,21 @@ Column coherence is mandatory:
 - `todo` -> `idea` or `planned`
 - `doing` -> `in-progress` or `validating`
 - `done` -> `complete`
+
+Lifecycle ordering is mandatory:
+
+- Pickup/start implementation: move `todo -> doing`, set
+  `maturity: "in-progress"`, set `status: "active"`, and create/derive linked
+  checklist state before editing implementation files. Never implement a
+  `todo` card in place.
+- Needs validation/yellow card: keep the card in `doing`, write or update
+  `validation.md` first, then set `maturity: "validating"`. Do not move to
+  `done` just because validation is needed.
+- Done card: move to `done` only after validation state exists and final
+  completion is explicitly approved; set `maturity: "complete"`.
+- Event logs: append meaningful `task.moved`, `task.updated`,
+  `checklist.updated`, or `validation.updated` records to both the card's
+  `tasks/<id>/events.jsonl` and the global `.agents/mpi-kanban/events.jsonl`.
 
 Reject these common mistakes. They are NOT maturity values:
 
@@ -32,8 +54,9 @@ Reject these common mistakes. They are NOT maturity values:
   put it in `maturity`.
 
 Any other `maturity` value renders as a red invalid card in the VS Code board.
-A `doing` card that should show yellow uses `in-progress`, never
-`implementation` or `idea`.
+A `doing` card that should show needs-validation/yellow state uses
+`maturity: "validating"` after validation state exists, never
+`implementation`, `idea`, or `Validated`.
 
 Before every write, derive the maturity from the destination column unless the
 workflow has an explicitly allowed value:
@@ -139,7 +162,8 @@ Allowed direct task-card updates:
 - `activeSessionTitle`
 - `links`
 
-Always update `updated_at` and append `task.updated`.
+Always update `updated_at` and append `task.updated` to both the task event log
+and the global event log.
 
 If `patch.maturity` is present, validate it before writing:
 
@@ -247,7 +271,9 @@ Event rules:
 1. One compact JSON object per line.
 2. Include `schema: "mpi-kanban/event/v1"`, `type`, `at`, and `actor`.
 3. Include `id` for task-scoped events.
-4. Append only. Do not rewrite event history except during an explicit repair
+4. For normal task-card changes, append matching records to both the task log
+   and global log so local card history and board history stay coherent.
+5. Append only. Do not rewrite event history except during an explicit repair
    approved by the user.
 
 ---
@@ -258,4 +284,5 @@ Event rules:
 2. For `required`, set `attention.state`, `reason`, and `updated_at`.
 3. For `cleared`, either set `attention.state` to `cleared` with a reason or
    remove the `attention` object when no history is needed on the visible card.
-4. Write the task and append `attention.required` or `attention.cleared`.
+4. Write the task and append `attention.required` or `attention.cleared` to
+   both event logs.

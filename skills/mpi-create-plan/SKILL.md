@@ -147,6 +147,10 @@ through `mpi-continue`, which moves the card To do -> Doing before any edits.
 ## Hard rules
 
 - Do not implement.
+- Card-write preflight is mandatory before any `column`, `maturity`, or
+  `status` write: read `<mpi-lib-root>/task-board-ops/_schema.md` and
+  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  existing cards.
 - Do not let implementation begin from a `todo` card. Implementation must run
   through `mpi-continue`, which calls `beginImplementation` to move the card
   `To do -> Doing` and derive the checklist first. The lifecycle is always

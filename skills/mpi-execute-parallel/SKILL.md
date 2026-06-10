@@ -136,6 +136,10 @@ finish:
 
 - Never parallelize a normal phase or compact plan.
 - Never infer ownership when the plan omitted it.
+- Card-write preflight is mandatory before any `column`, `maturity`, or
+  `status` write: read `<mpi-lib-root>/task-board-ops/_schema.md` and
+  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  existing cards.
 - Never let workers edit the plan, JSON board, task workspace, legacy kanban,
   handoff, rules, or memory files unless that path is explicitly their
   ownership and the task is about those files.
