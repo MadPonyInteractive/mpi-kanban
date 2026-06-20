@@ -118,6 +118,12 @@ Per `~/.claude/CLAUDE.md`:
 
 ### 4. Commit
 
+Running `mpi-end-session` IS the user's explicit request to commit this
+session's touched files. Commit without asking again, even if a general "commit
+only when the user asks" instruction is otherwise in effect — invoking this
+skill is that ask. Do not report "did not commit"; the only thing this skill
+never does is `git push`.
+
 - Stage files by name; never use `git add -A` or `git add .`.
 - The session running `mpi-end-session`, or an explicit integrator, owns the
   final commit summary. Base the message on current coordination state and the
@@ -237,7 +243,9 @@ items explicitly.
 - Never use `git add -A` or `git add .`.
 - Never modify a rule file in `.agents/rules/` without explicit user approval.
 - Never auto-overwrite or delete a memory entry; ask first.
-- Never push (`git push`); committing is enough, and the user pushes when ready.
+- Committing is in scope and authorized by invoking this skill; do not defer
+  the commit to a separate user confirmation. Never push (`git push`);
+  committing is enough, and the user pushes when ready.
 - Never commit over another fresh active writer's claim.
 - Card-write preflight is mandatory before any `column`, `maturity`, or
   `status` write: read `<mpi-lib-root>/task-board-ops/_schema.md` and

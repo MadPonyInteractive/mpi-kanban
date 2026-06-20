@@ -59,6 +59,15 @@ Brief facts known at planning time.
 
 ## Verification
 
+**Verify mode:** auto | user-ux
+
+`auto` = the agent fully self-verifies (tests, build, smoke, re-read) and does
+not need the user to confirm a passing result. `user-ux` = the card has a UI/UX
+surface the user must look at and feel in the running app before it is done.
+Choose `user-ux` only when there is something a human must visually or
+interactively judge; otherwise `auto`. `mpi-continue` reads this line to decide
+whether to stop for the user after implementation.
+
 Final verification instructions.
 
 ## Preservation Notes
@@ -82,12 +91,23 @@ because several files may change.
 3. If the goal is clearly large or uncertain, or if independent parallel
    implementation looks likely (work splits into disjoint-ownership tasks),
    recommend `mpi-create-large-plan` instead and wait for confirmation.
-4. Resolve or create the JSON board task. See "Task-board update" below.
-5. Write the compact plan file to `.agents/mpi-kanban/tasks/<id>/plan.md`.
+4. **Front-load decisions (scalable-foundation).** When project mode is
+   `scalable-foundation`, before writing the plan, exercise the mode's
+   clarification and proactive-engineering behavior from
+   `<mpi-lib-root>/project-intent/modes.md`: surface the architecture, pattern,
+   and library decisions this work implies, push back where a stronger
+   foundation is warranted, name future-proofing concerns the user has not
+   raised, and resolve open questions with the user now. The goal is an
+   implementable card that carries no unresolved decisions, so implementation
+   does not stop mid-flight to ask.
+5. Resolve or create the JSON board task. See "Task-board update" below.
+6. Write the compact plan file to `.agents/mpi-kanban/tasks/<id>/plan.md`.
    Include project mode in `## Current State` when the profile exists
    ("Project mode: scalable-foundation"). Pull relevant conventions or
-   commands from the matched topic block only.
-6. Update the task card's `maturity`, `status`, and `links.plan`.
+   commands from the matched topic block only. Set `**Verify mode:**` in
+   `## Verification`: `user-ux` if the card has a UI/UX surface the user must
+   judge in the running app, otherwise `auto`.
+7. Update the task card's `maturity`, `status`, and `links.plan`.
 
 ## Task-board update
 

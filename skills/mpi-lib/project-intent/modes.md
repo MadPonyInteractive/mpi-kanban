@@ -92,6 +92,11 @@ more surface area. Engineering intent matters from the first commit.
 - **Clarification behavior:** surface tradeoffs explicitly. When two
   approaches are both defensible, present both with the recommended choice
   and the reason. Ask before introducing a new abstraction layer.
+- **Proactive engineering bar:** during planning, enforce strong patterns and
+  OOP where they pay off, and proactively name future-proofing concerns and
+  scalability suggestions the user has not raised (data model growth, extension
+  points, where new code will go). Raise these at planning time so the user
+  decides them once, before the card is implementable, not mid-implementation.
 - **Preservation requirements:** keep architecture summary, conventions,
   knowledge index, and rules current. `mpi-end-session` proposes profile and
   index updates when implementation changes architecture, conventions,

@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-06-20
+
+### Changed
+
+- Made the `mpi-continue` post-implementation gate conditional. Plans now
+  declare `**Verify mode:**` (`auto` or `user-ux`) in their `## Verification`
+  section. For an `auto` card whose self-verification passed, `mpi-continue`
+  reports the passing result and continues without stopping for the user; it
+  stops only when the card has a `user-ux` surface to judge in the running app,
+  or when self-verification failed or could not run. Untagged or legacy plans
+  default to `auto`. This removes the per-step "press 1 to verify" prompt for
+  work the agent has already verified.
+- Taught `mpi-create-plan` and `mpi-create-large-plan` to set `Verify mode:` on
+  the plan and, in `scalable-foundation` mode, to front-load architecture,
+  pattern, and library decisions and push back before a card is implementable,
+  so implementation does not stop mid-flight to ask.
+- Added a proactive engineering bar to the `scalable-foundation` mode contract:
+  enforce strong patterns where they pay off and proactively name
+  future-proofing concerns at planning time.
+- `mpi-end-session` now treats its own invocation as the user's explicit request
+  to commit the session's touched files, so it commits without deferring to a
+  general "ask before committing" instruction. It still never pushes and still
+  will not commit over a contested file claim or in `nimbalyst` mode.
+
 ## [0.8.4] - 2026-06-10
 
 ### Changed
@@ -313,7 +337,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.4...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.5...HEAD
+[0.8.5]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.1...v0.8.2

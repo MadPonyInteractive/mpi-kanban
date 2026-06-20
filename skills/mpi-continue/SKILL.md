@@ -331,26 +331,78 @@ After approval:
 5. Implement the briefed action. Keep edits scoped to the stated files/modules.
 6. If verification needs temporary logs, add them and remove them after the
    user verifies.
+7. **Self-verify before deciding whether to stop.** Run the card's verification
+   (the plan's `**Verify:**` / `## Verification` steps: tests, build, smoke,
+   re-read). Capture whether it passed.
 
-After implementation, output:
+## Post-implementation gate (conditional)
+
+Read `**Verify mode:**` from the active plan's `## Verification` section.
+Default to `auto` when the line is absent (legacy/compact plans). For a
+multi-phase plan, use the current phase's verify mode if it declares one,
+otherwise the plan-level value.
+
+Branch on (verify mode) x (did self-verification pass):
+
+**A. `auto` and self-verification passed → do not stop for the user.**
+Report the result and continue straight into the "After verified work" steps
+below (plan/board/state update), then move to the next step or completion.
+Output:
 
 ```markdown
-Continue step complete.
+Continue step complete (auto-verified).
 
 **Files changed:** <list>
 **Key changes:** <summary>
+**Verification run:** <checks executed> -> PASSED
 **Plan updates:** <summary or none>
 
-**Verify:**
-<exact verification steps>
+Continuing to the next step.
+```
 
-**Option 1 - Verified** - say "1" or "verified"
-**Option 2 - Keep talking** - say "2" or "keep talking"
+Do not ask the user to press 1. There is nothing for them to verify that the
+agent has not already verified.
+
+**B. `user-ux` and self-verification passed → stop for the user's eyes.**
+The card has a UI/UX surface only the user can judge. Output:
+
+```markdown
+Continue step complete - needs your check in the app.
+
+**Files changed:** <list>
+**Key changes:** <summary>
+**Automated checks:** <checks executed> -> PASSED
+
+**Check in the app:**
+<exact, specific UI/UX steps for the user to look at and feel>
+
+**Option 1 - Looks good** - say "1" or "verified"
+**Option 2 - Changes / keep talking** - say "2" (then describe what to change)
 ```
 
 Stop and wait.
 
-## If user chooses Option 1
+**C. Self-verification failed or could not run (any verify mode) → stop and
+report the blocker.** A failed or unrunnable check is a real stop, never an
+auto-continue. Output:
+
+```markdown
+Continue step complete - verification did not pass.
+
+**Files changed:** <list>
+**Key changes:** <summary>
+**Verification run:** <checks executed> -> FAILED / could not run
+**What failed:** <specific failure / why it could not run>
+
+I will not mark this verified. Say how to proceed, or "2" to keep talking.
+```
+
+Stop and wait.
+
+## After verified work
+
+These steps run when path A auto-verified, or after the user chooses Option 1
+in path B. (Path C does not reach here until the failure is resolved.)
 
 1. Remove temporary verification logs.
 2. Update the plan:
@@ -371,8 +423,9 @@ Stop and wait.
    `checklist.md`, add validation notes to `validation.md`, call `writeTask`
    for concise status/badge changes, and append `checklist.updated` or
    `validation.updated` events when meaningful. Move the card to `done` only
-   after validation state is represented in the task workspace and the user has
-   verified the work. If using a legacy Markdown board, flip the relevant
+   after validation state is represented in the task workspace and the work is
+   verified — by the user for a `user-ux` card, or by passing self-verification
+   for an `auto` card. If using a legacy Markdown board, flip the relevant
    kanban step when a lifecycle/phase boundary is complete and move
    IMPLEMENTING to VALIDATING rather than directly to COMPLETED. In
    `nimbalyst` mode, do not mutate JSON board files or `kanban.md`; tell the
@@ -389,9 +442,11 @@ Step verified. Say "continue" to keep going, "handoff" to switch sessions, or "e
 Plan complete. Suggested next step: run `mpi-end-session` to preserve docs/rules/memory, commit, and move the JSON task card to `done` after validation is represented and explicitly approved.
 ```
 
-## If user chooses Option 2
+## If the user chooses "keep talking" / changes (Option 2)
 
-Do nothing else. Stay in conversation and append once:
+Reached from path B or path C when the user wants changes or to keep talking
+rather than accept the step. Do not run the "After verified work" steps. Stay in
+conversation, address the requested changes, and append once:
 
 ```text
 Context getting large? Run `mpi-handoff` before starting a new session.
@@ -411,7 +466,11 @@ Context getting large? Run `mpi-handoff` before starting a new session.
   `To do -> Doing -> Done`, never `To do -> Done`. This applies on every entry
   path (direct continue, post-plan, or resumed handoff), not only the
   session-setup flow above.
-- Post-implementation verification choice is mandatory.
+- Post-implementation self-verification is mandatory: always run the card's
+  verification before deciding whether to stop. Stopping for the user is
+  mandatory only when the card's `**Verify mode:**` is `user-ux`, or when
+  self-verification failed or could not run. For an `auto` card whose checks
+  passed, do not stop for the user — report the passing result and continue.
 - Do not commit or push; committing is `mpi-end-session`'s responsibility.
 - Do not force stale plan tasks. Update the plan when reality has changed.
 - Do not spawn implementation workers here. When the next eligible unit is a

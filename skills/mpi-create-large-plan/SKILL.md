@@ -79,6 +79,15 @@ What is known now, including relevant files, constraints, and open risks.
 
 ## Verification
 
+**Verify mode:** auto | user-ux
+
+`auto` = the agent fully self-verifies (tests, build, smoke, re-read) and does
+not need the user to confirm a passing result. `user-ux` = the card has a UI/UX
+surface the user must look at and feel in the running app before it is done.
+Choose `user-ux` only when there is something a human must visually or
+interactively judge; otherwise `auto`. `mpi-continue` reads this line to decide
+whether to stop for the user after implementation.
+
 Final end-to-end verification criteria.
 
 ## Preservation Notes
@@ -107,6 +116,19 @@ and note why in the plan.
 4. Synthesize findings into an adaptive plan with `Current State`,
    `Remaining Work`, `Plan Drift`, `Verification`, and `Preservation Notes`.
    Include project mode in `## Current State` when the profile exists.
+   **Front-load decisions (scalable-foundation):** when project mode is
+   `scalable-foundation`, exercise the mode's clarification and
+   proactive-engineering behavior from
+   `<mpi-lib-root>/project-intent/modes.md` before finalizing the plan — surface
+   the architecture, pattern, and library decisions the work implies, push back
+   where a stronger foundation is warranted, name future-proofing concerns the
+   user has not raised, and resolve open questions with the user now. A task
+   becomes implementable only when it carries no unresolved decisions, so
+   `mpi-continue` does not stop mid-implementation to ask.
+   Set `**Verify mode:**` in `## Verification` (`user-ux` if the work has a
+   UI/UX surface the user must judge in the running app, otherwise `auto`). For
+   a multi-phase plan, also note per phase or per batch when a phase is
+   `user-ux` so `mpi-continue` stops only on those phases.
 5. Self-audit:
    - Each task has `**Verify:**`.
    - Independent implementation work is in `## Parallel Batch` sections by
