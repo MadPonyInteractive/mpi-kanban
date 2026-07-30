@@ -63,6 +63,13 @@ If SPEC and PLAN disagree, ask the user before choosing.
   `mpi-project-refresh`. Do not restore separate `mpi-project-setup` or
   `mpi-project-mode` skills unless the user explicitly reverses the lifecycle
   simplification decision.
+- `mpi-continue` carries the `column` and `maturity` enums inline in its
+  `## Card contract` section and defaults discovered work into the active card
+  in its `## Discovered work` section. Both deliberately duplicate `mpi-lib`.
+  Do not deduplicate them into a lib-only reference: the earlier
+  preflight-read version of this rule failed in a month of real use, because
+  agents skipped the extra file read when a value looked obvious from
+  neighbouring cards.
 
 ## Maintenance
 

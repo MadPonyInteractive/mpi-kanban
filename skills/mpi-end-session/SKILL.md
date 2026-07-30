@@ -228,6 +228,9 @@ Output to the user:
 - Message result should distinguish no relevant open messages, messages
   resolved/acknowledged/replied during close-out, or messages left unresolved
   with their paths and next action.
+- `Noticed, not actioned:` - separate work found during the session that was
+  deliberately not turned into cards, one line each, or omit the heading when
+  there is none. Do not create cards for these; the user decides.
 - Task-board result - one of:
   - `Task board: "MPI-42" -> done. [task.json](.agents/mpi-kanban/tasks/MPI-42/task.json)`
   - `Task board: "MPI-42" still in doing - validation or implementation remains. [task.json](.agents/mpi-kanban/tasks/MPI-42/task.json)`

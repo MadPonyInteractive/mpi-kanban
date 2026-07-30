@@ -7,7 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.8.5] - 2026-06-20
+### Fixed
+
+- `mpi-continue` now carries the task-card contract inline: the `column` and
+  `maturity` enums, the column/maturity coherence rules, and the reject-list of
+  common non-maturity words. The enum previously lived only in `mpi-lib` behind
+  a "read these two files first" preflight that agents skipped when a value
+  looked obvious from neighbouring cards, so invalid maturities kept reaching
+  the board through the pack's most-used skill.
+
+### Added
+
+- A `## Discovered work` rule in `mpi-continue`. Work found while implementing
+  the active card now folds into that card by default (checklist item, plan
+  edit, validation note) instead of becoming a new card. Genuinely separate
+  work is reported under `Noticed, not actioned:` for the user to decide, and a
+  card is created only when the user asks in the current request. `mpi-continue`
+  had no card-creation path at all, so agents improvised both the card and its
+  maturity, producing card sprawl that had to be repaired with umbrella cards.
+- `mpi-end-session` reports a `Noticed, not actioned:` list in its final report
+  so deferred findings surface instead of dying with the session.
 
 ### Changed
 

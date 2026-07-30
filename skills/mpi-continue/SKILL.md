@@ -50,6 +50,41 @@ the plan instead of forcing the next unchecked item.
 
 Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
+## Card contract
+
+These are the only legal values. Do not copy them from other cards on the
+board; other cards may be wrong.
+
+- `column`: `todo` | `doing` | `done`
+- `maturity`: `idea` | `planned` | `in-progress` | `validating` | `complete`
+- Coherence: `todo` -> `idea` or `planned`; `doing` -> `in-progress` or
+  `validating`; `done` -> `complete`
+
+These are not maturity values: `active`, `accepted`, `deferred`, `done`,
+`implementing`, `implementation`, `validated`, `Validated`, `validation`,
+`spec`, `scoped`, `designed`, `review`. Process detail belongs in `status`,
+`attention`, `description`, or the linked task workspace files.
+
+## Discovered work
+
+Work you find while implementing the active card belongs to the active card.
+That is the default and it needs no approval.
+
+- Same system, same files, or needed to make the active card's verification
+  pass -> fold it into the active card: append a `checklist.md` item, extend
+  `plan.md`, note it in `validation.md`. Do not create a card.
+- Genuinely separate work (different system, not needed for this card's
+  verification) -> do not create a card silently. Collect it and report it at
+  the end of the step under `Noticed, not actioned:` so the user decides.
+- Create a card only when the user explicitly asks for one in the current
+  request. Then use `createTask` from
+  `<mpi-lib-root>/task-board-ops/mutate.md`. Never hand-write a `task.json`.
+
+Before proposing any new card, check the open `todo` and `doing` cards for one
+that already covers the same system, and extend that card instead. Several
+cards touching one system is the failure this rule exists to prevent; an
+umbrella card afterwards is a repair, not the goal.
+
 ## Read-only board entry mode
 
 Use this mode when the user asks to inspect one card/task rather than continue
@@ -456,9 +491,15 @@ Context getting large? Run `mpi-handoff` before starting a new session.
 
 - Approval before implementation is mandatory.
 - Card-write preflight is mandatory before any `column`, `maturity`, or
-  `status` write: read `<mpi-lib-root>/task-board-ops/_schema.md` and
-  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
-  existing cards.
+  `status` write: use the `## Card contract` values above, and read
+  `<mpi-lib-root>/task-board-ops/_schema.md` and
+  `<mpi-lib-root>/task-board-ops/mutate.md` for the write recipes. Do not
+  derive legal values from existing cards.
+- Never create a task card unless the user asked for one in the current
+  request. Discovered work folds into the active card by default; see
+  `## Discovered work`.
+- Never hand-write or hand-edit a `task.json`. Every card write goes through a
+  `mutate.md` recipe so the enum, coherence, and events stay correct.
 - The card must be in `doing` before any implementation edit. In `file` mode,
   `beginImplementation` must have moved the card `todo -> doing`, set
   `maturity: "in-progress"`, and derived the checklist before you edit any
