@@ -36,6 +36,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   value and is now a first-class maturity for the `todo` column. Updated
   `SPEC.md`, `skills/mpi-lib/task-board-ops/`, `skills/mpi-continue/SKILL.md`,
   `skills/mpi-execute-parallel/SKILL.md`, and `scripts/validate_plugin.py`.
+- `skills/mpi-lib/scripts/validate_board.py`, a runnable check that validates a
+  live JSON task board in any project: board schema and column set, card/column
+  and maturity coherence, required fields, link containment, orphaned task
+  folders, and event logs. Run it as
+  `python <mpi-lib-root>/scripts/validate_board.py <project-root>`; exit 0 means
+  consistent, exit 1 prints one line per violation. `mpi-end-session` runs it
+  before committing, and it is the gate a board batch must pass before
+  dispatch. Nothing an agent ran had previously checked a real board.
+- A board batch source in `mpi-execute-parallel`. A batch can now come from
+  ready cards on `board.json`, not only from a `## Parallel Batch` section
+  inside one plan, so work can be split across cards instead of only within
+  one. A card is selectable when it is in `todo` with `maturity: "planned"`, has
+  a `plan.md`, carries no required attention, and has ownership derivable from
+  `files.json` or a plan `Ownership:` line that is disjoint from every other
+  selected card. Every excluded card is reported with its reason. Dispatch
+  proceeds without asking, because the plan is the approval.
+- A single worker-to-worker messaging case: a worker that needs a file outside
+  its ownership files one `mpi-message` record and stops that line of work
+  rather than editing or negotiating. No read-receipt loop.
+- Board-dispatch routing and trigger phrases in `mpi-continue` ("run the ready
+  cards", "dispatch ready cards", "work the board"). `mpi-continue` still never
+  spawns workers itself.
+
+### Changed
+
+- `scripts/validate_plugin.py` now imports the maturity enum, the JSON and
+  event-log helpers, and the whole board-tree check from
+  `skills/mpi-lib/scripts/validate_board.py` instead of keeping its own copy.
+  The enum has one code-level source of truth rather than two that had to be
+  kept comparable by hand.
+- The release-time maturity contract check now also covers the deliberate
+  inline enum copies in `mpi-continue` and `mpi-execute-parallel`. Those copies
+  are duplicated on purpose; this is what keeps them honest as they multiply.
+
+## [0.8.5] - 2026-06-20
 
 ### Changed
 
