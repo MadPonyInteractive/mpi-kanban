@@ -139,6 +139,27 @@ After migration, prefer moving the old Markdown board to
 keep only a tombstoned/generated file there and update project boot docs so
 agents continue from `board.json` and `tasks/<id>/`.
 
+## Board Validator
+
+The `mpi-lib` support skill ships a runnable script that validates any
+project's live JSON task board:
+
+```text
+python <mpi-lib-root>/scripts/validate_board.py <project-root>
+```
+
+`<mpi-lib-root>` is the installed path of the `mpi-lib` skill (for example
+`~/.agents/skills/mpi-lib` or `~/.claude/skills/mpi-lib`).
+`<project-root>` is the project directory containing
+`.agents/mpi-kanban/board.json`; it defaults to the current directory.
+A project with no `board.json` is not an error.
+
+The script checks board schema, the fixed column set, card/column and
+maturity-enum coherence, required task fields, link paths, orphaned task
+folders, and board-level and task-level event logs. Exit 0 means the board
+is consistent; exit 1 prints one line per violation. `mpi-end-session` runs
+this check automatically before committing.
+
 ## Workflow
 
 The normal loop is:

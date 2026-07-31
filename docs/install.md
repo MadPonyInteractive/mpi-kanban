@@ -30,6 +30,20 @@ npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 Restart or reload the agent if it caches skill metadata for the current
 session.
 
+## Board Validator
+
+To confirm a project's board is consistent after installing or after a session
+ends unexpectedly, run:
+
+```text
+python <mpi-lib-root>/scripts/validate_board.py <project-root>
+```
+
+Replace `<mpi-lib-root>` with the installed path of the `mpi-lib` skill (for
+example `~/.agents/skills/mpi-lib`). `<project-root>` defaults to the current
+directory. A project with no `board.json` is not an error. Exit 0 means the
+board is consistent; exit 1 prints one line per violation.
+
 ## Agent Notes
 
 Different agents expose installed skills differently. Use the native Agent

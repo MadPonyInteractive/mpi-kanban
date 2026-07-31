@@ -116,6 +116,23 @@ Per `~/.claude/CLAUDE.md`:
 - Ask before removing or modifying an existing memory entry; show current
   content plus the proposed change.
 
+### 3b. Board check
+
+Before committing, check the live board:
+
+```text
+python <mpi-lib-root>/scripts/validate_board.py <project-root>
+```
+
+- Exit 0: continue.
+- Exit non-zero: report every violation line verbatim and fix the board through
+  `<mpi-lib-root>/task-board-ops/mutate.md` recipes before committing. Do not
+  commit a board the validator rejects, and do not hand-edit `task.json` to
+  silence it.
+- Python missing, script missing, or any other launch failure: skip the check,
+  say so in the final report, and continue. This check never blocks close-out
+  by being unavailable.
+
 ### 4. Commit
 
 Running `mpi-end-session` IS the user's explicit request to commit this

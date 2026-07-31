@@ -72,7 +72,12 @@ If SPEC and PLAN disagree, ask the user before choosing.
   Do not deduplicate them into a lib-only reference: the earlier
   preflight-read version of this rule failed in a month of real use, because
   agents skipped the extra file read when a value looked obvious from
-  neighbouring cards.
+  neighbouring cards. The single code-level source of truth for the maturity
+  enum is `skills/mpi-lib/scripts/validate_board.py` (`TASK_MATURITIES`).
+  `scripts/validate_plugin.py` imports it rather than keeping a second copy,
+  and `validate_maturity_contract_docs()` in that same file checks the inline
+  copies in `mpi-continue` and `mpi-execute-parallel` against it at release
+  time. Do not remove that check believing the duplication is unguarded prose.
 
 ## Maintenance
 

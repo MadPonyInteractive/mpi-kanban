@@ -1,6 +1,6 @@
 ---
 name: mpi-continue
-description: MPI workflow pack - Continue active MPI work, show/read one board task, or update one task-card state. Use when the user says "continue this MPI plan", "MPI continue", "continue", "resume", "keep going", "pick this back up", "read a handoff and continue", "what is MPI-5", "show/read/open MPI-5", "move/update/set MPI-5 to doing/validating/done", "mark the card validating", "$mpi-continue", or wants implementation to proceed from an MPI plan/handoff.
+description: MPI workflow pack - Continue active MPI work, show/read one board task, or update one task-card state. Use when the user says "continue this MPI plan", "MPI continue", "continue", "resume", "keep going", "pick this back up", "read a handoff and continue", "what is MPI-5", "show/read/open MPI-5", "move/update/set MPI-5 to doing/validating/done", "mark the card validating", "run the ready cards", "dispatch ready cards", "work the board", "$mpi-continue", or wants implementation to proceed from an MPI plan/handoff. Board-wide dispatch requests route to mpi-execute-parallel.
 ---
 
 # mpi-continue Skill
@@ -334,6 +334,17 @@ Say "go parallel" to route there, or "sequential" to implement it one task at a 
 Route to `mpi-execute-parallel` on confirmation. `mpi-continue` never spawns
 implementation workers itself. Fall back to a sequential continue brief only if
 the user explicitly chooses sequential, or the batch fails an eligibility gate.
+
+## Board dispatch routing
+
+When the user asks for the whole board rather than one card - "run the ready
+cards", "dispatch ready cards", "work the board", "run everything that's
+ready" - that is a board batch, not a continue. Route it to
+`mpi-execute-parallel` and use its `## Board batch source` section; do not
+implement the cards here one after another, and do not spawn workers here.
+
+Requests naming one card ("continue MPI-42", "what is MPI-42") stay in this
+skill.
 
 ## Gate 1 - Continue brief
 

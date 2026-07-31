@@ -1,6 +1,6 @@
 ---
 name: mpi-execute-parallel
-description: MPI workflow pack - Execute an explicit parallel batch from an MPI large plan using worker sub-agents. Use only when a plan contains a `## Parallel Batch` section with task ownership, or when the user says "MPI execute parallel", "run a parallel batch", "$mpi-execute-parallel", or asks to run a parallel batch.
+description: MPI workflow pack - Execute a parallel batch with worker sub-agents, from a plan's `## Parallel Batch` section or from ready cards on the JSON task board. Use when a plan contains a `## Parallel Batch` section with task ownership, or when the user says "MPI execute parallel", "run a parallel batch", "run the ready cards", "dispatch ready cards", "work the board", "$mpi-execute-parallel", or asks to run a parallel batch or dispatch ready board cards.
 ---
 
 # mpi-execute-parallel Skill
@@ -20,16 +20,30 @@ Cache that root path for the rest of this session. All references below resolve 
 
 ## Purpose
 
-Run a parallel implementation batch from an MPI large plan. This skill only
-applies to explicit `## Parallel Batch` sections, and for eligible batches it is
-the default execution path - `mpi-continue` routes valid batches here rather
-than implementing them sequentially. "Only explicit batches" is a safety scope,
-not a discouragement: when a batch passes the eligibility gate below, running it
-in parallel is the expected default.
+Run a parallel implementation batch. This skill only applies to explicitly
+declared work - a `## Parallel Batch` section in a plan, or ready cards on the
+JSON board - and for eligible batches it is the default execution path;
+`mpi-continue` routes valid batches here rather than implementing them
+sequentially. "Only explicit batches" is a safety scope, not a discouragement:
+when a batch passes the gate below, running it in parallel is the expected
+default.
 
 The main agent coordinates workers, integrates changes, verifies the batch,
 and updates the plan plus JSON task-board state. Workers implement only their
 assigned task.
+
+## Batch sources
+
+A batch comes from one of two places:
+
+1. **Plan batch** - a `## Parallel Batch` section inside one card's active
+   plan. Splits work *within* one card. See `## Eligibility gate`.
+2. **Board batch** - ready cards selected from `.agents/mpi-kanban/board.json`.
+   Splits work *across* cards. See `## Board batch source`.
+
+Everything below the selection step - the coordination and message reads, the
+worker briefing, integration, verification, and the card-write rules - applies
+to both. Only selection differs.
 
 Shared coordination lifecycle references:
 
@@ -42,6 +56,10 @@ Shared coordination lifecycle references:
 Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
 ## Eligibility gate
+
+This gate covers the plan batch source. For a board batch, read
+`## Board batch source` first for selection, then apply the coordination reads
+and the abort conditions here to the selected cards.
 
 Before spawning workers, read the active plan and find the next incomplete
 `## Parallel Batch` section.
@@ -79,6 +97,67 @@ contested files, owning sessions, task, workspace, agent, or role, then choose
 wait, handoff, integration, a message/request record, or user clarification
 according to the lifecycle rules.
 
+## Board batch source
+
+Use this when the user asks to run the ready cards, dispatch ready cards, or
+work the board, instead of naming a plan batch. It requires
+`.agents/mpi-kanban/board.json`; there is no legacy Markdown board equivalent.
+
+First, run the board validator:
+
+```text
+python <mpi-lib-root>/scripts/validate_board.py <project-root>
+```
+
+Exit non-zero: stop and report every violation line verbatim. Do not dispatch
+against a board the validator rejects - a board that fails this check is
+exactly the board whose `todo` cards cannot be trusted. If Python or the script
+is unavailable, say so and stop; unlike close-out, dispatch does not proceed
+without the check.
+
+A card is selectable only when all of these hold:
+
+- it is in the `todo` column,
+- its `maturity` is exactly `planned` - not `idea`, `research`,
+  `needs-decision`, `blocked`, or `deferred`,
+- its task workspace has a `plan.md`,
+- it carries no `attention.state: "required"`,
+- its ownership is derivable,
+- that ownership is disjoint from every other selected card's ownership and
+  from every fresh active write claim in `state/index.json`.
+
+Ownership derives from the card's `files.json` when that file exists and lists
+files, otherwise from `Ownership:` lines in its `plan.md`. A card with neither
+is not selectable. Never infer ownership from card text, title, or a diff.
+
+Report the whole selection before spawning any worker. Every card the board
+offered appears in it, with a reason when excluded:
+
+```text
+Board batch: 2 selected, 3 excluded.
+
+Selected:
+- MPI-31 - owns src/api/** (files.json)
+- MPI-34 - owns docs/install.md (plan.md Ownership:)
+
+Excluded:
+- MPI-30 - maturity is `research`, not `planned`
+- MPI-33 - no plan.md; needs planning first
+- MPI-35 - ownership overlaps MPI-31 on src/api/routes.ts
+```
+
+Never drop a card silently.
+
+Then dispatch without asking. A card carrying a `plan.md` has already been
+through a planning conversation and that plan is the approval. The only stops
+are a validator failure and an ownership conflict between selected cards.
+
+Each selected card becomes one worker task: its `plan.md` is the task text, its
+derived ownership is the ownership, and its plan's `**Verify:**` or
+`## Verification` content is the verify instruction. Call `beginImplementation`
+from `<mpi-lib-root>/task-board-ops/mutate.md` for each selected card before
+its worker edits anything, so no card is implemented while still in `todo`.
+
 ## Briefing workers
 
 For each task:
@@ -100,9 +179,32 @@ For each task:
      workspace files, plan, handoff, rules, or memory unless those paths are
      explicitly in its ownership,
    - warning that other workers may edit the repo and unrelated edits must
-     not be reverted.
+     not be reverted,
+   - the rule in `## Blocked on a file it does not own`.
 
 Workers must edit only their owned files/modules and report changed paths.
+
+## Blocked on a file it does not own
+
+A worker that needs a file outside its ownership does not edit it and does not
+negotiate with another worker. It files one message through `mpi-message`, then
+stops that line of work:
+
+- `to`: `{ "selector": "file", "value": "<the exact path it needed>" }`
+- `related`: its own `task_card`, the owning card as `task_card` when known,
+  the coordination `task` for the batch, and the file under `files`
+- `subject`: one line, the file and why it was needed
+- `body`: what it needed the file for and what it did instead
+
+It then reports the stop in its result and finishes whatever remains of its own
+owned work. It does not wait for a reply - the bus is async, with no live
+delivery and no read receipt.
+
+The orchestrator surfaces these messages at integration (step 1 of
+`## Main-agent responsibilities`) and decides there: widen ownership and rerun,
+make the edit itself as `integrator`, or leave it for a follow-up card.
+
+This is the only worker-to-worker messaging case in this skill.
 
 ## Main-agent responsibilities
 
@@ -126,8 +228,9 @@ finish:
    `checklist.updated` or `validation.updated` events when meaningful, and use
    `moveTask` / `writeTask` from `<mpi-lib-root>/task-board-ops/mutate.md` for
    any card status, maturity, or column change. Never write invented maturity
-   values such as `Validated`, `spec`, `implementing`, or `done`; the only
-   allowed values are `idea`, `planned`, `research`, `needs-decision`,
+   values: `active`, `accepted`, `done`, `implementing`, `implementation`,
+   `validated`, `Validated`, `validation`, and `spec` are not maturities. The
+   only allowed values are `idea`, `planned`, `research`, `needs-decision`,
    `blocked`, `deferred`, `in-progress`, `validating`, `complete`, and
    `rejected`, matched to the card column. Move the card to `done` only after
    validation state is represented. For unmigrated legacy projects, update the
@@ -137,6 +240,8 @@ finish:
 
 - Never parallelize a normal phase or compact plan.
 - Never infer ownership when the plan omitted it.
+- Never dispatch a board batch without a passing `validate_board.py` run, and
+  never select a card that has no `plan.md`.
 - Card-write preflight is mandatory before any `column`, `maturity`, or
   `status` write: read `<mpi-lib-root>/task-board-ops/_schema.md` and
   `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from

@@ -589,14 +589,27 @@ state and explicit final-completion approval in the current request.
 
 ## 10. Parallel Execution
 
-`mpi-execute-parallel` only runs explicit `## Parallel Batch` sections.
-Each batch task must include:
+`mpi-execute-parallel` runs from one of two batch sources:
 
-- unchecked task text;
-- `Ownership:` with files/modules;
-- disjoint ownership from every other task;
-- `Briefings:` rule names or bundle names when relevant;
-- `**Verify:**`.
+1. **Plan batch** - an explicit `## Parallel Batch` section inside one card's
+   plan. Each task must include unchecked task text, `Ownership:` with
+   files/modules, disjoint ownership from every other task, optional
+   `Briefings:` rule or bundle names, and `**Verify:**`.
+
+2. **Board batch** - ready cards selected from `.agents/mpi-kanban/board.json`.
+   Requires a passing `python validate_board.py` run before dispatch; a
+   validator failure stops selection entirely. A card is selectable when it is
+   in `todo`, its `maturity` is exactly `planned`, its task workspace has a
+   `plan.md`, it carries no `attention.state: "required"`, and its ownership is
+   derivable and disjoint from every other selected card and every active write
+   claim in `state/index.json`. A card's `plan.md` is the approval; dispatch
+   does not stop to ask.
+
+Both batch sources share the same coordination lifecycle, worker briefing, and
+integration flow. The only worker-to-worker messaging case is a file-ownership
+block: a worker that needs a file outside its ownership files one `mpi-message`
+record pointing at the file and stops that line of work without waiting for a
+reply.
 
 The main agent spawns workers, integrates results, verifies the batch, and
 updates plan/task-board state. Workers must not edit plan, board, task

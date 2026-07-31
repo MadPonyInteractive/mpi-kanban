@@ -31,6 +31,9 @@ path as `<mpi-lib-root>`, and read individual reference files only when needed.
 - `plan-ops/` - plan shape, reading, derivation, and mutation guidance.
 - `project-intent/` - project mode contracts.
 - `project-knowledge/` - project profile and knowledge-index contracts.
+- `scripts/validate_board.py` - runnable live-board check:
+  `python <mpi-lib-root>/scripts/validate_board.py <project-root>`. Exits 0 when
+  the board is consistent, 1 with one line per violation.
 - `templates/board.json` - JSON board bootstrap template.
 - `templates/interop.json` - default source-of-truth mode template.
 - `templates/task.json` - task-card bootstrap template.

@@ -7,15 +7,24 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# The live-board rules ship with the pack; import them rather than keeping a
+# second copy here, so the maturity enum has one code-level source of truth.
+sys.path.insert(0, str(ROOT / "skills" / "mpi-lib" / "scripts"))
+try:
+    import validate_board as board_rules
+except ImportError as exc:  # pragma: no cover - a missing shipped script is a pack failure
+    print(f"skills/mpi-lib/scripts/validate_board.py could not be imported: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+TASK_COLUMNS = board_rules.TASK_COLUMNS
+TASK_MATURITIES = board_rules.TASK_MATURITIES
+TASK_MATURITY_BY_COLUMN = board_rules.TASK_MATURITY_BY_COLUMN
+TASK_REQUIRED_FIELDS = board_rules.TASK_REQUIRED_FIELDS
+
 KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 NAME_MAX = 64
 DESCRIPTION_MAX = 1024
-TASK_ID = re.compile(r"^MPI-[1-9][0-9]*$")
-TASK_COLUMNS = ("todo", "doing", "done")
-TASK_MATURITIES = {
-    "idea", "planned", "research", "needs-decision", "blocked", "deferred",
-    "in-progress", "validating", "complete", "rejected",
-}
 INVALID_MATURITY_EXAMPLES = {
     "active",
     "accepted",
@@ -29,17 +38,6 @@ INVALID_MATURITY_EXAMPLES = {
 MESSAGE_STATUSES = {"open", "acknowledged", "replied", "resolved", "superseded", "closed"}
 OPEN_MESSAGE_STATUSES = {"open", "acknowledged", "replied"}
 MESSAGE_SELECTORS = {"session", "agent", "role", "task", "file", "workspace", "user"}
-TASK_MATURITY_BY_COLUMN = {
-    "todo": {"idea", "planned", "research", "needs-decision", "blocked", "deferred"},
-    "doing": {"in-progress", "validating"},
-    "done": {"complete", "rejected"},
-}
-UNRESOLVED_COORDINATION_STATUSES = {
-    "needs_review",
-    "needs_verification",
-    "needs_integration",
-}
-TASK_REQUIRED_FIELDS = {"schema", "id", "title", "column", "created_at", "updated_at", "links"}
 ACTIVE_KANBAN_REF = re.compile(
     r"\b(read|edit|update|continue|use|open|boot|load|mutate|write)\b.{0,80}"
     r"(\.agents/mpi-kanban/kanban\.md|\.claude/mpi-kanban/kanban\.md)",
@@ -159,6 +157,7 @@ def validate_mpi_lib_present() -> None:
         "task-board-ops/validate.md",
         "kanban-ops/find.md",
         "project-knowledge/indexing.md",
+        "scripts/validate_board.py",
         "docs/coordination/README.md",
         "templates/board.json",
         "templates/interop.json",
@@ -208,13 +207,7 @@ def validate_kanban_templates() -> None:
 
 
 def load_json(path: Path, label: str) -> object | None:
-    try:
-        return json.loads(path.read_text(encoding="utf-8-sig"))
-    except json.JSONDecodeError as exc:
-        fail(f"{label} is invalid JSON: {exc}")
-    except OSError as exc:
-        fail(f"{label} could not be read: {exc}")
-    return None
+    return board_rules.load_json(errors, path, label)
 
 
 def validate_task_board_templates() -> None:
@@ -264,6 +257,10 @@ def validate_maturity_contract_docs() -> None:
         ROOT / "skills" / "mpi-lib" / "task-board-ops" / "mutate.md",
         ROOT / "skills" / "mpi-lib" / "task-board-ops" / "validate.md",
         ROOT / "skills" / "mpi-lib" / "templates" / "project-profile.md",
+        # Inline copies. CLAUDE.md keeps these deliberately duplicated; this is
+        # what keeps them honest as they multiply.
+        ROOT / "skills" / "mpi-continue" / "SKILL.md",
+        ROOT / "skills" / "mpi-execute-parallel" / "SKILL.md",
     ]
     enum_values = TASK_MATURITIES
     for path in required_paths:
@@ -280,182 +277,12 @@ def validate_maturity_contract_docs() -> None:
                 fail(f"{path.relative_to(ROOT)} does not reject invalid maturity example {value!r}")
 
 
-def validate_event_log(path: Path, label: str, *, require_task_id: bool = False) -> None:
-    if not path.exists():
-        return
-    try:
-        lines = path.read_text(encoding="utf-8").splitlines()
-    except OSError as exc:
-        fail(f"{label} could not be read: {exc}")
-        return
-    for index, line in enumerate(lines, start=1):
-        if not line.strip():
-            continue
-        try:
-            event = json.loads(line)
-        except json.JSONDecodeError as exc:
-            fail(f"{label}:{index} malformed JSONL event: {exc}")
-            continue
-        if not isinstance(event, dict):
-            fail(f"{label}:{index} event must be a JSON object")
-            continue
-        if event.get("schema") != "mpi-kanban/event/v1":
-            fail(f"{label}:{index} event schema must be mpi-kanban/event/v1")
-        if not event.get("type"):
-            fail(f"{label}:{index} event missing type")
-        if not event.get("at"):
-            fail(f"{label}:{index} event missing at")
-        if require_task_id and not event.get("id"):
-            fail(f"{label}:{index} task event missing id")
-
-
-def linked_path_is_inside(task_dir: Path, link_value: object) -> Path | None:
-    if not isinstance(link_value, str) or not link_value:
-        return None
-    if Path(link_value).is_absolute():
-        return None
-    target = (task_dir / link_value).resolve()
-    try:
-        target.relative_to(task_dir.resolve())
-    except ValueError:
-        return None
-    return target
-
-
 def validate_task_board_tree() -> None:
-    board_root = ROOT / ".agents" / "mpi-kanban"
-    board_path = board_root / "board.json"
-    if not board_path.exists():
-        return
+    for message in board_rules.validate_board(ROOT):
+        fail(message)
 
-    board = load_json(board_path, ".agents/mpi-kanban/board.json")
-    if not isinstance(board, dict):
-        return
-    if board.get("schema") != "mpi-kanban/board/v1":
-        fail(".agents/mpi-kanban/board.json schema must be mpi-kanban/board/v1")
-    next_id = board.get("next_id")
-    if not isinstance(next_id, int) or next_id < 1:
-        fail(".agents/mpi-kanban/board.json next_id must be a positive integer")
 
-    columns = board.get("columns")
-    if not isinstance(columns, dict) or tuple(columns.keys()) != TASK_COLUMNS:
-        fail(".agents/mpi-kanban/board.json columns must be exactly todo, doing, done")
-        return
-
-    listed: dict[str, str] = {}
-    max_suffix = 0
-    for column in TASK_COLUMNS:
-        ids = columns.get(column)
-        if not isinstance(ids, list):
-            fail(f".agents/mpi-kanban/board.json column {column} must be a list")
-            continue
-        for task_id in ids:
-            if not isinstance(task_id, str) or not TASK_ID.match(task_id):
-                fail(f".agents/mpi-kanban/board.json contains invalid task id in {column}: {task_id!r}")
-                continue
-            if task_id in listed:
-                fail(f"task id {task_id} appears in both {listed[task_id]} and {column}")
-            listed[task_id] = column
-            max_suffix = max(max_suffix, int(task_id.split("-", 1)[1]))
-
-    if isinstance(next_id, int) and next_id <= max_suffix:
-        fail(".agents/mpi-kanban/board.json next_id must be greater than all existing task IDs")
-
-    tasks_root = board_root / "tasks"
-    for task_id, column in listed.items():
-        task_dir = tasks_root / task_id
-        task_json = task_dir / "task.json"
-        if not task_json.exists():
-            fail(f"listed task {task_id} is missing {task_json.relative_to(ROOT)}")
-            continue
-        task = load_json(task_json, str(task_json.relative_to(ROOT)))
-        if not isinstance(task, dict):
-            continue
-        if task.get("schema") != "mpi-kanban/task-card/v1":
-            fail(f"{task_json.relative_to(ROOT)} schema must be mpi-kanban/task-card/v1")
-        missing = TASK_REQUIRED_FIELDS - set(task)
-        if missing:
-            fail(f"{task_json.relative_to(ROOT)} missing required fields: {sorted(missing)}")
-        if task.get("id") != task_id:
-            fail(f"{task_json.relative_to(ROOT)} id must match folder/listed id {task_id}")
-        if task.get("column") != column:
-            fail(f"{task_json.relative_to(ROOT)} column must match board column {column}")
-        maturity = task.get("maturity")
-        if maturity is not None:
-            if maturity not in TASK_MATURITIES:
-                fail(
-                    f"{task_json.relative_to(ROOT)} maturity must be one of "
-                    "idea, planned, research, needs-decision, blocked, deferred, "
-                    "in-progress, validating, complete, rejected; "
-                    f"got {maturity!r}, which renders as an invalid card"
-                )
-            elif maturity not in TASK_MATURITY_BY_COLUMN[column]:
-                fail(f"{task_json.relative_to(ROOT)} maturity {maturity!r} is invalid for column {column}")
-        if column == "done" and task.get("status") == "active":
-            fail(f"{task_json.relative_to(ROOT)} is done but still has status active")
-        links = task.get("links")
-        if not isinstance(links, dict):
-            fail(f"{task_json.relative_to(ROOT)} links must be an object")
-            continue
-        for key, value in links.items():
-            target = linked_path_is_inside(task_dir, value)
-            if target is None:
-                fail(f"{task_json.relative_to(ROOT)} link {key!r} must be a relative path inside the task folder")
-                continue
-            if target.exists() and target.name == "events.jsonl":
-                validate_event_log(target, str(target.relative_to(ROOT)), require_task_id=True)
-            if target.exists() and target.name.endswith(".json"):
-                load_json(target, str(target.relative_to(ROOT)))
-        checklist = linked_path_is_inside(task_dir, links.get("checklist"))
-        validation = linked_path_is_inside(task_dir, links.get("validation"))
-        brief = linked_path_is_inside(task_dir, links.get("brief"))
-        attention = task.get("attention")
-        if column == "doing" and checklist is not None and not checklist.exists():
-            fail(f"{task_json.relative_to(ROOT)} is in doing but missing linked checklist.md")
-        if column == "done" and validation is not None and not validation.exists():
-            fail(f"{task_json.relative_to(ROOT)} is in done but missing linked validation.md")
-        if isinstance(attention, dict) and attention.get("state") == "required" and brief is not None and not brief.exists():
-            fail(f"{task_json.relative_to(ROOT)} requires attention but missing linked brief.md")
-
-    if tasks_root.exists():
-        for child in tasks_root.iterdir():
-            if child.is_dir() and (child / "task.json").exists() and child.name not in listed:
-                fail(f"orphaned task folder not listed in board.json: {child.relative_to(ROOT)}")
-
-    validate_event_log(board_root / "events.jsonl", ".agents/mpi-kanban/events.jsonl")
-
-    state_index = board_root / "state" / "index.json"
-    if state_index.exists():
-        state = load_json(state_index, ".agents/mpi-kanban/state/index.json")
-        if isinstance(state, dict) and state.get("board") != ".agents/mpi-kanban/board.json":
-            fail(".agents/mpi-kanban/state/index.json board must point to .agents/mpi-kanban/board.json when board.json exists")
-        if isinstance(state, dict):
-            active_tasks = state.get("active_tasks", [])
-            if not isinstance(active_tasks, list):
-                fail(".agents/mpi-kanban/state/index.json active_tasks must be a list")
-            else:
-                for value in active_tasks:
-                    if not isinstance(value, str):
-                        fail(".agents/mpi-kanban/state/index.json active_tasks entries must be strings")
-                        continue
-                    task_record_path = ROOT / value
-                    if not task_record_path.exists():
-                        fail(f".agents/mpi-kanban/state/index.json active task is missing: {value}")
-                        continue
-                    task_record = load_json(task_record_path, value)
-                    if not isinstance(task_record, dict):
-                        continue
-                    status = task_record.get("status")
-                    if status == "closed":
-                        fail(f"{value} is closed but still listed in active_tasks")
-                    task_card = task_record.get("task_card")
-                    if isinstance(task_card, str) and listed.get(task_card) == "done":
-                        if status not in UNRESOLVED_COORDINATION_STATUSES:
-                            fail(
-                                f"{value} points at done card {task_card} with resolved status {status!r}; "
-                                "remove it from active_tasks or mark the unresolved state explicitly"
-                            )
-
+def validate_boot_docs() -> None:
     boot_docs = [
         ROOT / "START-HERE.md",
         ROOT / "AGENTS.md",
@@ -628,6 +455,7 @@ def main() -> int:
     validate_task_board_templates()
     validate_maturity_contract_docs()
     validate_task_board_tree()
+    validate_boot_docs()
     validate_coordination_messages()
     validate_interop_state()
     validate_no_stale_runtime_refs()
