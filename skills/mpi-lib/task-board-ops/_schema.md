@@ -126,23 +126,32 @@ Optional fields:
 `column` must match the column containing the task ID in `board.json`.
 Canonical `maturity` values are:
 
-- `idea`
-- `planned`
-- `in-progress`
-- `validating`
-- `complete`
+| Column  | Values |
+| ------- | ------ |
+| `todo`  | `idea`, `planned`, `research`, `needs-decision`, `blocked`, `deferred` |
+| `doing` | `in-progress`, `validating` |
+| `done`  | `complete`, `rejected` |
+
+When to use each `todo` value: `research` — the card needs investigation
+before it can be planned; `needs-decision` — the work is understood but a
+user/product decision is outstanding; `blocked` — ready in principle but
+waiting on another card or an external dependency; `deferred` — deliberately
+postponed, not being picked up in the current stretch.
+
+For `done`: `rejected` — closed without being built, kept as a record of the
+decision.
 
 Column and maturity must stay coherent:
 
-- `todo` cards use `idea` or `planned`.
+- `todo` cards use `idea`, `planned`, `research`, `needs-decision`, `blocked`, or `deferred`.
 - `doing` cards use `in-progress` or `validating`.
-- `done` cards use `complete`.
+- `done` cards use `complete` or `rejected`.
 
 Nimbalyst `implementing` maps to MPI `in-progress`; it is not a valid
 task-card maturity value.
 
 Do not invent process-specific maturity values. Labels such as `active`,
-`accepted`, `done`, `deferred`, `implementing`, `implementation`, `validated`,
+`accepted`, `done`, `implementing`, `implementation`, `validated`,
 `Validated`, `validation`, `spec`, `scoped`, `designed`, and `review` are not
 valid task-card maturity values. Preserve that meaning in `status`,
 `attention`, `description`, or linked task workspace files instead.

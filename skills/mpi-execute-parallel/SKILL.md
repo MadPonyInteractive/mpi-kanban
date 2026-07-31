@@ -127,8 +127,9 @@ finish:
    `moveTask` / `writeTask` from `<mpi-lib-root>/task-board-ops/mutate.md` for
    any card status, maturity, or column change. Never write invented maturity
    values such as `Validated`, `spec`, `implementing`, or `done`; the only
-   allowed values are `idea`, `planned`, `in-progress`, `validating`, and
-   `complete`, matched to the card column. Move the card to `done` only after
+   allowed values are `idea`, `planned`, `research`, `needs-decision`,
+   `blocked`, `deferred`, `in-progress`, `validating`, `complete`, and
+   `rejected`, matched to the card column. Move the card to `done` only after
    validation state is represented. For unmigrated legacy projects, update the
    relevant kanban step as compatibility behavior.
 

@@ -27,6 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   maturity, producing card sprawl that had to be repaired with umbrella cards.
 - `mpi-end-session` reports a `Noticed, not actioned:` list in its final report
   so deferred findings surface instead of dying with the session.
+- Widened the task-card `maturity` enum from 5 values to 10. New `todo`
+  values: `research` (needs investigation before planning), `needs-decision`
+  (understood but a user/product decision is outstanding), `blocked` (ready but
+  waiting on another card or an external dependency), `deferred` (deliberately
+  postponed). New `done` value: `rejected` (closed without being built; kept as
+  a record of the decision). `deferred` was previously treated as an invalid
+  value and is now a first-class maturity for the `todo` column. Updated
+  `SPEC.md`, `skills/mpi-lib/task-board-ops/`, `skills/mpi-continue/SKILL.md`,
+  `skills/mpi-execute-parallel/SKILL.md`, and `scripts/validate_plugin.py`.
 
 ### Changed
 

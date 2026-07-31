@@ -56,14 +56,25 @@ These are the only legal values. Do not copy them from other cards on the
 board; other cards may be wrong.
 
 - `column`: `todo` | `doing` | `done`
-- `maturity`: `idea` | `planned` | `in-progress` | `validating` | `complete`
-- Coherence: `todo` -> `idea` or `planned`; `doing` -> `in-progress` or
-  `validating`; `done` -> `complete`
+- `maturity`:
+  - `todo`: `idea` | `planned` | `research` | `needs-decision` | `blocked` | `deferred`
+  - `doing`: `in-progress` | `validating`
+  - `done`: `complete` | `rejected`
+- Coherence: `todo` -> `idea`, `planned`, `research`, `needs-decision`,
+  `blocked`, or `deferred`; `doing` -> `in-progress` or `validating`;
+  `done` -> `complete` or `rejected`
 
-These are not maturity values: `active`, `accepted`, `deferred`, `done`,
-`implementing`, `implementation`, `validated`, `Validated`, `validation`,
-`spec`, `scoped`, `designed`, `review`. Process detail belongs in `status`,
-`attention`, `description`, or the linked task workspace files.
+When to use new `todo` values: `research` — needs investigation before
+planning; `needs-decision` — understood but a decision is outstanding;
+`blocked` — ready but waiting on another card or an external dependency;
+`deferred` — deliberately postponed, not being picked up in the current
+stretch. For `done`: `rejected` — closed without being built, kept as a
+record of the decision.
+
+These are not maturity values: `active`, `accepted`, `done`, `implementing`,
+`implementation`, `validated`, `Validated`, `validation`, `spec`, `scoped`,
+`designed`, `review`. Process detail belongs in `status`, `attention`,
+`description`, or the linked task workspace files.
 
 ## Discovered work
 

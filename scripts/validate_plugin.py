@@ -12,12 +12,14 @@ NAME_MAX = 64
 DESCRIPTION_MAX = 1024
 TASK_ID = re.compile(r"^MPI-[1-9][0-9]*$")
 TASK_COLUMNS = ("todo", "doing", "done")
-TASK_MATURITIES = {"idea", "planned", "in-progress", "validating", "complete"}
+TASK_MATURITIES = {
+    "idea", "planned", "research", "needs-decision", "blocked", "deferred",
+    "in-progress", "validating", "complete", "rejected",
+}
 INVALID_MATURITY_EXAMPLES = {
     "active",
     "accepted",
     "done",
-    "deferred",
     "implementing",
     "implementation",
     "validated",
@@ -28,9 +30,9 @@ MESSAGE_STATUSES = {"open", "acknowledged", "replied", "resolved", "superseded",
 OPEN_MESSAGE_STATUSES = {"open", "acknowledged", "replied"}
 MESSAGE_SELECTORS = {"session", "agent", "role", "task", "file", "workspace", "user"}
 TASK_MATURITY_BY_COLUMN = {
-    "todo": {"idea", "planned"},
+    "todo": {"idea", "planned", "research", "needs-decision", "blocked", "deferred"},
     "doing": {"in-progress", "validating"},
-    "done": {"complete"},
+    "done": {"complete", "rejected"},
 }
 UNRESOLVED_COORDINATION_STATUSES = {
     "needs_review",
@@ -248,7 +250,7 @@ def validate_task_board_templates() -> None:
             fail("templates/task.json column must be todo, doing, or done")
         maturity = task.get("maturity")
         if maturity not in TASK_MATURITIES:
-            fail("templates/task.json maturity must be one of idea, planned, in-progress, validating, complete")
+            fail("templates/task.json maturity must be one of idea, planned, research, needs-decision, blocked, deferred, in-progress, validating, complete, rejected")
         elif maturity not in TASK_MATURITY_BY_COLUMN.get(str(task.get("column")), set()):
             fail("templates/task.json maturity must match its column")
         if not isinstance(task.get("links"), dict):
@@ -383,7 +385,8 @@ def validate_task_board_tree() -> None:
             if maturity not in TASK_MATURITIES:
                 fail(
                     f"{task_json.relative_to(ROOT)} maturity must be one of "
-                    "idea, planned, in-progress, validating, complete; "
+                    "idea, planned, research, needs-decision, blocked, deferred, "
+                    "in-progress, validating, complete, rejected; "
                     f"got {maturity!r}, which renders as an invalid card"
                 )
             elif maturity not in TASK_MATURITY_BY_COLUMN[column]:

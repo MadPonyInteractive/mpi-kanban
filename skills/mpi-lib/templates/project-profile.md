@@ -38,18 +38,25 @@ Detail: <pointer to an architecture doc, or remove this line>.
 `maturity` is a fixed enum. Never invent values and never copy a `status` or
 intent word into it. Allowed values, by column:
 
-| Column  | Allowed `maturity`        |
-| ------- | ------------------------- |
-| `todo`  | `idea`, `planned`         |
+| Column  | Allowed `maturity` |
+| ------- | ------------------ |
+| `todo`  | `idea`, `planned`, `research`, `needs-decision`, `blocked`, `deferred` |
 | `doing` | `in-progress`, `validating` |
-| `done`  | `complete`                |
+| `done`  | `complete`, `rejected` |
+
+When to use `todo` values: `research` — needs investigation before planning;
+`needs-decision` — understood but a user/product decision is outstanding;
+`blocked` — ready but waiting on another card or an external dependency;
+`deferred` — deliberately postponed, not being picked up in the current
+stretch. For `done`: `rejected` — closed without being built, kept as a
+record of the decision.
 
 `status` is a separate field (e.g. `active`, `accepted`). Words like `active`,
-`deferred`, `done`, `implementing`, and `implementation` are NOT maturity
-values. Words like `Validated`, `validated`, `validation`, `spec`, `scoped`,
-`designed`, and `review` are also NOT maturity values. A `doing` card under
-active work is `in-progress` (renders yellow), not `implementation`, `spec`, or
-`idea`. Any other `maturity` renders as a red invalid card.
+`done`, `implementing`, and `implementation` are NOT maturity values. Words
+like `Validated`, `validated`, `validation`, `spec`, `scoped`, `designed`, and
+`review` are also NOT maturity values. A `doing` card under active work is
+`in-progress` (renders yellow), not `implementation`, `spec`, or `idea`. Any
+other `maturity` renders as a red invalid card.
 
 ## Open Gaps
 

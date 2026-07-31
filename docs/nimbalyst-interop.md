@@ -101,7 +101,9 @@ and do not restore `BACKLOG`, `PLANNING`, `IMPLEMENTING`, `VALIDATING`, or
 Nimbalyst phase names are not MPI task-card maturity values. When importing or
 exporting the implementation phase, map Nimbalyst `implementing` to MPI
 `maturity: "in-progress"` on a `doing` card. Valid MPI maturity values are
-`idea`, `planned`, `in-progress`, `validating`, and `complete`.
+`idea`, `planned`, `research`, `needs-decision`, `blocked`, and `deferred` for
+`todo`; `in-progress` and `validating` for `doing`; `complete` and `rejected`
+for `done`.
 
 ## Field Mapping
 

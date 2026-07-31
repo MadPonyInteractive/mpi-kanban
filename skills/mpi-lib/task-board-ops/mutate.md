@@ -15,14 +15,15 @@ examples. Existing cards can be stale or invalid.
 
 Use this contract for every card write:
 
-`maturity` accepts ONLY: `idea`, `planned`, `in-progress`, `validating`,
-`complete`. Do not guess, invent, or copy another field's value into it.
+`maturity` accepts ONLY: `idea`, `planned`, `research`, `needs-decision`,
+`blocked`, `deferred`, `in-progress`, `validating`, `complete`, `rejected`.
+Do not guess, invent, or copy another field's value into it.
 
 Column coherence is mandatory:
 
-- `todo` -> `idea` or `planned`
+- `todo` -> `idea`, `planned`, `research`, `needs-decision`, `blocked`, or `deferred`
 - `doing` -> `in-progress` or `validating`
-- `done` -> `complete`
+- `done` -> `complete` or `rejected`
 
 Lifecycle ordering is mandatory:
 
@@ -42,8 +43,6 @@ Lifecycle ordering is mandatory:
 Reject these common mistakes. They are NOT maturity values:
 
 - `active`, `accepted`, `done` -> these are `status` values, not maturity.
-- `deferred` -> deferral is intent; keep the card in `todo` with `planned`
-  (or `idea`) and record the deferral in the description or brief.
 - `implementing`, `implementation` -> Nimbalyst phrasing; the MPI value is
   `in-progress`.
 - `validated`, `Validated`, `validation` -> validation state is represented by
@@ -63,9 +62,9 @@ workflow has an explicitly allowed value:
 
 | Column | Allowed `maturity` | Default when unsure |
 |---|---|---|
-| `todo` | `idea`, `planned` | `planned` for planned/reopened work; `idea` for raw backlog ideas |
+| `todo` | `idea`, `planned`, `research`, `needs-decision`, `blocked`, `deferred` | `planned` for planned/reopened work; `idea` for raw backlog ideas; pick the more specific value when the state is known |
 | `doing` | `in-progress`, `validating` | `in-progress`; use `validating` only after validation state exists |
-| `done` | `complete` | `complete` |
+| `done` | `complete`, `rejected` | `complete`; use `rejected` only for explicitly closed/abandoned work |
 
 If an existing card already has an invalid or incoherent maturity, correct it
 with the same task-board write that changes or confirms its column. Do not
@@ -122,11 +121,13 @@ New ideas default to `todo`.
 4. Read `tasks/<id>/task.json`.
 5. Update `column`, `maturity`, and `updated_at` together. Column movement is
    also maturity reconciliation:
-   - `toColumn: "todo"` -> keep existing `idea` or `planned` when coherent;
+   - `toColumn: "todo"` -> keep the existing value when it is one of `idea`,
+     `planned`, `research`, `needs-decision`, `blocked`, or `deferred`;
      otherwise set `planned`.
    - `toColumn: "doing"` -> keep existing `validating` only when validation
      state is already represented; otherwise set `in-progress`.
-   - `toColumn: "done"` -> set `complete`.
+   - `toColumn: "done"` -> keep existing `rejected` when the card was
+     explicitly closed without being built; otherwise set `complete`.
 6. If the move implies agent reconciliation, set:
 
    ```json
@@ -167,8 +168,9 @@ and the global event log.
 
 If `patch.maturity` is present, validate it before writing:
 
-- It must be exactly `idea`, `planned`, `in-progress`, `validating`, or
-  `complete`.
+- It must be exactly `idea`, `planned`, `research`, `needs-decision`,
+  `blocked`, `deferred`, `in-progress`, `validating`, `complete`, or
+  `rejected`.
 - It must match the task's current `column`.
 - It must not be copied from `status`, legacy Markdown columns, Nimbalyst
   phases, tracker states, or freeform process labels.

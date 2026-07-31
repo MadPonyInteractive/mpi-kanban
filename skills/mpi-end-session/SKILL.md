@@ -183,13 +183,16 @@ Skipping task-board close-out; use mpi-nimbalyst-sync for a board snapshot."
    warning. The lifecycle is always `To do -> Doing -> Done`, never
    `To do -> Done` for implemented work.
    Maturity auto-correct: before any move, read the card's `maturity` and check
-   it against the enum (`idea`, `planned`, `in-progress`, `validating`,
-   `complete`) and its column. If the value is invalid (e.g. `active`,
-   `accepted`, `deferred`, `done`, `Validated`, `validated`, `validation`,
-   `spec`, `implementing`, `implementation`) or incoherent with the column,
-   call `writeTask(id, { "maturity": "<corrected>" }, actor)` to set the
-   coherent value (`todo` -> `planned` or `idea`; `doing` -> `in-progress` or,
-   when validation is represented, `validating`; `done` -> `complete`). Print:
+   it against the enum (`idea`, `planned`, `research`, `needs-decision`,
+   `blocked`, `deferred`, `in-progress`, `validating`, `complete`, `rejected`)
+   and its column. If the value is invalid (e.g. `active`, `accepted`, `done`,
+   `Validated`, `validated`, `validation`, `spec`, `implementing`,
+   `implementation`) or incoherent with the column, call
+   `writeTask(id, { "maturity": "<corrected>" }, actor)` to set the coherent
+   value (`todo` -> keep any valid todo value, otherwise `planned`; `doing` ->
+   `in-progress` or, when validation is represented, `validating`; `done` ->
+   keep `rejected` when the work was explicitly closed without being built,
+   otherwise `complete`). Print:
    `Note: card "<id>" had invalid maturity "<old>"; corrected to "<new>".`
 
 5. If validation is represented and the user explicitly approved final

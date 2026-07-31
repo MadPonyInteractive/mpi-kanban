@@ -216,21 +216,39 @@ for UI scanning; they must not duplicate long plans, handoffs, research, or
 implementation notes. Long-form work belongs in the linked task workspace
 files.
 
-Canonical task-card `maturity` values are `idea`, `planned`, `in-progress`,
-`validating`, and `complete`. JSON task boards must not use legacy Markdown
-column names or Nimbalyst phase names as maturity values. In particular,
-Nimbalyst `implementing` maps to MPI `maturity: "in-progress"` on a `doing`
-card; `implementing` is not a task-card maturity value.
+Canonical task-card `maturity` values are:
+
+| Column  | Values |
+| ------- | ------ |
+| `todo`  | `idea`, `planned`, `research`, `needs-decision`, `blocked`, `deferred` |
+| `doing` | `in-progress`, `validating` |
+| `done`  | `complete`, `rejected` |
+
+When to use each `todo` value: `idea` for raw unplanned items; `planned` for
+scoped, ready work; `research` — the card needs investigation before it can be
+planned; `needs-decision` — the work is understood but a user/product decision
+is outstanding; `blocked` — ready in principle but waiting on another card or
+an external dependency; `deferred` — deliberately postponed, not being picked
+up in the current stretch.
+
+For `done`: `complete` for finished work; `rejected` — closed without being
+built, kept in `done` as a record of the decision.
+
+JSON task boards must not use legacy Markdown column names or Nimbalyst phase
+names as maturity values. In particular, Nimbalyst `implementing` maps to MPI
+`maturity: "in-progress"` on a `doing` card; `implementing` is not a
+task-card maturity value.
+
 Process labels such as `Validated`, `validated`, `validation`, `spec`,
-`scoped`, `review`, `active`, `accepted`, `deferred`, `done`,
-`implementing`, or `implementation` are not maturity values; represent them in
-`status`, `attention`, `description`, or linked task workspace files.
+`scoped`, `review`, `active`, `accepted`, `done`, `implementing`, or
+`implementation` are not maturity values; represent them in `status`,
+`attention`, `description`, or linked task workspace files.
 
 Column and maturity must stay coherent:
 
-- `todo` cards use `idea` or `planned`.
+- `todo` cards use `idea`, `planned`, `research`, `needs-decision`, `blocked`, or `deferred`.
 - `doing` cards use `in-progress` or `validating`.
-- `done` cards use `complete`.
+- `done` cards use `complete` or `rejected`.
 
 Companion renderers should surface unknown maturity values as invalid with an
 obvious fallback badge or board notice instead of rendering them as an unstyled

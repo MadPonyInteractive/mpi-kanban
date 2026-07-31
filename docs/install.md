@@ -76,10 +76,11 @@ validating card stays in `doing`, writes or updates `validation.md` first, and
 uses `maturity: "validating"`. A done move requires represented validation
 state and explicit final-completion approval.
 
-Task-card `maturity` is also fixed: `idea`, `planned`, `in-progress`,
-`validating`, and `complete`. Do not use process labels such as `Validated`,
-`spec`, `active`, `done`, or `implementing` as maturity values; the VS Code
-board treats unknown values as invalid cards.
+Task-card `maturity` is also fixed, scoped per column: `todo` uses `idea`,
+`planned`, `research`, `needs-decision`, `blocked`, or `deferred`; `doing` uses
+`in-progress` or `validating`; `done` uses `complete` or `rejected`. Do not use
+process labels such as `Validated`, `spec`, `active`, `done`, or `implementing`
+as maturity values; the VS Code board treats unknown values as invalid cards.
 
 Legacy projects may still contain `.agents/mpi-kanban/kanban.md` or
 `.claude/mpi-kanban/kanban.md`. Treat those files as migration inputs or

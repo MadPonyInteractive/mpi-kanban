@@ -22,13 +22,14 @@ Run these checks against `.agents/mpi-kanban/board.json` when it exists:
 - Task `schema` is `mpi-kanban/task-card/v1`.
 - Task `id` matches its folder name.
 - Task `column` matches the board column that lists it.
-- Task `maturity`, when present, is one of `idea`, `planned`,
-  `in-progress`, `validating`, or `complete`.
-- Task `maturity` matches the board column: `todo` allows `idea` or
-  `planned`; `doing` allows `in-progress` or `validating`; `done` allows
-  `complete`.
+- Task `maturity`, when present, is one of `idea`, `planned`, `research`,
+  `needs-decision`, `blocked`, `deferred`, `in-progress`, `validating`,
+  `complete`, or `rejected`.
+- Task `maturity` matches the board column: `todo` allows `idea`, `planned`,
+  `research`, `needs-decision`, `blocked`, or `deferred`; `doing` allows
+  `in-progress` or `validating`; `done` allows `complete` or `rejected`.
 - Task `maturity` does not contain process/status labels such as `Validated`,
-  `validated`, `validation`, `spec`, `active`, `accepted`, `done`, `deferred`,
+  `validated`, `validation`, `spec`, `active`, `accepted`, `done`,
   `implementing`, or `implementation`. These are invalid even if they describe
   real work state.
 - A `done` task card should not keep `status: "active"` after completion is
@@ -88,8 +89,9 @@ Safe repairs to propose:
   clearly the intended state.
 - Replace an invalid or incoherent task `maturity` with the column-coherent MPI
   value after preserving the old label in a repair note when useful:
-  `todo` -> `planned` or `idea`, `doing` -> `in-progress` or `validating`,
-  `done` -> `complete`.
+  `todo` -> `planned`, `idea`, `research`, `needs-decision`, `blocked`, or
+  `deferred`; `doing` -> `in-progress` or `validating`;
+  `done` -> `complete` or `rejected`.
 - Update `state/index.json` `board` to `.agents/mpi-kanban/board.json` when
   `board.json` exists.
 - Remove `closed` coordination task records from `active_tasks`.

@@ -52,7 +52,10 @@ If SPEC and PLAN disagree, ask the user before choosing.
 ## Hard Constraints
 
 - Do not add task-board columns or task-card fields beyond the SPEC board
-  contract; the VS Code extension expects the fixed JSON board schema.
+  contract; the VS Code extension expects the fixed JSON board schema. This
+  forbids new columns and new fields; it does not forbid widening an existing
+  field's value set. MPI-22 widened `maturity` from 5 to 10 values that way,
+  shipping both repos in lockstep.
 - Skills are pure Markdown. Shared reference docs live in `skills/mpi-lib/`.
 - Do not use `${CLAUDE_PLUGIN_ROOT}`, Claude `!` injection, Codex plugin
   manifests, or plugin-scoped install assumptions in workflow skills.
