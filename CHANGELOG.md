@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-07-31
+
 ### Fixed
 
 - `mpi-continue` now carries the task-card contract inline: the `column` and
@@ -400,7 +402,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.5...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.5...v0.9.0
 [0.8.5]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.3...v0.8.4
 [0.8.3]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.2...v0.8.3
