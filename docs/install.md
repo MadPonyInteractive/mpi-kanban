@@ -30,6 +30,20 @@ npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 Restart or reload the agent if it caches skill metadata for the current
 session.
 
+### Which version is installed
+
+The pack stamps its version in the `mpi-lib` skill frontmatter:
+
+```text
+grep version ~/.agents/skills/mpi-lib/SKILL.md
+```
+
+`mpi-project-refresh` prints the same value in every report and warns when the
+install is older than the version the project last recorded. It compares
+against the project, not the network, so it catches a downgrade or a second
+machine running an old install - not "a newer release exists upstream". Nothing
+here updates itself; run the command above.
+
 ## Board Validator
 
 To confirm a project's board is consistent after installing or after a session

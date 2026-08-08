@@ -192,7 +192,9 @@ After approval, apply only approved changes:
    In file mode, `file` means the JSON board and task workspaces, not
    `kanban.md`.
 4. Create or update `.agents/mpi-kanban/project-profile.md` from
-   `<mpi-lib-root>/templates/project-profile.md`.
+   `<mpi-lib-root>/templates/project-profile.md`. Set `pack_version` to the
+   `metadata.version` value in `<mpi-lib-root>/SKILL.md`; that is what
+   `mpi-project-refresh` later compares an install against.
 5. Create or update `.agents/mpi-kanban/project-knowledge-index.md` from
    `<mpi-lib-root>/templates/project-knowledge-index.md`.
 6. Update `.agents/mpi-kanban/state/index.json` so `board` points at

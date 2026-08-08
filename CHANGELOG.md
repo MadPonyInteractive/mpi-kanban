@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Stale-install detection. The pack ships one version stamp,
+  `metadata.version` in `skills/mpi-lib/SKILL.md`, and a project records the
+  version it was last refreshed with as `pack_version` in
+  `.agents/mpi-kanban/project-profile.md`. `mpi-init` writes it and
+  `mpi-project-refresh` compares the two, reporting the installed version in
+  every report and raising a stale-install finding above all others when the
+  install is older than the recorded version. Detects a downgrade or a second
+  machine running an old install; detecting a newer upstream release would
+  need a network call the pack does not make. The pack never reinstalls
+  itself. `README.md` and `docs/install.md` document how to read the installed
+  version.
+
+### Fixed
+
+- The version stamp had sat at `0.8.4` through the 0.9.0 and 0.10.0 releases
+  because nothing checked it - the exact silent staleness it exists to detect.
+  `validate_pack_version()` in `scripts/validate_plugin.py` now fails the
+  release when the stamp does not match the latest released changelog heading,
+  and `/release` bumps it after promoting the changelog.
+
 ## [0.10.0] - 2026-08-08
 
 ### Fixed

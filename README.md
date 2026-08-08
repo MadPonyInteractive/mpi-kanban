@@ -44,6 +44,10 @@ npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 
 Restart your agent sessions after updating so they reload the installed skills.
 
+To see which version you have, `grep version ~/.agents/skills/mpi-lib/SKILL.md`.
+`mpi-project-refresh` reports it too, and flags an install older than the one
+the project last recorded. See [docs/install.md](docs/install.md).
+
 ## Use
 
 Natural language is the intended interface:

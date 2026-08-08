@@ -3,7 +3,7 @@ name: mpi-lib
 description: MPI workflow pack - shared reference library for the mpi-kanban skills. Agents may read its reference files directly for card/task-board rules; do not run it as a user workflow.
 metadata:
   author: Mad Pony Interactive
-  version: "0.8.4"
+  version: "0.10.0"
 ---
 
 # mpi-lib Support Skill
@@ -15,6 +15,26 @@ workflow.
 
 Other `mpi-*` skills locate this sibling skill at first use, cache its root
 path as `<mpi-lib-root>`, and read individual reference files only when needed.
+
+## Pack Version
+
+The installed pack version is the `metadata.version` value in this file's
+frontmatter. It is the only version stamp the pack ships, and it is bumped at
+release. Read it from `<mpi-lib-root>/SKILL.md` to find out which release is
+installed.
+
+A project records the version it was last refreshed with as `pack_version` in
+`.agents/mpi-kanban/project-profile.md` frontmatter. `mpi-project-refresh`
+compares the two. Compare the numbers component by component, never as
+strings: `0.9.0` is older than `0.10.0`, but sorts after it.
+
+Nothing here reaches the network, so the pack cannot tell that a newer release
+exists upstream - only that this install is older than one this project has
+already seen. To update, the user runs:
+
+`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
+
+The pack never reinstalls itself.
 
 ## Reference Index
 

@@ -87,6 +87,11 @@ enough to validate shape and source-of-truth mode:
   `AGENTS.md`, `CLAUDE.md`, `README.md`, project memory indexes, and obvious
   docs under `docs/` that are listed by the profile/index
 
+Also read `metadata.version` from `<mpi-lib-root>/SKILL.md`. That is the
+installed pack version, and it goes in the final report every time - a refresh
+report that does not name the version it was produced by cannot be trusted
+later.
+
 Skim linked sources; do not deep-load every doc/rule/memory file.
 
 ### 2. Detect drift
@@ -125,6 +130,23 @@ Report findings in these categories:
   resolves. A missing config is a finding, not a silent default: it makes
   `mpi-brief-rule` stop for every rule name, so every sub-agent dispatched
   from this project runs with no briefing.
+- **Pack install:** compare the installed `metadata.version` against
+  `pack_version` in the profile frontmatter. Compare the numbers component by
+  component, never as strings: `0.9.0` is older than `0.10.0` but sorts after
+  it, so a string comparison reports the stale install as current. Cases:
+  - installed is **older** than `pack_version` - stale install. Report it
+    first, above every other finding, and say plainly that the rest of this
+    report was produced by an old auditor and may be missing checks that exist
+    in the recorded release. Tell the user to reinstall with
+    `npx skills add MadPonyInteractive/mpi-kanban --all -y -g` and re-run the
+    refresh. Never reinstall automatically.
+  - `pack_version` **missing** - the profile predates the stamp. Propose
+    adding it, no warning.
+  - installed is **newer**, or equal - normal. Record the installed version.
+
+  This detects a downgrade or a second machine with an old install. It cannot
+  detect that a newer release exists upstream; that needs a network call the
+  pack does not make.
 - **Rules:** a `rules_dir` that does not exist, or exists with no file carrying
   a `## Sub-Agent Briefing` heading. Propose `seedFirstRule()` from
   `<mpi-lib-root>/config-ops.md`. Also report rules that have drifted from the
@@ -182,7 +204,10 @@ After approval, in order:
    `<mpi-lib-root>/templates/project-profile.md` and
    `<mpi-lib-root>/templates/project-knowledge-index.md`.
 2. Update `.agents/mpi-kanban/project-profile.md` per approved findings.
-   Bump `last_refresh` to today.
+   Bump `last_refresh` to today. Set `pack_version` to the installed
+   `metadata.version`, unless the installed version is older than the recorded
+   one - never lower `pack_version`, or the stale install erases the evidence
+   that it is stale.
 3. Update `.agents/mpi-kanban/project-knowledge-index.md` per approved findings.
    Bump `last_refresh` to today.
 4. Apply approved mode changes and mode notes.
@@ -217,6 +242,7 @@ After approval, in order:
 
 ```text
 Refresh applied.
+- Pack version: <installed version> <"(STALE - project recorded <recorded>)" when older>.
 - Profile: <change count or "no changes">.
 - Index: <change count or "no changes">.
 - Mode: <unchanged | old -> new>.
@@ -244,6 +270,8 @@ Refresh applied.
 - Never treat `source_of_truth: file` as permission to read or write
   `kanban.md` when `board.json` exists.
 - Never switch Nimbalyst/file source-of-truth mode silently.
+- Never reinstall or update the pack. Report the stale install, give the user
+  the install command, stop.
 
 ## Related invocations
 

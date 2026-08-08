@@ -180,6 +180,51 @@ def validate_mpi_lib_present() -> None:
             fail(f"{skill_dir.name}/SKILL.md: missing mpi-lib discovery block")
 
 
+def validate_pack_version() -> None:
+    """The mpi-lib version stamp is what a project compares against.
+
+    It sat at 0.8.4 through two releases because nothing checked it, which is
+    exactly the silent staleness the stamp exists to detect.
+    """
+    skill = ROOT / "skills" / "mpi-lib" / "SKILL.md"
+    if not skill.exists():
+        return
+    frontmatter = parse_frontmatter(skill.read_text(encoding="utf-8")) or {}
+    metadata = frontmatter.get("metadata")
+    stamped = metadata.get("version") if isinstance(metadata, dict) else None
+    if not stamped:
+        fail("skills/mpi-lib/SKILL.md: missing metadata.version pack stamp")
+        return
+
+    changelog = ROOT / "CHANGELOG.md"
+    if not changelog.exists():
+        fail("missing CHANGELOG.md; cannot check the mpi-lib version stamp")
+        return
+    released = re.search(
+        r"^## \[(\d+\.\d+\.\d+)\]", changelog.read_text(encoding="utf-8"), re.MULTILINE
+    )
+    if not released:
+        fail("CHANGELOG.md: no released `## [x.y.z]` heading found")
+        return
+    if stamped != released.group(1):
+        fail(
+            f"skills/mpi-lib/SKILL.md metadata.version is {stamped} but the latest "
+            f"CHANGELOG release is {released.group(1)}; bump the stamp or the pack "
+            "ships claiming to be an older release"
+        )
+
+    # The stamp is only useful if a project records one to compare it against.
+    wiring = {
+        "skills/mpi-lib/templates/project-profile.md": "pack_version:",
+        "skills/mpi-init/SKILL.md": "pack_version",
+        "skills/mpi-project-refresh/SKILL.md": "pack_version",
+    }
+    for rel, needle in wiring.items():
+        path = ROOT / rel
+        if not path.exists() or needle not in path.read_text(encoding="utf-8"):
+            fail(f"{rel}: missing `{needle}`; stale-install detection is not wired up")
+
+
 def validate_kanban_templates() -> None:
     expected = [
         "## BACKLOG",
@@ -493,6 +538,7 @@ def check_no_symlinks() -> None:
 def main() -> int:
     skill_names = validate_skills()
     validate_mpi_lib_present()
+    validate_pack_version()
     validate_kanban_templates()
     validate_task_board_templates()
     validate_maturity_contract_docs()

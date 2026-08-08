@@ -5,6 +5,7 @@ mode_rationale: default at init
 mode_source: default
 setup_date: YYYY-MM-DD
 last_refresh: YYYY-MM-DD
+pack_version: <mpi-lib metadata.version at setup/refresh time>
 knowledge_index: .agents/mpi-kanban/project-knowledge-index.md
 ---
 
