@@ -57,6 +57,9 @@ If SPEC and PLAN disagree, ask the user before choosing.
   field's value set. MPI-22 widened `maturity` from 5 to 10 values that way,
   shipping both repos in lockstep.
 - Skills are pure Markdown. Shared reference docs live in `skills/mpi-lib/`.
+- The pack ships exactly one version stamp: `metadata.version` in
+  `skills/mpi-lib/SKILL.md`. `/release` bumps it after promoting the changelog;
+  `validate_pack_version()` enforces the match. Do not add a second stamp.
 - Do not use `${CLAUDE_PLUGIN_ROOT}`, Claude `!` injection, Codex plugin
   manifests, or plugin-scoped install assumptions in workflow skills.
 - The pack is all-or-nothing. Every consuming skill must fail clearly when
