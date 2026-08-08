@@ -49,6 +49,10 @@ Run these checks against `.agents/mpi-kanban/board.json` when it exists:
   `task_card` in `done` are unresolved only (`needs_review`,
   `needs_verification`, or `needs_integration`); completed, verified, or closed
   work must not stay active.
+- Every `state/files/<uuid>.json` parses, uses
+  `schema: "mpi-kanban/file-claim/v1"`, sets exactly one of `path` (string) or
+  `paths` (list of strings), carries a known claim status, and is written
+  without a UTF-8 BOM.
 - If `.agents/mpi-kanban/state/interop.json` has `source_of_truth: "file"`,
   treat that as the JSON board and task workspaces, not `kanban.md`.
 - If `.agents/mpi-kanban/kanban.md` still exists, it is either under
@@ -95,6 +99,10 @@ Safe repairs to propose:
 - Update `state/index.json` `board` to `.agents/mpi-kanban/board.json` when
   `board.json` exists.
 - Remove `closed` coordination task records from `active_tasks`.
+- Correct a file-claim record's `schema` to `mpi-kanban/file-claim/v1`, strip a
+  leading BOM, or fold a stray `paths` array into `path` when it holds one
+  entry. These are format repairs; never change which paths a claim covers, and
+  never reassign its owner.
 - For a coordination task tied to a `done` card, remove it from `active_tasks`
   when its status is `verified`, `completed`, or `closed`, preserving the
   record for archive/cleanup.

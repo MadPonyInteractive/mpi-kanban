@@ -122,7 +122,8 @@ Do not commit. Do not run cleanup.
 ### Step 5 - Write the handoff document
 
 Create file at `.agents/mpi-kanban/state/handoffs/<uuid>.json` and create the
-directory if missing. Generate `<uuid>` with `python scripts/new_uuid.py`. Use
+directory if missing. Generate `<uuid>` with `python <mpi-lib-root>/scripts/new_uuid.py`, or with
+`python -c "import uuid; print(uuid.uuid4())"` if that script is missing. Use
 the same value for the filename and the JSON `id`.
 
 When `task_card.id` is present, also create a lightweight pointer under

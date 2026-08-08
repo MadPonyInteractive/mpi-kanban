@@ -158,6 +158,7 @@ def validate_mpi_lib_present() -> None:
         "kanban-ops/find.md",
         "project-knowledge/indexing.md",
         "scripts/validate_board.py",
+        "scripts/new_uuid.py",
         "docs/coordination/README.md",
         "templates/board.json",
         "templates/interop.json",
@@ -165,6 +166,7 @@ def validate_mpi_lib_present() -> None:
         "templates/kanban.md",
         "templates/project-profile.md",
         "templates/project-knowledge-index.md",
+        "templates/rule.md",
     )
     for rel in required:
         if not (mpi_lib / rel).exists():
@@ -275,6 +277,26 @@ def validate_maturity_contract_docs() -> None:
         for value in INVALID_MATURITY_EXAMPLES:
             if value not in lower:
                 fail(f"{path.relative_to(ROOT)} does not reject invalid maturity example {value!r}")
+
+    # Any other shipped doc that enumerates the enum must carry all of it. The
+    # explicit list above says "these files MUST document it"; this says "and
+    # nowhere else may document a stale subset of it". mpi-project-refresh
+    # carried the pre-MPI-22 five-value list for a full release without this.
+    checked = set(required_paths)
+    for path in (ROOT / "skills").rglob("*.md"):
+        if path in checked:
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        # "`idea`, `planned`" is how every real enum listing opens. A legacy
+        # column-mapping table mentions single values and must not trip this.
+        if "`idea`, `planned`" not in text:
+            continue
+        missing = [value for value in enum_values if f"`{value}`" not in text]
+        if missing:
+            fail(
+                f"{path.relative_to(ROOT)} enumerates task maturities but omits "
+                + ", ".join(repr(value) for value in missing)
+            )
 
 
 def validate_task_board_tree() -> None:
@@ -411,6 +433,26 @@ def validate_no_stale_runtime_refs() -> None:
                 fail(f"stale runtime reference '{pattern}' in {path.relative_to(ROOT)}")
 
 
+def validate_coordination_wiring() -> None:
+    """Guard the two ways coordination silently switched itself off (MPI-26)."""
+    skills = ROOT / "skills"
+    for path in skills.rglob("*.md"):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for match in re.finditer(r"\S*scripts/new_uuid\.py", text):
+            if match.group(0) != "<mpi-lib-root>/scripts/new_uuid.py":
+                fail(
+                    f"{path.relative_to(ROOT)}: new_uuid.py reference "
+                    f"{match.group(0)!r} is not anchored to <mpi-lib-root>"
+                )
+
+    init = skills / "mpi-init" / "SKILL.md"
+    if init.exists() and "mpi-kanban.local.md" not in init.read_text(encoding="utf-8"):
+        fail("mpi-init/SKILL.md must create .agents/mpi-kanban.local.md on adopt")
+    refresh = skills / "mpi-project-refresh" / "SKILL.md"
+    if refresh.exists() and "mpi-kanban.local.md" not in refresh.read_text(encoding="utf-8"):
+        fail("mpi-project-refresh/SKILL.md must report a missing mpi-kanban.local.md")
+
+
 def validate_skills_sh_json(skill_names: set[str]) -> None:
     path = ROOT / "skills.sh.json"
     if not path.exists():
@@ -459,6 +501,7 @@ def main() -> int:
     validate_coordination_messages()
     validate_interop_state()
     validate_no_stale_runtime_refs()
+    validate_coordination_wiring()
     validate_skills_sh_json(skill_names)
     validate_removed_surfaces()
     check_no_symlinks()

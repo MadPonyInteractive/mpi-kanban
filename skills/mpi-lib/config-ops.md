@@ -13,8 +13,13 @@ through `mpi-brief-rule`.
 ```
 
 The `.local.md` suffix lets the user gitignore it via the standard
-`.agents/*.local.md` pattern. The file is ALWAYS user-managed â€” never
-auto-create it (config is project-specific; the user must opt in).
+`.agents/*.local.md` pattern.
+
+`mpi-init` scaffolds this file as part of project adoption, with approval. It
+is the ONLY skill that creates it. Every consumer - `mpi-brief-rule` above all -
+must treat a missing config as a stop condition and emit the bootstrap notice
+below; consumers must never auto-create it. After adoption the file is
+user-managed.
 
 ---
 
@@ -142,22 +147,28 @@ empty or missing, return `[]`.
 
 ## Bootstrap snippet (config missing)
 
-When `mpi-brief-rule` is invoked and `loadConfig()` returns `null`, emit this
-verbatim (substituting the project-relative path):
+When a consumer calls `loadConfig()` and it returns `null`, emit this verbatim
+(substituting the project-relative path):
 
 ```
-No mpi-kanban config found.
+No mpi-kanban config found at .agents/mpi-kanban.local.md, so no rule briefings
+can be resolved. Any sub-agent dispatched right now receives no briefing at all.
 
-To enable rule briefings, create [.agents/mpi-kanban.local.md](.agents/mpi-kanban.local.md)
-with this shape:
+Fix it in one of two ways:
+
+1. Run `/mpi-init` in this project. It scaffolds the config and fills the rules
+   list by scanning the rules folder for files with a `## Sub-Agent Briefing`
+   heading. Projects adopted before this was added need one `/mpi-init` pass, or
+   a `/mpi-project-refresh`, which reports the missing config as a finding.
+
+2. Hand-write [.agents/mpi-kanban.local.md](.agents/mpi-kanban.local.md) with
+   this shape:
 
 ---
 rules_dir: .agents/rules
 rules:
   - name: components
     file: components.md
-  - name: events
-    file: events.md
 bundles:
   - name: frontend-worker
     rules: [components, events]
@@ -165,11 +176,68 @@ critical_snapshot_file: AGENTS.md
 critical_snapshot_anchor: critical-rules-snapshot
 ---
 
-Add the rules and optional bundles you want sub-agents to receive briefings for.
-
 Reminder: `.local.md` files are user-local. Add `.agents/*.local.md` to your
 `.gitignore` if it is not already covered.
 ```
 
-After printing the notice, stop â€” do not auto-create the file.
+After printing the notice, stop. Do not auto-create the file. Only `mpi-init`
+creates it.
 
+---
+
+## `scaffoldConfig()` - `mpi-init` only
+
+Runs once, during project adoption, after approval. No other skill may call it.
+
+1. If `<project-root>/.agents/mpi-kanban.local.md` already exists, stop and keep
+   it. Never overwrite a user-managed config.
+2. Determine `rules_dir`: the first existing directory of `.agents/rules`,
+   `.claude/rules`, `docs/rules`. If none exists, use `.agents/rules`.
+3. Scan `rules_dir` (top level, then one level deep) for `*.md` files containing
+   a `## Sub-Agent Briefing` heading. Each match becomes one `{name, file}`
+   entry: `file` is the path relative to `rules_dir`, `name` is the filename
+   without its extension. A rule file with no such heading is skipped from the
+   list - it is a rule for humans, not a dispatchable briefing.
+3b. If the scan found nothing, seed the first rule with `seedFirstRule()` below
+   rather than writing an empty `rules: []`. A project with no rules dispatches
+   sub-agents that know nothing about it.
+4. Leave `bundles: []`. Bundles group rules per worker archetype and need project
+   judgement; the user adds them later.
+5. Set `critical_snapshot_file` to the first project entrypoint that exists,
+   preferring `AGENTS.md`, then `CLAUDE.md`, then `README.md`. Set
+   `critical_snapshot_anchor` to the anchor of the heading holding the universal
+   rules snapshot. If no such heading exists, write `critical-rules-snapshot` and
+   say in the report that the anchor does not resolve yet.
+6. Report what was written: rules found, files skipped, whether a first rule was
+   seeded, and whether the snapshot anchor resolved.
+
+---
+
+## `seedFirstRule(rulesDir)`
+
+For a project whose `rules_dir` holds no briefing-carrying rule file. Called by
+`scaffoldConfig()`, and by `mpi-project-refresh` when it finds the same gap.
+
+Rules are not optional furniture: `mpi-brief-rule` is how a cold sub-agent
+learns what the project expects of it, and it has nothing to return until at
+least one rule file exists. So seed one - but seed it from evidence, never from
+invention.
+
+1. Create `rules_dir` if missing.
+2. Write `<rules_dir>/project.md` from `<mpi-lib-root>/templates/rule.md`.
+3. Fill it ONLY from what adoption already established - the project profile,
+   the knowledge index, `AGENTS.md`/`CLAUDE.md`, and the repo conventions
+   actually observed. Every line must trace to something read. A convention you
+   cannot point at does not go in.
+4. Its `## Sub-Agent Briefing` should let a sub-agent that has read nothing else
+   start work: what the project is, the build/test/lint commands that exist, the
+   conventions a worker would otherwise violate, and the things it must never do.
+   Keep it short. A briefing nobody reads is worth nothing.
+5. Where evidence is thin, write the heading with a one-line `TODO:` naming what
+   is unknown, and say so in the report. An honest gap beats a confident guess.
+6. Register it in the config as `{name: project, file: project.md}`.
+7. Show the seeded file to the user in the proposal. It is a rule file, so the
+   per-file approval in `<mpi-lib-root>/project-knowledge/updates.md` applies.
+
+One rule is a starting point, not a target. `mpi-end-session` splits specific
+rules out of it as real conventions appear in real work.

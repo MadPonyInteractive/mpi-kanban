@@ -7,6 +7,72 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-08
+
+### Fixed
+
+- Coordination could be silently off in an installed pack. `scripts/new_uuid.py`
+  lived at the repo root, and only `skills/` ships, so it reached no install -
+  and its four references used the project-relative path `scripts/new_uuid.py`
+  rather than `<mpi-lib-root>/scripts/new_uuid.py`. Generating a UUID is step 2
+  of *Register Or Renew Session*, the first mechanical action in the whole
+  coordination lifecycle, so agents hit a missing script at the first write of
+  the first record and skipped coordination entirely: no session records, no
+  file claims, concurrent sessions overwriting each other. The helper now ships
+  at `skills/mpi-lib/scripts/new_uuid.py`, every reference is anchored to
+  `<mpi-lib-root>`, and `lifecycle.md`, `messages.md`, `uuid-helper.md`, and
+  `mpi-handoff` all carry the dependency-free fallback
+  `python -c "import uuid; print(uuid.uuid4())"` so a future packaging slip
+  degrades instead of stopping the lifecycle. Regression-guarded in
+  `scripts/validate_plugin.py`.
+- Nothing created `.agents/mpi-kanban.local.md`, so `mpi-brief-rule` stopped
+  with its bootstrap notice for every rule name and every sub-agent dispatched
+  from a project started with `mpi-init` received no briefing at all. `mpi-init`
+  now scaffolds the config during adoption via `scaffoldConfig()`, filling the
+  `rules` list by scanning `rules_dir` for files with a `## Sub-Agent Briefing`
+  heading. `mpi-project-refresh` reports a missing or drifted config as a
+  finding so projects adopted earlier are told rather than left silent, and the
+  bootstrap notice now names the fix and states plainly that a sub-agent
+  dispatched right now would run unbriefed. `mpi-brief-rule` still refuses to
+  auto-create the file.
+- `mpi-project-refresh` and `task-board-ops/read.md` still carried the
+  pre-0.9.0 five-value `maturity` enum, so a card legitimately marked
+  `research`, `needs-decision`, `blocked`, `deferred`, or `rejected` was read as
+  board drift by the reader and by the skill whose job is detecting drift.
+  `validate_maturity_contract_docs()` only checked a hand-kept file list and
+  missed both. It now also scans every shipped skill doc that enumerates the
+  enum and fails on any stale subset, so the next widening cannot leave a copy
+  behind.
+- Nothing validated `.agents/mpi-kanban/state/files/`, and it had drifted three
+  separate ways in this repo's own state: five records used
+  `schema: "mpi-kanban/file/v1"`, two carried a UTF-8 BOM, and 16 of 44 stored
+  `paths` while the schema documented only `path`. `validate_board.py` now
+  checks every claim record - schema, exactly one of `path`/`paths`, a known
+  status, and no BOM - and `mpi-project-refresh` reports the same shapes as
+  drift.
+- Multi-file claims were undocumented. All 16 `paths` records covered 3 to 18
+  files each, which is what "module ownership" in `coordination-ops/lifecycle.md`
+  means in practice, so this was a gap in the schema rather than sloppy writing:
+  a reader following `schemas.md` and matching only `path` silently missed every
+  multi-file claim. `paths` is now first-class alongside `path`, an entry ending
+  in `/` explicitly claims that subtree, and `lifecycle.md` and `messages.md`
+  tell readers to match both fields.
+
+### Added
+
+- Rules bootstrap. A project with no rule file carrying a `## Sub-Agent
+  Briefing` heading now gets a first one instead of an empty `rules: []`:
+  `seedFirstRule()` in `mpi-lib/config-ops.md` writes `<rules_dir>/project.md`
+  from the new `mpi-lib/templates/rule.md`, drafted only from what adoption
+  actually read, with `TODO:` lines where evidence is thin. `mpi-init` proposes
+  it during adoption and `mpi-project-refresh` proposes it for projects that
+  never had one. Both need per-file approval like any rule file.
+- `mpi-end-session` now proposes a new rule file when a session established or
+  enforced a convention no existing rule covers, and registers it in
+  `.agents/mpi-kanban.local.md`. Rules grow from work that proved them rather
+  than from a one-time guess at adoption. Capped at one or two per session and
+  gated on the same per-file approval.
+
 ## [0.9.0] - 2026-07-31
 
 ### Fixed
@@ -402,7 +468,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.5...v0.9.0
 [0.8.5]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.3...v0.8.4

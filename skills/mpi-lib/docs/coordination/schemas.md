@@ -114,6 +114,28 @@ verification, integration, or final commit summary, set status to `complete`,
 `needs_review`, `needs_verification`, or `needs_integration` and list it in
 `pending_file_states`.
 
+### What a claim covers
+
+A record claims **either** one path or a set of paths:
+
+- `path` - a single string. Use it for a single-file claim.
+- `paths` - a list of strings. Use it for one claim over several files, which is
+  what "module ownership" in `coordination-ops/lifecycle.md` means in practice.
+
+Exactly one of the two is present. Both are first-class: a reader that only
+looks at `path` silently misses every multi-file claim, which is how a live
+project ran for weeks with claims on disk and nothing enforcing them.
+
+An entry ending in `/` claims that subtree, not a file. `skills/mpi-continue/`
+covers every file under it. Match a candidate file against a claim entry with:
+exact string equality, or the entry ends in `/` and the candidate starts with
+it.
+
+Write these records as UTF-8 **without** a BOM. On Windows, PowerShell `>` and
+`Out-File` add one by default; `Set-Content -Encoding utf8` in PowerShell 5.1
+does too. A leading BOM makes a strict `JSON.parse` / `json.load` throw, so use
+a writer that omits it, or read with `utf-8-sig`.
+
 Folder-aware file references may replace or supplement plain `path` fields when
 a VS Code workspace contains several folders:
 

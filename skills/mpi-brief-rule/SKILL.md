@@ -40,9 +40,12 @@ All recipes (`loadConfig`, `resolveRulePath`, `resolveBundle`, `getRuleList`,
 need the first recipe Ã¢â‚¬â€ not before. Resolve the file from `<mpi-lib-root>`.
 
 1. **Load config.** Call `loadConfig()`.
-   - If `null` (file missing) Ã¢â€ â€™ emit the bootstrap notice from
-     `<mpi-lib-root>/config-ops.md` ("No mpi-kanban config found..."), and stop. Do NOT
-     auto-create the config.
+   - If `null` (file missing), emit the bootstrap notice from
+     `<mpi-lib-root>/config-ops.md` ("No mpi-kanban config found..."), and stop.
+     Do NOT auto-create the config here. `mpi-init` is the skill that creates
+     it, and `mpi-project-refresh` reports it missing; the notice tells the user
+     to run one of them. Say plainly that a sub-agent dispatched right now would
+     receive no briefing at all, so a silent no-op is not mistaken for success.
 
 2. **Resolve the rule or bundle.**
    - Use `getBundleList(config)`. If `<rule_name>` matches a configured

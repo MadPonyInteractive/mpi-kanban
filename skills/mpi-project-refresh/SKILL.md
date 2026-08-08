@@ -47,6 +47,8 @@ before the user approves the refresh proposal.
 - `<mpi-lib-root>/task-board-ops/validate.md` - JSON board validation checks.
 - `<mpi-lib-root>/task-board-ops/migrate.md` - legacy board migration proposals.
 - `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode state.
+- `<mpi-lib-root>/config-ops.md` - sub-agent briefing config shape and
+  `scaffoldConfig()`.
 
 ## Pre-condition
 
@@ -101,7 +103,8 @@ Report findings in these categories:
 - **Board:** JSON schema validity, task folders, linked files, legacy board files
   still treated as live, retained legacy `kanban.md` without a tombstone,
   orphaned task workspaces, and task-card `maturity` values outside the fixed
-  enum (`idea`, `planned`, `in-progress`, `validating`, `complete`) or
+  enum (`idea`, `planned`, `research`, `needs-decision`, `blocked`,
+  `deferred`, `in-progress`, `validating`, `complete`, `rejected`) or
   incoherent with their column. Treat values such as `Validated`, `spec`,
   `active`, `done`, `implementing`, and `implementation` as repair findings,
   not as new states.
@@ -110,8 +113,23 @@ Report findings in these categories:
   misread as Markdown instead of JSON/file-backed board state, `active_tasks`
   entries that are missing, closed, or tied to `done` JSON task cards without
   unresolved statuses such as `needs_review`, `needs_verification`, or
-  `needs_integration`.
+  `needs_integration`. Also `state/files/` records: a wrong `schema`, neither or
+  both of `path`/`paths`, an unknown claim status, or a leading BOM. Nothing
+  validated that folder before, and every one of those shapes was found live.
 - **Agent entrypoints:** `AGENTS.md` / `CLAUDE.md` pointers missing or stale.
+- **Sub-agent briefing config:** `.agents/mpi-kanban.local.md` missing
+  entirely, a `rules_dir` that no longer exists, configured rule files that
+  are gone from disk, rule files under `rules_dir` that carry a
+  `## Sub-Agent Briefing` heading but are not listed, and a
+  `critical_snapshot_file`/`critical_snapshot_anchor` pair that no longer
+  resolves. A missing config is a finding, not a silent default: it makes
+  `mpi-brief-rule` stop for every rule name, so every sub-agent dispatched
+  from this project runs with no briefing.
+- **Rules:** a `rules_dir` that does not exist, or exists with no file carrying
+  a `## Sub-Agent Briefing` heading. Propose `seedFirstRule()` from
+  `<mpi-lib-root>/config-ops.md`. Also report rules that have drifted from the
+  code they govern, and conventions now enforced in several places with no rule
+  of their own.
 
 Cap inspection to a sane budget. If the repo is too large, narrow scope with the
 user instead of scanning everything.
@@ -188,6 +206,12 @@ After approval, in order:
    small replacements from `kanban.md` to `board.json` / `tasks/<id>/`.
 11. Apply approved `AGENTS.md` or `CLAUDE.md` pointer edits. Preserve existing
     content; pointer-first additions only.
+12. Apply approved sub-agent briefing config repairs. Create a missing
+    `.agents/mpi-kanban.local.md` with `scaffoldConfig()` from
+    `<mpi-lib-root>/config-ops.md`, seeding a first rule when the project has
+    none. For an existing config, only add or correct approved `rules` entries
+    and pointers; never rewrite it wholesale and never drop entries the user
+    added by hand.
 
 ### 6. Final report
 

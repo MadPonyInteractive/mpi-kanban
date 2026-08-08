@@ -80,7 +80,9 @@ Inputs: `agent`, `role`, optional `task`, optional display `name`.
 
 1. Read `state/index.json`.
 2. Reuse the current session record when the session path is already known.
-   Otherwise generate a UUID with `python scripts/new_uuid.py`.
+   Otherwise generate a UUID with `python <mpi-lib-root>/scripts/new_uuid.py`.
+   If that script is missing, use `python -c "import uuid; print(uuid.uuid4())"`.
+   Never skip session registration because the helper could not be found.
 3. Write or update `sessions/<uuid>.json`:
    - `schema`: `mpi-kanban/session/v1`
    - `status`: `active`
@@ -119,7 +121,10 @@ owner session path.
 
 Inputs: session path, task path, file paths or module ownership.
 
-1. Read `active_file_claims` before editing.
+1. Read `active_file_claims` before editing. A record claims either `path` (a
+   single string) or `paths` (a list); read BOTH fields on every record. An
+   entry ending in `/` claims that whole subtree. See
+   `docs/coordination/schemas.md`.
 2. For each file, if another fresh `claimed` record exists:
    - do not edit the file;
    - choose wait, request handoff, create a proposal/review note, ask for an
@@ -128,7 +133,8 @@ Inputs: session path, task path, file paths or module ownership.
    intent is clear. Uncertain cases ask the user.
 4. If no active writer blocks the file, create a file record with status
    `claimed`, `claim_kind: "write"`, owner session, owner role, task path, and
-   heartbeat.
+   heartbeat. Use `path` for a single file; use `paths` for one claim over a set
+   of files or a module. Do not write both on the same record.
 5. Add the file record to `active_file_claims`.
 6. If the same path has records in `pending_file_states`, read them before
    editing; they are provenance, not write locks.

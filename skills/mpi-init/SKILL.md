@@ -55,6 +55,8 @@ Read only the references needed for the path being executed:
   adoption map.
 - `<mpi-lib-root>/project-knowledge/updates.md` - approval and preservation
   rules.
+- `<mpi-lib-root>/config-ops.md` - `scaffoldConfig()`, the sub-agent briefing
+  config at `.agents/mpi-kanban.local.md`.
 
 ## Inputs
 
@@ -148,6 +150,16 @@ The proposal must include:
    `README.md`, project memory indexes, and similar startup docs that still
    point active task continuation at `kanban.md`.
 8. Rule or memory changes, if any, with per-file approval requirements.
+9. Sub-agent briefing config action: create `.agents/mpi-kanban.local.md`
+   when missing, listing the `rules_dir` that will be scanned and the rule
+   files that carry a `## Sub-Agent Briefing` heading. Without this file
+   `mpi-brief-rule` stops for every rule name and sub-agents dispatch with no
+   briefing, so propose it even when the scan finds no rules yet.
+10. First-rule action when the project has no rule file carrying a briefing:
+   propose seeding `<rules_dir>/project.md` with `seedFirstRule()` from
+   `<mpi-lib-root>/config-ops.md`, drafted only from what this adoption pass
+   actually read. Show the drafted file in the proposal; it is a rule file, so
+   it needs its own approval.
 
 End with:
 
@@ -192,6 +204,12 @@ After approval, apply only approved changes:
    `<mpi-lib-root>/project-knowledge/updates.md`.
 10. If a backlog source was provided, import parsed tasks after the board
     exists.
+11. Write the approved seed rule file, if any, from
+    `<mpi-lib-root>/templates/rule.md`.
+12. Create `.agents/mpi-kanban.local.md` with `scaffoldConfig()` from
+    `<mpi-lib-root>/config-ops.md` when it is missing. Run this after any
+    approved rule-file writes so the briefing scan sees them. Never overwrite
+    an existing config.
 
 ### 5. Import freeform tasks
 
@@ -241,6 +259,8 @@ Next: use `mpi-brainstorm`, `mpi-create-plan`, or `mpi-continue`.
   `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
   existing cards or legacy Markdown entries.
 - `mpi-init` may create the initial profile/index and record project mode.
+- `mpi-init` is the only skill that creates `.agents/mpi-kanban.local.md`.
+  Consumers such as `mpi-brief-rule` must keep refusing to auto-create it.
 - Mode changes after initialization are handled by `mpi-project-refresh`.
 - Never maintain `board.json` and `kanban.md` as competing live boards.
 - Never let `source_of_truth: file` mean the legacy Markdown board when

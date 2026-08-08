@@ -649,6 +649,14 @@ bundle.
 
 The pack does not hardcode project rules.
 
+`mpi-init` creates this file during adoption and is the only skill that does;
+`mpi-project-refresh` reports it missing. A consumer that finds no config stops
+and says so - it never auto-creates one. A project whose rules folder holds no
+file with a `## Sub-Agent Briefing` heading gets a first rule seeded from what
+adoption actually read, and `mpi-end-session` proposes further rules as real
+work proves real conventions. Without any of this the skill answers every rule
+name with a bootstrap notice and sub-agents dispatch unbriefed.
+
 ## 13. Cleanup
 
 `mpi-cleanup` classifies workflow artifacts as active, completed, orphaned,

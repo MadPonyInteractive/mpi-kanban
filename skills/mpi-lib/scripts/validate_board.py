@@ -15,6 +15,7 @@ the single code-level source of truth.
 """
 from __future__ import annotations
 
+import codecs
 import json
 import re
 import sys
@@ -32,6 +33,10 @@ TASK_MATURITY_BY_COLUMN = {
     "done": {"complete", "rejected"},
 }
 TASK_REQUIRED_FIELDS = {"schema", "id", "title", "column", "created_at", "updated_at", "links"}
+FILE_CLAIM_STATUSES = {
+    "claimed", "complete", "needs_review", "needs_verification",
+    "needs_integration", "verified", "released", "stale", "closed",
+}
 UNRESOLVED_COORDINATION_STATUSES = {
     "needs_review",
     "needs_verification",
@@ -245,8 +250,38 @@ def validate_board(root: Path) -> list[str]:
                                 "state explicitly"
                             )
 
+    validate_file_claims(errors, board_root)
+
     return errors
 
+
+
+def validate_file_claims(errors: list[str], board_root: Path) -> None:
+    """Nothing validated state/files/ until MPI-26, and it had drifted."""
+    claims_root = board_root / "state" / "files"
+    if not claims_root.is_dir():
+        return
+    for record_path in sorted(claims_root.glob("*.json")):
+        label = f".agents/mpi-kanban/state/files/{record_path.name}"
+        if record_path.read_bytes().startswith(codecs.BOM_UTF8):
+            errors.append(f"{label} starts with a UTF-8 BOM; write it without one")
+        record = load_json(errors, record_path, label)
+        if not isinstance(record, dict):
+            continue
+        if record.get("schema") != "mpi-kanban/file-claim/v1":
+            errors.append(f"{label} schema must be mpi-kanban/file-claim/v1")
+        path, paths = record.get("path"), record.get("paths")
+        if (path is None) == (paths is None):
+            errors.append(f"{label} must set exactly one of path or paths")
+        elif path is not None and not isinstance(path, str):
+            errors.append(f"{label} path must be a string")
+        elif paths is not None and (
+            not isinstance(paths, list) or not all(isinstance(v, str) for v in paths)
+        ):
+            errors.append(f"{label} paths must be a list of strings")
+        status = record.get("status")
+        if status not in FILE_CLAIM_STATUSES:
+            errors.append(f"{label} has unknown status {status!r}")
 
 def main(argv: list[str]) -> int:
     root = Path(argv[1] if len(argv) > 1 else ".").resolve()

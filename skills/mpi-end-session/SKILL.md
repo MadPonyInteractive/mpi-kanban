@@ -86,8 +86,16 @@ For each changed file, decide whether a rule or doc needs to update:
   introduced or changed -> relevant `.agents/rules/*.md` file may need an edit.
 - Architectural shift large enough to affect onboarding -> `docs/PROJECT.md`
   pointer may need an edit.
+- A convention this session established or enforced that NO existing rule
+  file covers -> propose a new rule file. This is how a project's rules grow:
+  the work proves the convention, then the rule records it. Draft it from
+  `<mpi-lib-root>/templates/rule.md`, give it a `## Sub-Agent Briefing`
+  section, and add it to the `rules` list in `.agents/mpi-kanban.local.md` so
+  `mpi-brief-rule` can dispatch it. Propose at most one or two per session,
+  and only for conventions that actually bit someone in this session.
 
 Cardinal rule: ask the user before modifying any architectural rule file.
+Creating one needs the same explicit approval.
 Surface a one-line proposal per file and wait for explicit approval per file.
 
 Edits must be concise: short bullets, no prose bloat, no new headings unless

@@ -60,8 +60,9 @@ Never accept a user-supplied task ID for a new task.
    - `schema` is `mpi-kanban/task-card/v1`;
    - `id` matches the folder and requested ID;
    - `column` is `todo`, `doing`, or `done`;
-   - when present, `maturity` is exactly `idea`, `planned`, `in-progress`,
-     `validating`, or `complete`, and matches the task's column.
+   - when present, `maturity` is exactly `idea`, `planned`, `research`,
+     `needs-decision`, `blocked`, `deferred`, `in-progress`, `validating`,
+     `complete`, or `rejected`, and matches the task's column.
 4. Return the parsed task plus paths to linked workspace files.
 
 If `maturity` is invalid or incoherent, report it as board drift before using

@@ -50,7 +50,8 @@ Messages coordinate; they do not grant write ownership. If a message concerns a
 file or workspace folder:
 
 1. Reread `state/index.json`.
-2. Load relevant `active_file_claims`.
+2. Load relevant `active_file_claims`. Match against both `path` and `paths`
+   on each record, and treat an entry ending in `/` as covering its subtree.
 3. If another fresh claim has `status: "claimed"` for the file, do not edit the
    file. Reply, ask for handoff, wait, or ask the user.
 4. If no active claim blocks the file, still read matching
@@ -64,8 +65,8 @@ Inputs: `from`, `to`, `subject`, `body`, optional `related`, optional
 
 1. Call `ensureMessageRoot()`.
 2. Reread `state/index.json`.
-3. Generate a UUID with `python scripts/new_uuid.py` when that helper is
-   available; otherwise use the runtime's normal UUID generator.
+3. Generate a UUID with `python <mpi-lib-root>/scripts/new_uuid.py`. If that
+   script is missing, use `python -c "import uuid; print(uuid.uuid4())"`.
 4. Write `.agents/mpi-kanban/state/messages/<uuid>.json`:
    - `schema`: `mpi-kanban/message/v1`
    - `id`: generated UUID
