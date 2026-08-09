@@ -93,12 +93,13 @@ def main():
     doing = (board.get("columns") or {}).get("doing") or []
     path, state = _mpi.session_state(root, data.get("session_id", "unknown"))
 
-    reason, update = decide(_mpi.edited_path(data), doing, state)
-    if update:
-        state.update(update)
-        _mpi.write_session_state(path, state)
-    if reason:
-        _mpi.deny(reason)
+    for candidate in _mpi.written_paths(data) or [None]:
+        reason, update = decide(candidate, doing, state)
+        if update:
+            state.update(update)
+            _mpi.write_session_state(path, state)
+        if reason:
+            _mpi.deny(reason)
     sys.exit(0)
 
 

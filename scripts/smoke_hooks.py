@@ -61,8 +61,8 @@ def edit_payload(root, path, session="me"):
             "tool_name": "Edit", "tool_input": {"file_path": os.path.join(root, path)}}
 
 
-def bash_payload(root, command):
-    return {"session_id": "me", "cwd": root, "hook_event_name": "PreToolUse",
+def bash_payload(root, command, session="me"):
+    return {"session_id": session, "cwd": root, "hook_event_name": "PreToolUse",
             "tool_name": "Bash", "tool_input": {"command": command}}
 
 
@@ -90,6 +90,21 @@ def main():
         code, _ = run("guard-claim.py", edit_payload(root, "src/api/routes.py", "peer-session"))
         checks.append(("guard-claim allows the owner's own write", code == 0))
 
+        # The Bash path. Registered only against Edit|Write|NotebookEdit until
+        # 1.0.1, so `sed -i` walked straight through a live claim.
+        code, err = run("guard-claim.py",
+                        bash_payload(root, "sed -i 's/a/b/' src/api/routes.py"))
+        checks.append(("guard-claim blocks a shell in-place edit of a claimed file",
+                       code == 2 and "BLOCKED" in err))
+
+        code, err = run("guard-claim.py", bash_payload(root, "echo x > src/api/new.py"))
+        checks.append(("guard-claim blocks a shell redirect into a claimed subtree",
+                       code == 2 and "BLOCKED" in err))
+
+        code, _ = run("guard-claim.py",
+                      bash_payload(root, "grep -n 'x > y' src/api/routes.py"))
+        checks.append(("guard-claim allows a read of a claimed file", code == 0))
+
         code, err = run("guard-card.py", edit_payload(root, "src/ui/main.py"))
         checks.append(("guard-card blocks a code edit with no card",
                        code == 2 and "maturity" in err))
@@ -108,6 +123,16 @@ def main():
 
         code, err = run("guard-card.py", edit_payload(root, ".agents/mpi-kanban/tasks/MPI-3/task.json"))
         checks.append(("guard-card still blocks a third card", code == 2 and "MPI-1" in err))
+
+        # The Bash path, on its own session so the once-per-session state is fresh.
+        code, err = run("guard-card.py",
+                        bash_payload(root, "sed -i 's/a/b/' src/ui/main.py", "shell"))
+        checks.append(("guard-card blocks a shell edit with no card",
+                       code == 2 and "BLOCKED" in err))
+
+        code, _ = run("guard-card.py",
+                      bash_payload(root, "python -m pytest -q", "shell-read"))
+        checks.append(("guard-card allows a command that writes nothing", code == 0))
 
         code, err = run("guard-shell.py", bash_payload(root, "cat <<'EOF'\nhello\nEOF"))
         checks.append(("guard-shell blocks a heredoc", code == 2 and "heredoc" in err))

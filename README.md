@@ -191,11 +191,17 @@ prints the reason - none of them fail silently.
 | Hook | Fires on | Blocks |
 | --- | --- | --- |
 | `guard-git` | `Bash` | `git checkout -- <path>`, `git checkout .`, `git restore` without `--staged`, destructive `git stash`, `git reset --hard`, `git clean -f/-d/-x`. `checkout -b`, branch switches, `restore --staged` and read-only `stash` subcommands pass. |
-| `guard-card` | `Edit`, `Write` | Editing code with no card in `doing`, and creating a second card in one session. The block message carries the card contract inline and names the file, so ownership is seeded from the real first touch. An approved second card passes on retry. |
-| `guard-claim` | `Edit`, `Write` | Writing a path another live session has claimed. Reads both `path` and `paths` claim shapes. |
+| `guard-card` | `Edit`, `Write`, `Bash` | Editing code with no card in `doing`, and creating a second card in one session. The block message carries the card contract inline and names the file, so ownership is seeded from the real first touch. An approved second card passes on retry. |
+| `guard-claim` | `Edit`, `Write`, `Bash` | Writing a path another live session has claimed. Reads both `path` and `paths` claim shapes. |
 | `guard-shell` | `Bash` | Heredocs and multi-line escaped strings. Use a script file or a single-quoted `python -c`. |
 | `session-start` | session start | Nothing - reports open claims, unresolved messages, active handoffs, and `doing` cards, so coordination no longer depends on typing a command. |
 | `precompact-handoff` | before compaction | Nothing - offers a handoff before context is auto-compacted. |
+
+`guard-card` and `guard-claim` watch `Bash` as well as the edit tools, because a
+guard that only watches `Edit` and `Write` is bypassed by `sed -i`, a `>`
+redirect, `tee`, `cp` or `mv` - and some harness modes tell the agent to prefer
+exactly those. They read the written path out of the command; a write hidden
+inside `python -c` or an interpreted script is still invisible to them.
 
 ## Dispatch
 

@@ -36,6 +36,16 @@
             "type": "command",
             "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-shell.py\"",
             "statusMessage": "Checking the shell command form..."
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-claim.py\"",
+            "statusMessage": "Checking file claims..."
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-card.py\"",
+            "statusMessage": "Checking the task card..."
           }
         ]
       },

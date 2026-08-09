@@ -6,6 +6,7 @@ bug, not enforcement.
 """
 import json
 import os
+import shlex
 import sys
 
 BOARD = ".agents/mpi-kanban/board.json"
@@ -38,17 +39,112 @@ def adopted(root):
     return os.path.exists(os.path.join(root, BOARD))
 
 
-def edited_path(data):
-    """The workspace-relative path an Edit/Write/NotebookEdit call targets."""
-    target = (data.get("tool_input") or {}).get("file_path")
-    if not target:
+SEPARATORS = {"&&", "||", ";", "|", "&", "\n"}
+# Commands whose file operands are written, not read.
+WRITERS = {"sed", "tee", "cp", "mv", "truncate", "install"}
+
+
+def _relative(target, root):
+    """`target` as a workspace-relative POSIX path, or None if it escapes root."""
+    if not target or target.startswith("/dev/"):
         return None
-    root = project_root(data)
+    if not os.path.isabs(target):
+        target = os.path.join(root, target)
     try:
         rel = os.path.relpath(target, root)
     except ValueError:  # different drive on Windows
-        return target.replace(os.sep, "/")
-    return rel.replace(os.sep, "/")
+        return None
+    rel = rel.replace(os.sep, "/")
+    return None if rel.startswith("../") or rel == ".." else rel
+
+
+def bash_targets(command):
+    """Raw paths a shell command writes to.
+
+    ponytail: pattern-matched, not parsed. It sees `>`/`>>` redirects, `sed -i`,
+    `tee`, `cp`, `mv`, `truncate` and `install`. It does NOT see a write hidden
+    inside `python -c`, an interpreter script, a Makefile or a `$(...)`
+    substitution -- those stay unguarded, and the answer there is to widen this
+    list, not to parse the shell. False negatives are the safe direction: a
+    missed write is the behaviour that shipped in 1.0.0, a false block is a new
+    way to stop the agent working.
+    """
+    found = []
+    for tokens in _segments(command):
+        i = 0
+        redirected = set()
+        while i < len(tokens):
+            if tokens[i] in (">", ">>") and i + 1 < len(tokens):
+                found.append(tokens[i + 1])
+                redirected.add(i + 1)
+                i += 2
+                continue
+            i += 1
+        verb = os.path.basename(tokens[0])
+        if verb not in WRITERS:
+            continue
+        operands = [t for n, t in enumerate(tokens)
+                    if n and n not in redirected and not t.startswith("-")
+                    and t not in (">", ">>")]
+        if verb == "sed":
+            if not any(t.startswith("-i") or t.startswith("--in-place") for t in tokens[1:]):
+                continue
+            operands = operands[1:]  # the first operand is the script
+        elif verb in ("cp", "mv", "install"):
+            operands = operands[-1:]  # only the destination is written
+        found.extend(operands)
+    return found
+
+
+def _segments(command):
+    """The command's tokens, split at `&&`, `||`, `;` and `|`.
+
+    `shlex` with `punctuation_chars` is what makes this safe: it keeps a quoted
+    `'s|a|b|'` or a `grep 'x >> y'` intact, which a regex split over the raw
+    string cannot, and it hands back `>` and `>>` as their own tokens.
+    """
+    lexer = shlex.shlex(command or "", posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        tokens = list(lexer)
+    except ValueError:  # an unbalanced quote: read nothing rather than guess
+        return []
+    segments, current = [], []
+    for token in tokens:
+        if token in SEPARATORS:
+            if current:
+                segments.append(current)
+            current = []
+        else:
+            current.append(token)
+    if current:
+        segments.append(current)
+    return segments
+
+
+def written_paths(data):
+    """Every workspace-relative path this tool call writes to.
+
+    Edit/Write/NotebookEdit name their target outright. A Bash call has to be
+    read out of the command, because the guards that matter -- the card and the
+    claim -- are worth nothing if `sed -i` walks around them.
+    """
+    root = project_root(data)
+    tool_input = data.get("tool_input") or {}
+    target = tool_input.get("file_path")
+    if target:
+        rel = _relative(target, root)
+        # An Edit tool call outside the project is still the agent's own edit;
+        # keep the old behaviour of reporting it rather than dropping it.
+        return [rel or target.replace(os.sep, "/")]
+    if data.get("tool_name") == "Bash" or "command" in tool_input:
+        seen = []
+        for raw in bash_targets(tool_input.get("command")):
+            rel = _relative(raw, root)
+            if rel and rel not in seen:
+                seen.append(rel)
+        return seen
+    return []
 
 
 def session_state(root, session_id):
@@ -105,6 +201,34 @@ def _selftest():
     assert claim_paths({"path": "a.py"}) == ["a.py"]
     assert claim_paths({"paths": ["a.py", "b/"]}) == ["a.py", "b/"]
     assert claim_paths({}) == []
+
+    root = os.path.join(os.sep, "repo")
+
+    def bash(command):
+        return written_paths({"cwd": root, "tool_name": "Bash",
+                              "tool_input": {"command": command}})
+
+    # the bypass this exists to close
+    assert bash("sed -i 's/a/b/' src/app.py") == ["src/app.py"]
+    assert bash("cd /repo && sed -i.bak 's|a|b|' a.py b.py") == ["a.py", "b.py"]
+    assert bash("sed -n '1,5p' src/app.py") == [], "a read is not a write"
+    assert bash("echo hi > notes.md") == ["notes.md"]
+    assert bash("echo hi >> notes.md") == ["notes.md"]
+    assert bash("echo hi > notes.md") == bash("echo hi >notes.md")
+    assert bash("cat x | tee out.txt") == ["out.txt"]
+    assert bash("cp src/a.py src/b.py") == ["src/b.py"], "only the destination"
+    assert bash("mv 'a b.py' 'c d.py'") == ["c d.py"], "quoted operands"
+    assert bash("git status --short") == []
+    assert bash("grep -n 'x >> y' src/app.py") == [], "a shift inside quotes"
+    assert bash("python scripts/x.py > /dev/null") == []
+    assert bash("python scripts/x.py 2>&1 | head") == []
+    assert bash("sed -i 's/a/b/' /elsewhere/app.py") == [], "outside the project"
+    assert bash("") == []
+
+    # Edit/Write keep naming their own target
+    assert written_paths({"cwd": root,
+                          "tool_input": {"file_path": os.path.join(root, "src", "a.py")}}) \
+        == ["src/a.py"]
     print("_mpi selftest OK")
 
 

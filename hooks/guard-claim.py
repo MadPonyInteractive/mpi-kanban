@@ -93,8 +93,8 @@ def main():
     root = _mpi.project_root(data)
     if not _mpi.adopted(root):
         sys.exit(0)
-    candidate = _mpi.edited_path(data)
-    if not candidate:
+    candidates = _mpi.written_paths(data)
+    if not candidates:
         sys.exit(0)
 
     index = _mpi.read_json(os.path.join(root, _mpi.STATE, "index.json")) or {}
@@ -107,10 +107,11 @@ def main():
         claims.append((rel, record, owner))
 
     now = datetime.datetime.now(datetime.timezone.utc)
-    hit = blocking_claim(candidate, claims, data.get("session_id"), timeout, now)
-    if hit:
-        record_path, owner = hit
-        _mpi.deny(BLOCK_MSG.format(path=candidate, record=record_path, owner=owner))
+    for candidate in candidates:
+        hit = blocking_claim(candidate, claims, data.get("session_id"), timeout, now)
+        if hit:
+            record_path, owner = hit
+            _mpi.deny(BLOCK_MSG.format(path=candidate, record=record_path, owner=owner))
     sys.exit(0)
 
 

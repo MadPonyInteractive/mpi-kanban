@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-09
+
+The first live install pass found that two of the three enforcement hooks were
+enforcing nothing against a shell write. This release closes that.
+
+### Fixed
+
+- `guard-card` and `guard-claim` now watch `Bash` as well as `Edit`, `Write` and
+  `NotebookEdit`. Registered against the edit tools alone they enforced nothing
+  against a shell write: with a live claim armed, `sed -i` rewrote the claimed
+  file with exit 0 one call after the same write through the Edit tool was
+  blocked. Harness modes that instruct the agent to prefer `sed`/redirects over
+  the edit tools made that bypass the default path, not a corner case. Found by
+  the first live install pass; `smoke_hooks.py` could not see it, because a
+  synthetic payload never shows which tool calls the harness routes to a hook.
+- Both guards now take a list of written paths rather than a single one.
+  `_mpi.written_paths()` reads `>`/`>>` redirects, `sed -i`, `tee`, `cp`, `mv`,
+  `truncate` and `install` out of a command with `shlex` in `punctuation_chars`
+  mode, so a quoted `grep 'x >> y'` is not mistaken for a redirect. A write
+  hidden inside `python -c` or an interpreted script is still not seen.
+
+### Removed
+
+- The root `docs/coordination/` copy, a stale fork of the shipped
+  `skills/mpi-lib/docs/coordination/`. Nothing referenced it; it is now in
+  `REMOVED_PATHS` so it cannot come back.
+
 ## [1.0.0] - 2026-08-09
 
 Mpi-Kanban is a Claude Code plugin. It ships hooks and agents, which a skills
@@ -606,7 +633,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.10.0...v1.0.0
 [0.10.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.5...v0.9.0

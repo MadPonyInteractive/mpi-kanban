@@ -85,6 +85,7 @@ REMOVED_PATHS = (
     "skills/mpi-lib/templates/interop.json",
     "skills/mpi-lib/kanban-ops",
     "skills/mpi-lib/templates/kanban.md",
+    "docs/coordination",
     "skills/mpi-init/templates/kanban.md",
     "docs/nimbalyst-interop.md",
 )

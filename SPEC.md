@@ -106,12 +106,19 @@ fails closed with a printed reason rather than silently.
   `git checkout .`, `git restore` without `--staged`, destructive `git stash`,
   `git reset --hard`, and `git clean -f/-d/-x`. Branch operations,
   `restore --staged`, and read-only `stash` subcommands pass.
-- `guard-card` (`PreToolUse`/Edit,Write) - refuse a code edit outside
+- `guard-card` (`PreToolUse`/Edit,Write,Bash) - refuse a code edit outside
   `.agents/` when no card is in `doing`, with the card contract inline and the
   file named so ownership seeds from the first real touch; and refuse a second
   card created in one session, which passes on retry once approved.
-- `guard-claim` (`PreToolUse`/Edit,Write) - refuse a write to a path claimed by
-  another live session. Reads both the `path` and `paths` claim shapes.
+- `guard-claim` (`PreToolUse`/Edit,Write,Bash) - refuse a write to a path claimed
+  by another live session. Reads both the `path` and `paths` claim shapes.
+- Both read the written path from a `Bash` command as well as from the edit
+  tools' `file_path`. A guard registered on the edit tools alone is bypassed by
+  `sed -i`, a `>` redirect, `tee`, `cp` or `mv`, and a harness mode that prefers
+  shell edits turns that bypass into the default path. Coverage is deliberately
+  pattern-matched rather than parsed: a write hidden inside `python -c` or an
+  interpreted script is not seen, and the fix for that is a wider command list,
+  not a shell parser.
 - `guard-shell` (`PreToolUse`/Bash) - refuse heredocs and multi-line escaped
   strings; require a script file or a single-quoted `python -c`.
 - `session-start` (`SessionStart`) - report open claims, unresolved messages,
