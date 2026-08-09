@@ -87,6 +87,16 @@ If SPEC and PLAN disagree, ask the user before choosing.
 - Every hook must exit 0 immediately when the project has no
   `.agents/mpi-kanban/board.json`, must fail closed with a reason rather than
   silently, and must get a case in `scripts/smoke_hooks.py`.
+- `guard-card` and `guard-claim` must stay registered against `Bash` as well as
+  `Edit|Write|NotebookEdit`. Registered on the edit tools alone they enforce
+  nothing: `sed -i`, a `>` redirect, `tee`, `cp` and `mv` walk straight past
+  them, and harness modes that tell an agent to prefer shell edits make that the
+  default path. This shipped that way in 1.0.0 and was fixed in 1.0.1. Note what
+  `scripts/smoke_hooks.py` can and cannot prove: it builds the hook payload
+  itself, so it proves a hook's LOGIC and can never prove its MATCHER - 21/21
+  was green throughout. Only a live session against the installed plugin proves
+  registration, and a session cannot prove its own change, because `hooks.json`
+  is read at session start exactly like `skills/`.
 - A skill that dispatches `agents/<name>.md` must ship it;
   `validate_plugin.py` checks this.
 - `isolation: "worktree"` is not the isolation mechanism for dispatch. A
