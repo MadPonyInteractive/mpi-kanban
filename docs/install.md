@@ -3,6 +3,9 @@
 Mpi-Kanban is a Claude Code plugin. Skills, enforcement hooks, and agents all
 ship from one manifest, so there is nothing to install per component.
 
+Installing registers twelve workflow skills, the `mpi-lib` support skill, six
+hooks, and two read-only agents.
+
 ## Remove the pre-1.0 skills pack first
 
 Releases before 1.0 installed as an all-or-nothing Agent Skills pack. Plugin
@@ -64,6 +67,28 @@ older than the version the project last recorded. That comparison is against
 the project, not the network, so it catches a downgrade or a second machine
 running an old install - not "a newer release exists upstream".
 
+## What the hooks do to your session
+
+The hooks register on install and start guarding immediately. In a project with
+no `.agents/mpi-kanban/board.json` every one of them exits without doing
+anything, so installing the plugin does not change how an un-adopted project
+behaves. In an adopted project, expect these blocks:
+
+- Destructive git - `git checkout -- <path>`, `git checkout .`, `git restore`
+  without `--staged`, destructive `git stash`, `git reset --hard`, and
+  `git clean -f/-d/-x` are refused. Branch operations are not.
+- No card - editing code outside `.agents/` with no card in `doing` is refused
+  once, and the message carries the card contract so the card can be created on
+  the spot.
+- A second card in one session - refused, so the finding is folded into the
+  active card or justified in one line. An approved second card passes on retry.
+- A claimed path - writing a file another live session has claimed is refused.
+- Heredocs and multi-line escaped shell strings - refused; use a script file or
+  a single-quoted `python -c`.
+
+Every block prints its reason. None of them fail silently. If a hook is in your
+way, the message names what to do instead.
+
 ## Board Validator
 
 To confirm a project's board is consistent after installing or after a session
@@ -87,7 +112,9 @@ Ask naturally, or use the namespaced skill name:
 what is MPI-5?
 set MPI-5 to validating
 continue this MPI plan
+run the ready cards
 read inbox
+MPI end session
 create an MPI handoff
 run MPI cleanup
 ```
@@ -150,22 +177,14 @@ If a very old plugin install is still registered:
 /plugin uninstall mpi-kanban@mad-pony-interactive --scope user
 ```
 
+If the project was already running the pre-1.0 pack, it almost certainly grew
+local scaffolding to work around gaps 1.0 closes - a close-out wrapper skill, a
+copy of the destructive-git hook, rules restating contracts that are now
+enforced. [migrating-to-1.0.md](migrating-to-1.0.md) is the checklist, and
+`mpi-project-refresh` audits all of it under its **1.0 migration** category.
+
 After installing in a project, run `mpi-init`. It is the single onboarding
 entrypoint: it creates or migrates the JSON board, writes the project profile
 and knowledge index, records project mode, and can import a freeform backlog.
 Use `mpi-project-refresh` later for maintenance, drift updates, and project
 mode changes.
-
-## Nimbalyst Interop
-
-Nimbalyst interop uses `.agents/mpi-kanban/state/interop.json` to decide which
-system is canonical:
-
-- `file` mode: MPI updates `.agents/mpi-kanban/board.json`, task folders, and
-  passive event logs.
-- `nimbalyst` mode: Nimbalyst trackers/sessions are canonical and MPI board
-  updates happen only through explicit `mpi-nimbalyst-sync` import/export
-  snapshots.
-
-Use `mpi-nimbalyst-sync detect` before switching modes. The skill prompts before
-changing source of truth.

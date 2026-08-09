@@ -7,27 +7,143 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-09
+
+Mpi-Kanban is a Claude Code plugin. It ships hooks and agents, which a skills
+pack could not, and it enforces the rules it used to merely state.
+
+**Upgrading is not automatic.** Remove the 15 pre-1.0 skill folders before
+installing, or every request matches two skills and one of them runs the old
+contract. `docs/install.md` leads with the removal commands, and
+`docs/migrating-to-1.0.md` covers the local scaffolding a repo should now drop.
+
 ### Added
 
-- Stale-install detection. The pack ships one version stamp,
-  `metadata.version` in `skills/mpi-lib/SKILL.md`, and a project records the
-  version it was last refreshed with as `pack_version` in
-  `.agents/mpi-kanban/project-profile.md`. `mpi-init` writes it and
-  `mpi-project-refresh` compares the two, reporting the installed version in
-  every report and raising a stale-install finding above all others when the
-  install is older than the recorded version. Detects a downgrade or a second
-  machine running an old install; detecting a newer upstream release would
-  need a network call the pack does not make. The pack never reinstalls
-  itself. `README.md` and `docs/install.md` document how to read the installed
-  version.
+- **Six enforcement hooks**, registered on install. `guard-git` refuses
+  destructive git (`checkout -- <path>`, `checkout .`, `restore` without
+  `--staged`, destructive `stash`, `reset --hard`, `clean -f/-d/-x`) while
+  letting branch operations through. `guard-card` refuses a code edit when no
+  card is in `doing`, with the card contract inline and the edited file named
+  so ownership seeds from the first real touch, and refuses a second card in
+  one session so the finding folds into the active card. `guard-claim` refuses
+  a write to a path another live session claimed. `guard-shell` refuses
+  heredocs and multi-line escaped strings. `session-start` reports open claims,
+  unresolved messages, active handoffs, and `doing` cards. `precompact-handoff`
+  offers a handoff before auto-compaction. Every hook is inert in a project
+  with no board, and every block prints its reason.
+- **Two read-only agents.** `dispatcher` plans the parallel split; being
+  read-only it cannot clobber a worker. `claim-auditor` runs at close-out and
+  classifies every factual assertion in the changelog, release notes, and cards
+  closed this cycle as PROVEN, UNPROVEN, FALSE, or OVERSTATED, with the commit
+  and source line that proves it, worst first, capped at 40 lines.
+- **Dispatch without being asked.** `mpi-continue` evaluates every start: when
+  ready work splits into two or more disjoint, independently verifiable file
+  sets, it dispatches up to four workers and announces the split instead of
+  waiting to be asked. It greps the real file footprint rather than trusting
+  `files.json`, and reports every card it excluded with the reason.
+- **Ownership written at `todo -> doing`**, where it is knowable, rather than
+  at card creation, where it was a guess. Board dispatch had never fired
+  because no card declared ownership.
+- **Umbrella cards are reachable.** `mpi-continue` recognises a large-plan card
+  carrying `## Parallel Batch` sections and dispatches its batch. A
+  consolidation sweep at close-out and in `mpi-project-refresh` clusters `todo`
+  cards by shared file footprint and proposes umbrellas. No new card field: a
+  `parent` key would break the VS Code board.
+- **`push_policy`** in the project profile - `auto`, `ask`, or `never` - asked
+  once by `mpi-init`. Close-out pushes accordingly, retrying a rejected push
+  once with `fetch` + `merge --ff-only`, and never rebasing a shared tree.
+- **`.agents/mpi-kanban/close-out.md`**, a project extension point close-out
+  runs at a defined slot, so a repo keeps its own release or propagation steps
+  without forking the pack skill.
+- **A shipped behaviour-rules template** covering claims discipline, shell
+  style, changelog restraint, multi-agent isolation, and reporting style;
+  `mpi-init` writes it and `mpi-project-refresh` keeps it current.
+- **Worker archetype stubs** scaffolded from the bundles a project already
+  declares in `.agents/mpi-kanban.local.md`.
+- **Stale-install detection.** The project records `pack_version` in its
+  profile; `mpi-project-refresh` compares it against the installed plugin
+  version, reports the installed version every run, and raises a stale-install
+  finding above all others. It detects a downgrade or a second machine on an
+  old install. It cannot detect a newer upstream release - that needs a network
+  call the plugin deliberately does not make - and it never reinstalls itself.
+- **`docs/migrating-to-1.0.md`** plus a matching `1.0 migration` drift category
+  in `mpi-project-refresh`, so a repo is audited by the skill it already runs.
+  Every finding is proposed with its diff, one at a time. Refresh never edits
+  the plugin.
+
+### Changed
+
+- **Distribution is the Claude Code plugin marketplace.** Install with
+  `/plugin marketplace add MadPonyInteractive/mpi-kanban` then
+  `/plugin install mpi-kanban@mad-pony-interactive`. Skills, hooks, and agents
+  ship from one manifest.
+- **Shared references resolve through `${CLAUDE_PLUGIN_ROOT}`.** The four-path
+  discovery probe is gone from every skill, and with it the symlink class of
+  bug it caused.
+- **Close-out is one skill with two exits.** `mpi-handoff` merged into
+  `mpi-end-session`: **resume** writes the handoff JSON, **done** closes the
+  card. Both commit, heal project knowledge, run the claim auditor, and resolve
+  every card parked in `validating` - evidence closes a card, and genuine human
+  judgement is asked for in the same session rather than deferred.
+- **Close-out reports are capped at four bullets**: CHANGED, VERIFIED with the
+  command that proved it, STILL OPEN, NEXT AGENT NEEDS.
+- **Close-out skips the coordination step-0 reads** when the state index shows
+  no active sessions, tasks, claims, pending states, or messages, and says so
+  in one line.
+- **The version stamp moved to `version` in `.claude-plugin/plugin.json`.** It
+  is the field Claude Code uses as the plugin update cache key. Still exactly
+  one stamp; `validate_pack_version()` binds it to the latest released
+  changelog heading.
+- Three rules that guaranteed zero dispatch were softened: ownership may be
+  inferred by grep as long as the inference is reported, provably disjoint
+  footprints may be parallelised whatever produced the plan, and evidence may
+  close a card. Workers still never commit or push, `mpi-init` still never
+  overwrites project knowledge without approval, and the dispatcher stays
+  read-only.
+
+### Removed
+
+- The `npx skills` / skills.sh install channel, and `skills.sh.json`.
+- `mpi-nimbalyst-sync`, `state/interop.json` handling, and every
+  source-of-truth mode gate. `mpi-project-refresh` offers to delete an orphaned
+  `interop.json`.
+- Markdown board *operation*. `skills/mpi-lib/kanban-ops/` and the board
+  templates are gone, along with the legacy fallbacks in `mpi-continue`,
+  `mpi-archive`, `mpi-cleanup`, and close-out. Adoption still migrates a legacy
+  `kanban.md` into JSON through `task-board-ops/migrate.md`.
+- Codex and Kilo residue: manifests, marketplace bundles, the generated skill
+  tree, and the three-runtime acceptance criterion.
+- `kanban_entry` from newly written handoff and coordination records. Nothing
+  read it. Existing records keep the field.
+
+Skill count is 12 workflow skills plus `mpi-lib`.
 
 ### Fixed
 
+- **The `next_id` race that silently overwrote cards.** Two agents creating a
+  card at once could both take the same ID, and the writer opened the file in
+  write mode, so the loser's card vanished without an error - three overwrites
+  in 90 minutes in one repo. `createTask` now claims the ID with
+  `os.mkdir(tasks/<id>)` as an exclusive lock, creates `task.json` with
+  exclusive-create mode, and retries at the next free ID, up to ten times. The
+  cap is ten rather than five because every loser retries at the same ID, so a
+  herd of N creators clears one ID per round; at five, an eight-way race
+  starved a claimant. `validate_board.py` also asserts `next_id` exceeds every
+  card id on the board.
 - The version stamp had sat at `0.8.4` through the 0.9.0 and 0.10.0 releases
   because nothing checked it - the exact silent staleness it exists to detect.
-  `validate_pack_version()` in `scripts/validate_plugin.py` now fails the
-  release when the stamp does not match the latest released changelog heading,
-  and `/release` bumps it after promoting the changelog.
+  `validate_pack_version()` now fails the release when the stamp does not match
+  the latest released changelog heading, and `/release` bumps it after
+  promoting the changelog.
+
+### Known limitation
+
+File claims are enforced locally. Within one session and the workers it
+dispatches, `guard-claim` is a real lock on every edit. Across two
+independently launched Claude Code windows it stays advisory: there is no
+native cross-session file lock on any platform, so both windows see the claim
+and neither can stop the other's process. Prefer one session dispatching
+workers over several windows on one repo.
 
 ## [0.10.0] - 2026-08-08
 
@@ -490,7 +606,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.10.0...v1.0.0
 [0.10.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.5...v0.9.0
 [0.8.5]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.8.4...v0.8.5

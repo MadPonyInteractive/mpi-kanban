@@ -144,6 +144,40 @@ Report findings in these categories:
   pre-1.0 contract. Report it above every other finding with the removal
   commands from `docs/install.md`. Any other `mpi-*` skill is a project-scope
   skill the user owns; never propose deleting those.
+- **1.0 migration:** local scaffolding a project wrote to compensate for gaps
+  the plugin now closes. Left in place it duplicates or fights the plugin. The
+  full checklist with the reasoning is
+  `${CLAUDE_PLUGIN_ROOT}/docs/migrating-to-1.0.md`; detect and propose, one
+  finding at a time, with its diff:
+  - A project close-out wrapper skill (commonly `.claude/skills/mpi-end/`).
+    Split it: the scope gate and the knowledge-healing pass now ship in
+    `mpi-end-session`, so delete those steps; the project-specific half moves
+    to `.agents/mpi-kanban/close-out.md`, which close-out runs at a defined
+    slot. Delete the wrapper once it is empty.
+  - A project copy of a hook the plugin now ships - most often
+    `.claude/hooks/guard-destructive-git.py` - together with its
+    `settings.json` registration. Both must go, or the guard fires twice.
+    Project-specific hooks with triggers the plugin does not have are **kept**.
+  - Rules or boot docs restating a contract a hook now enforces: a sub-agent
+    dispatch protocol, a file-claim protocol, a `next_id` derivation rule, a
+    board-write pre-authorization, a destructive-git ban. Propose removal per
+    section and name the hook that replaces it. These cost context in every
+    session, so they are the highest-value deletions in this category.
+  - Any warning that a skill must not live in `~/.claude/skills/` because it
+    would collide with the pack. Obsolete: plugin skills are namespaced.
+  - References to `~/.claude/skills/mpi-*`, `~/.agents/skills/mpi-*`, the
+    old cached mpi-lib root placeholder, the four-path discovery probe, the
+    symlink trap, or an `npx skills` install command. All are now
+    `${CLAUDE_PLUGIN_ROOT}` and the plugin install. The migration doc lists the
+    exact strings to grep for.
+  - Local workarounds for a pack bug fixed in 1.0, such as a hand-rolled
+    `python -c "import uuid"` line standing in for the shipped
+    `new_uuid.py`, or a project card tracking "delete the workaround half
+    once the pack ships it".
+
+  Propose; never sweep. This is deletion inside a repo holding live work and
+  possibly concurrent sessions, so nothing is removed without the user seeing
+  what replaces it. Never edit the plugin itself from here.
 - **Pack install:** compare the installed plugin `version` against
   `pack_version` in the profile frontmatter. Compare the numbers component by
   component, never as strings: `0.9.0` is older than `0.10.0` but sorts after

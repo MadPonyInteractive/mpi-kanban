@@ -21,17 +21,28 @@ Read these files only as needed:
 - `PLAN.md` before continuing implementation work.
 - `README.md` and `docs/install.md` before changing user-facing install docs.
 - `skills/mpi-lib/` before changing shared references.
-- `docs/plans/2026-05-23-cross-agent-skills-distribution-phase-7.md` for the
-  npx-only packaging refactor.
+- `docs/migrating-to-1.0.md` before advising a project still running the
+  pre-1.0 skills pack.
 - `docs/plans/2026-05-31-skill-onboarding-simplification.md` before changing
   project lifecycle commands or skill surface.
+- `docs/plans/2026-05-23-cross-agent-skills-distribution-phase-7.md` is history
+  only. It describes the npx-only packaging refactor that v1.0 reversed.
 
 If `SPEC.md` and `PLAN.md` disagree, ask the user before choosing an
 interpretation.
 
-## Skill Layout
+## Plugin Layout
 
-- Workflow skills live under `skills/mpi-*/SKILL.md`.
+- Workflow skills live under `skills/mpi-*/SKILL.md`. There are twelve, plus
+  the `mpi-lib` support skill.
+- Enforcement hooks live under `hooks/`, registered by `hooks/hooks.json`.
+  Every hook must exit 0 when the project has no board, and every hook has a
+  case in `scripts/smoke_hooks.py`.
+- Read-only agents live under `agents/`. A skill that dispatches one must ship
+  it; `scripts/validate_plugin.py` checks that.
+- The marketplace entry uses `source: "./"`, so the whole repository becomes
+  `${CLAUDE_PLUGIN_ROOT}`. `scripts/` is maintainer tooling; no shipped skill
+  invokes it. Runtime scripts live in `skills/mpi-lib/scripts/`.
 - `skills/mpi-lib/` is a support skill containing shared reference docs and
   board/task templates.
 - Shared templates live in `skills/mpi-lib/templates/`.
@@ -86,7 +97,7 @@ deep-loading rules, docs, or memory. Mode contracts and update rules live under
 
 ## Read-Only Boundary
 
-For normal Codex work outside this repository, treat this plugin directory as
+For normal work outside this repository, treat this plugin directory as
 read-only reference material. Edit this repository only when the user asks to
 modify Mpi-Kanban itself.
 

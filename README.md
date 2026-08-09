@@ -9,11 +9,11 @@ plan, continue, parallel execution, handoff, end session, cleanup) so a single
 session or a whole team of agents can pick up work, coordinate file ownership,
 and ship together.
 
-Skills: `mpi-init`, `mpi-project-refresh`, `mpi-brainstorm`,
+Twelve workflow skills: `mpi-init`, `mpi-project-refresh`, `mpi-brainstorm`,
 `mpi-create-plan`, `mpi-create-large-plan`, `mpi-continue`,
-`mpi-execute-parallel`, `mpi-message`, `mpi-nimbalyst-sync`,
-`mpi-handoff`, `mpi-end-session`, `mpi-cleanup`, `mpi-archive`,
-`mpi-brief-rule`, and the support skill `mpi-lib`.
+`mpi-execute-parallel`, `mpi-message`, `mpi-end-session`, `mpi-cleanup`,
+`mpi-archive`, `mpi-brief-rule` - plus the support skill `mpi-lib`, six
+enforcement hooks, and two read-only agents.
 
 ## Install
 
@@ -50,11 +50,12 @@ set MPI-5 to validating
 create a plan
 create a large plan
 continue this MPI plan
+run the ready cards
 read inbox
 tell another agent
 refresh MPI
-create an MPI handoff
 MPI end session
+create an MPI handoff
 run MPI cleanup
 ```
 
@@ -158,7 +159,7 @@ this check automatically before committing.
 The normal loop is:
 
 ```text
-brainstorm -> create-plan/create-large-plan -> continue -> handoff/continue -> end-session -> cleanup
+brainstorm -> create-plan/create-large-plan -> continue -> end-session -> cleanup
 ```
 
 - `mpi-brainstorm` explores an idea and can capture it as a `todo` task.
@@ -167,18 +168,51 @@ brainstorm -> create-plan/create-large-plan -> continue -> handoff/continue -> e
   batches when work can be split safely.
 - `mpi-continue` resumes from the current task ID, plan, handoff, board state,
   and repo state; it claims files before editing.
-- `mpi-execute-parallel` executes explicit safe parallel batches.
-- `mpi-nimbalyst-sync` coordinates source-of-truth mode, detection, dry-run
-  import/export boundaries, and tracker mappings for Nimbalyst interop.
-- `mpi-handoff` writes canonical handoff JSON under
-  `.agents/mpi-kanban/state/handoffs/`.
-- `mpi-end-session` preserves knowledge, commits when appropriate, and moves
-  implemented work into validation or closes explicitly validated work.
+- `mpi-execute-parallel` executes parallel batches and dispatches the ready
+  cards on the board.
+- `mpi-end-session` is close-out, with two exits. **Resume** writes a handoff
+  JSON under `.agents/mpi-kanban/state/handoffs/` for a fresh session;
+  **done** closes the task card. Both exits preserve knowledge, commit, and
+  resolve every card parked in `validating`. There is no separate
+  `mpi-handoff` skill - ask for a handoff and close-out takes the resume exit.
 - `mpi-cleanup` proposes conservative cleanup for old workflow artifacts.
 
 Board lifecycle is `To do -> Doing -> Done`. Planning, checklists, validation,
 attention, and handoffs live in the task workspace instead of being embedded in
 card bodies.
+
+## Enforcement
+
+Six hooks ship with the plugin and register themselves on install. They replace
+rules that used to be prose, and prose rules were fired through. Every hook is a
+no-op in a project with no `.agents/mpi-kanban/board.json`, and every block
+prints the reason - none of them fail silently.
+
+| Hook | Fires on | Blocks |
+| --- | --- | --- |
+| `guard-git` | `Bash` | `git checkout -- <path>`, `git checkout .`, `git restore` without `--staged`, destructive `git stash`, `git reset --hard`, `git clean -f/-d/-x`. `checkout -b`, branch switches, `restore --staged` and read-only `stash` subcommands pass. |
+| `guard-card` | `Edit`, `Write` | Editing code with no card in `doing`, and creating a second card in one session. The block message carries the card contract inline and names the file, so ownership is seeded from the real first touch. An approved second card passes on retry. |
+| `guard-claim` | `Edit`, `Write` | Writing a path another live session has claimed. Reads both `path` and `paths` claim shapes. |
+| `guard-shell` | `Bash` | Heredocs and multi-line escaped strings. Use a script file or a single-quoted `python -c`. |
+| `session-start` | session start | Nothing - reports open claims, unresolved messages, active handoffs, and `doing` cards, so coordination no longer depends on typing a command. |
+| `precompact-handoff` | before compaction | Nothing - offers a handoff before context is auto-compacted. |
+
+## Dispatch
+
+`mpi-continue` evaluates dispatch on every start. When the ready work splits
+into two or more disjoint file sets that are each independently verifiable, it
+dispatches workers and announces the split rather than asking first. It greps
+the real file footprint instead of trusting `files.json`, builds a conflict
+graph, dispatches at most four workers, and reports every card it excluded with
+the reason. Ownership is written at `todo -> doing`, where it is knowable.
+
+Two read-only agents ship with the plugin:
+
+- `dispatcher` - plans the split. Read-only, so it cannot clobber a worker.
+- `claim-auditor` - runs at close-out. Extracts every factual assertion from the
+  changelog, release notes, and cards closed this cycle, finds the commit and
+  source line proving each, and classifies them PROVEN / UNPROVEN / FALSE /
+  OVERSTATED, worst first, capped at 40 lines.
 
 ## Project Knowledge
 
@@ -221,19 +255,19 @@ resolved folder root, and path relative to that folder. Shared reference details
 for `.code-workspace` discovery live in
 `skills/mpi-lib/workspace-ops/discovery.md`.
 
-For Nimbalyst interop, source-of-truth mode lives in
-`.agents/mpi-kanban/state/interop.json`. Default `file` mode keeps normal MPI
-JSON board updates. In `nimbalyst` mode, Nimbalyst trackers/sessions are
-canonical and MPI board snapshots happen only at explicit sync boundaries.
+### What claims can and cannot lock
 
-Expected behavior by environment:
+File claims are enforced locally: the `guard-claim` hook blocks a write to a
+path another live session has claimed, on every edit, whether or not a skill
+was invoked. Within one Claude Code session and the workers it dispatches,
+that is a real lock.
 
-- VS Code and generic agents: stay in `file` mode; MPI updates
-  `.agents/mpi-kanban/board.json`, task folders, and event logs, and the
-  extension renders them.
-- Nimbalyst: switch to `nimbalyst` mode only after explicit approval; update
-  Nimbalyst trackers/sessions during normal work, and use `mpi-nimbalyst-sync`
-  for import/export snapshots.
+Across two independently launched Claude Code windows it is advisory. Nothing
+can make it otherwise - there is no native cross-session file lock on any
+platform, and cross-session messaging is not available everywhere. Two windows
+share the same `state/` directory and will both see a claim, but neither can
+stop the other's process. Prefer one session dispatching workers over N
+windows editing the same repo.
 
 ## Per-Project Config
 
@@ -247,8 +281,15 @@ Releases 0.7 through 0.10 installed as an all-or-nothing Agent Skills pack.
 Remove those 15 skill folders before installing the plugin - see
 [docs/install.md](docs/install.md), which leads with the removal.
 
-**Removed skills.** The separate `mpi-project-setup` and `mpi-project-mode`
-skills no longer exist. Use `mpi-init` for onboarding/adoption and
+A repo that ran the pre-1.0 pack also carries local scaffolding for gaps 1.0
+closes - a close-out wrapper skill, a copy of the destructive-git hook, rules
+restating contracts hooks now enforce. See
+[docs/migrating-to-1.0.md](docs/migrating-to-1.0.md), or run
+`mpi-project-refresh` and let it propose each removal with its diff.
+
+**Removed skills.** `mpi-handoff` merged into `mpi-end-session`, whose
+**resume** exit writes the handoff. `mpi-nimbalyst-sync` is gone. The separate
+`mpi-project-setup` and `mpi-project-mode` skills no longer exist. Use `mpi-init` for onboarding/adoption and
 `mpi-project-refresh` for maintenance and mode changes. Update any saved
 commands or scripts that referenced the old skill names.
 

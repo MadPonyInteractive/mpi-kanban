@@ -1,5 +1,10 @@
 # Mpi-Kanban Implementation Plan
 
+Phases are listed oldest first and are kept as a record of what shipped. Every
+phase below the v1.0 section is **history**: the Codex, Kilo, and npx/skills.sh
+phases describe packaging that v1.0 reversed. Read them for why a decision was
+made, never as current guidance. Current guidance is `SPEC.md` and `CLAUDE.md`.
+
 ## Shared coordination Phase 1
 
 - [x] Add shared coordination reference docs for `.agents/mpi-kanban/state/`.
@@ -188,3 +193,37 @@ Plan file: `docs/plans/2026-05-31-skill-onboarding-simplification.md`.
 - [x] Run changelog extraction.
 - [x] Run local `npx skills add . --all -y -g` and `npx skills add . -l`
   smoke tests.
+
+## v1.0 plugin rebuild, enforcement, and autonomous dispatch
+
+Card `MPI-28`. Plan file: `.agents/mpi-kanban/tasks/MPI-28/plan.md` (local).
+Reverses the npx-only decision of Phase 7: a skills pack cannot ship hooks or
+agents, and every other item in this release depends on shipping them.
+
+- [x] Phase 0 - rebuild as a Claude Code plugin. `.claude-plugin/plugin.json`
+  plus the marketplace entry, `${CLAUDE_PLUGIN_ROOT}` in place of the
+  `mpi-lib` discovery probe, `skills.sh.json` and the npx path dropped,
+  validator and release workflow reworked, legacy-install preflight in
+  `mpi-init` and `mpi-project-refresh`.
+- [x] Phase 1 - six enforcement hooks: `guard-git`, `guard-card`,
+  `guard-claim`, `guard-shell`, `session-start`, `precompact-handoff`.
+- [x] Phase 2 - close-out merged into one skill with two exits, resume or done.
+  Scope gate, `push_policy`, four-bullet report cap, knowledge-healing pass,
+  the `validating` sweep, `.agents/mpi-kanban/close-out.md` extension point.
+- [x] Phase 3 - autonomous dispatch. Ownership written at `todo -> doing`, a
+  read-only dispatcher firing from `mpi-continue` without being asked, max four
+  workers, every exclusion reported.
+- [x] Phase 4 - umbrellas reachable from `mpi-continue`, plus a consolidation
+  sweep that proposes them from clustered `todo` cards.
+- [x] Phase 5 - `agents/claim-auditor.md` and `agents/dispatcher.md`, worker
+  archetype templates, and the shipped behaviour-rules template.
+- [x] Phase 6 - the `next_id` race. `os.mkdir` claim plus mode `'x'` plus a
+  10-attempt retry in `createTask`.
+- [x] Phase 7 - Nimbalyst, the legacy Markdown board operations, and the
+  Codex/Kilo residue removed. Skill count 14 -> 12 plus `mpi-lib`.
+- [x] Phase 8 - docs and release: SPEC, README, install, CLAUDE.md, PLAN,
+  CHANGELOG, AGENTS rewritten for the plugin surface; stamp `1.0.0`.
+- [x] Phase 9 - `docs/migrating-to-1.0.md` and the `1.0 migration` drift
+  category in `mpi-project-refresh`.
+- [ ] Remove the 15 pre-1.0 pack skills from the maintainer's machine. Last
+  step of the rollout, deliberately after the release.

@@ -1,5 +1,9 @@
 # Shared Agent Coordination Contract
 
+> **This copy is repository documentation.** The version agents actually read
+> ships at `skills/mpi-lib/docs/coordination/`, and that copy is authoritative.
+> Change both, or change the shipped one only.
+
 This document defines the shared coordination contract for agents.
 Phase 2 adds shared lifecycle procedures for sessions, tasks, file claims,
 handoffs, stale claims, and cleanup behavior.
@@ -49,5 +53,6 @@ Reference docs:
 
 Lifecycle references:
 
-- [../../lib/coordination-ops/statuses.md](../../lib/coordination-ops/statuses.md) - shared status vocabulary.
-- [../../lib/coordination-ops/lifecycle.md](../../lib/coordination-ops/lifecycle.md) - session, task, file-claim, handoff, and close operations.
+- [../../skills/mpi-lib/coordination-ops/statuses.md](../../skills/mpi-lib/coordination-ops/statuses.md) - shared status vocabulary.
+- [../../skills/mpi-lib/coordination-ops/lifecycle.md](../../skills/mpi-lib/coordination-ops/lifecycle.md) - session, task, file-claim, handoff, and close operations.
+- [../../skills/mpi-lib/coordination-ops/messages.md](../../skills/mpi-lib/coordination-ops/messages.md) - async message send, inbox, acknowledgement, reply, resolve, and peer-route operations.

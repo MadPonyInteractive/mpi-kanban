@@ -33,18 +33,37 @@ per folder.
 
 ## 2. Distribution
 
-The only supported install and update channel is skills.sh / `npx skills`:
+The only supported install and update channel is the Claude Code plugin
+marketplace:
 
 ```text
-npx skills add MadPonyInteractive/mpi-kanban --all -y -g
+/plugin marketplace add MadPonyInteractive/mpi-kanban
+/plugin install mpi-kanban@mad-pony-interactive
+/plugin update mpi-kanban@mad-pony-interactive
 ```
 
-The `--all` flag is required. Partial installs are unsupported because the
-workflow skills depend on the sibling support skill `mpi-lib`.
+Skills, hooks, and agents ship from one manifest at
+`.claude-plugin/plugin.json`, published through
+`.claude-plugin/marketplace.json` with source `./`. The install is
+all-or-nothing: the workflow skills depend on the support skill `mpi-lib`, and
+partial installs are unsupported.
 
-Claude Code plugin packaging, Codex plugin packaging, Codex marketplace bundles,
-Kilo-specific generated skills, and live-copy plugin cache bridges are removed.
-Old users must reinstall through the npx command above.
+The marketplace entry uses `source: "./"`, so the whole repository becomes
+`${CLAUDE_PLUGIN_ROOT}`. `scripts/` is maintainer tooling and no shipped skill
+may invoke it; a script a skill runs at runtime lives in
+`skills/mpi-lib/scripts/`.
+
+The plugin ships exactly one version stamp: the `version` field in
+`.claude-plugin/plugin.json`. Claude Code uses it as the plugin update cache
+key. `validate_pack_version()` fails a release whose stamp does not match the
+latest released `## [x.y.z]` heading in `CHANGELOG.md`.
+
+The pre-1.0 skills.sh / `npx skills` channel is retired, along with Codex
+plugin packaging, Codex marketplace bundles, Kilo-specific generated skills,
+and live-copy plugin cache bridges. A user on the pre-1.0 pack must remove its
+15 skill folders before installing the plugin; both copies otherwise match the
+same trigger phrases and one of them carries the pre-1.0 contract. See
+`docs/migrating-to-1.0.md`.
 
 ## 3. Skill Set
 
@@ -60,43 +79,76 @@ Old users must reinstall through the npx command above.
   current repo state; show one task card; or perform a bounded direct
   task-card state update such as moving one `MPI-*` card to `doing`,
   `validating`, or `done`.
-- `mpi-execute-parallel` - execute explicit safe `## Parallel Batch` sections.
+- `mpi-execute-parallel` - execute explicit safe `## Parallel Batch` sections,
+  and dispatch the ready cards on the board.
 - `mpi-message` - send, read, acknowledge, reply to, resolve, and explicitly
   route same-filesystem async coordination messages.
-- `mpi-nimbalyst-sync` - coordinate Nimbalyst detection, source-of-truth mode,
-  dry-run import/export boundaries, and tracker mappings.
-- `mpi-handoff` - preserve current state in canonical JSON.
-- `mpi-end-session` - sync docs/rules/memory, commit when appropriate, and
-  close the active task when complete.
+- `mpi-end-session` - close out through one of two exits. Both sync
+  docs/rules/memory, commit and push per `push_policy`, run the claim auditor,
+  and resolve every card parked in `validating`. The **resume** exit writes a
+  handoff JSON for a fresh session; the **done** exit closes the task card.
 - `mpi-cleanup` - propose conservative cleanup for stale workflow artifacts.
-- `mpi-archive` - archive completed board tasks and legacy kanban entries.
+- `mpi-archive` - archive completed board tasks.
 - `mpi-brief-rule` - return configured rule briefings or rule bundles.
 - `mpi-lib` - shared reference library support skill; not a user workflow.
 
-`mpi-write-plan` and `mpi-execute-next` are removed.
+Twelve workflow skills plus `mpi-lib`. `mpi-write-plan` and `mpi-execute-next`
+were removed before 1.0. `mpi-handoff` merged into `mpi-end-session` in 1.0;
+`mpi-nimbalyst-sync` and `mpi-project-setup`/`mpi-project-mode` are removed.
+
+### 3a. Hooks
+
+Six hooks ship in `hooks/`, registered by `hooks/hooks.json`. Each one exits 0
+immediately when the project has no `.agents/mpi-kanban/board.json`, and each
+fails closed with a printed reason rather than silently.
+
+- `guard-git` (`PreToolUse`/Bash) - refuse `git checkout -- <path>`,
+  `git checkout .`, `git restore` without `--staged`, destructive `git stash`,
+  `git reset --hard`, and `git clean -f/-d/-x`. Branch operations,
+  `restore --staged`, and read-only `stash` subcommands pass.
+- `guard-card` (`PreToolUse`/Edit,Write) - refuse a code edit outside
+  `.agents/` when no card is in `doing`, with the card contract inline and the
+  file named so ownership seeds from the first real touch; and refuse a second
+  card created in one session, which passes on retry once approved.
+- `guard-claim` (`PreToolUse`/Edit,Write) - refuse a write to a path claimed by
+  another live session. Reads both the `path` and `paths` claim shapes.
+- `guard-shell` (`PreToolUse`/Bash) - refuse heredocs and multi-line escaped
+  strings; require a script file or a single-quoted `python -c`.
+- `session-start` (`SessionStart`) - report open claims, unresolved messages,
+  active handoffs, and `doing` cards.
+- `precompact-handoff` (`PreCompact`) - offer a handoff before auto-compaction.
+
+Every hook has a case in `scripts/smoke_hooks.py`, which runs each one as a
+real subprocess.
+
+### 3b. Agents
+
+Two read-only agents ship in `agents/`. A skill that dispatches an agent must
+ship it; `validate_plugin.py` enforces that.
+
+- `dispatcher` - plans the parallel split. Read-only, so it cannot clobber a
+  worker.
+- `claim-auditor` - runs at close-out. Classifies each factual assertion in the
+  changelog, release notes, and cards closed this cycle as PROVEN, UNPROVEN,
+  FALSE, or OVERSTATED, with the commit and source line that proves it, worst
+  first, capped at 40 lines.
 
 ## 4. Shared Reference Model
 
 Shared reference docs live under `skills/mpi-lib/`.
 
-Consuming skills locate `mpi-lib` at first use by checking:
+Consuming skills reference a shared file as
+`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/<sub/path>.md`. The placeholder is
+substituted anywhere it appears in skill and agent content, including inside
+hook `command` strings, so there is no discovery probe and no cached root.
 
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
+A project-relative path such as `scripts/foo.py` resolves against the
+*consuming project*, not the plugin, and is always a bug.
+`validate_lib_references()` fails the run when a skill points at an `mpi-lib`
+file that does not exist.
 
-After resolving the first existing path, the agent caches it as
-`<mpi-lib-root>` for the session and reads individual files on demand.
-
-If no candidate exists, the skill must stop and tell the user to reinstall:
-
-```text
-npx skills add MadPonyInteractive/mpi-kanban --all -y -g
-```
-
-Workflow skills must not rely on `${CLAUDE_PLUGIN_ROOT}`, Claude `!` injection,
-Codex plugin roots, or any runtime-specific plugin packaging feature.
+If a workflow skill cannot find `mpi-lib`, the install is broken; the skill
+must say so and tell the user to reinstall the plugin.
 
 ## 5. Task Board Contract
 
@@ -131,8 +183,6 @@ After a JSON board exists:
   `.agents/mpi-kanban/tasks/<id>/`;
 - `.agents/mpi-kanban/state/index.json` must point at
   `.agents/mpi-kanban/board.json`;
-- `source_of_truth: "file"` in `state/interop.json` means the local JSON/file
-  backed board, not the legacy Markdown board;
 - any retained `.agents/mpi-kanban/kanban.md` must be tombstoned as
   generated/display-only compatibility and must not be a canonical input;
 - project boot docs such as `START-HERE.md`, `AGENTS.md`, `CLAUDE.md`,
@@ -193,7 +243,7 @@ Initial `task.json` shape:
     "reason": "Needs user decision before validation.",
     "updated_at": "2026-05-30T12:00:00Z"
   },
-  "activeSessionTitle": "Codex implementation session",
+  "activeSessionTitle": "MPI-42 implementation session",
   "created_at": "2026-05-30T12:00:00Z",
   "updated_at": "2026-05-30T12:30:00Z",
   "links": {
@@ -234,10 +284,10 @@ up in the current stretch.
 For `done`: `complete` for finished work; `rejected` — closed without being
 built, kept in `done` as a record of the decision.
 
-JSON task boards must not use legacy Markdown column names or Nimbalyst phase
-names as maturity values. In particular, Nimbalyst `implementing` maps to MPI
-`maturity: "in-progress"` on a `doing` card; `implementing` is not a
-task-card maturity value.
+JSON task boards must not use legacy Markdown column names or external tracker
+phase names as maturity values. `implementing` in particular is not a task-card
+maturity value; a card being implemented is `doing` with
+`maturity: "in-progress"`.
 
 Process labels such as `Validated`, `validated`, `validation`, `spec`,
 `scoped`, `review`, `active`, `accepted`, `done`, `implementing`, or
@@ -264,7 +314,7 @@ Passive append-only event records live in:
 Each line is one JSON object:
 
 ```json
-{"schema":"mpi-kanban/event/v1","id":"MPI-42","type":"task.moved","at":"2026-05-30T12:30:00Z","actor":"codex","from":"todo","to":"doing","summary":"Moved into active implementation."}
+{"schema":"mpi-kanban/event/v1","id":"MPI-42","type":"task.moved","at":"2026-05-30T12:30:00Z","actor":"claude","from":"todo","to":"doing","summary":"Moved into active implementation."}
 ```
 
 Supported initial event types are `task.created`, `task.updated`,
@@ -280,13 +330,12 @@ Task-card events are appended to both
 `.agents/mpi-kanban/events.jsonl`. The task log gives local card history; the
 global log gives board-wide history.
 
-Legacy Markdown boards are migration inputs only. Their column/field shape is
-documented in `skills/mpi-lib/kanban-ops/_schema.md`; skills read `kanban.md`
-solely for migration or compatibility. Once `board.json` exists, normal board
-creation, movement, and status updates must use the JSON task board.
-Compatibility reads must first prefer `board.json`; they may inspect `kanban.md`
-only as legacy migration material, a tombstoned snapshot, or an explicitly
-requested compatibility artifact.
+Legacy Markdown boards are migration inputs only. `skills/mpi-lib/kanban-ops/`
+was removed in 1.0 along with the ability to *operate* a Markdown board; the
+one surviving path is adoption, through
+`skills/mpi-lib/task-board-ops/migrate.md`. Once `board.json` exists, all board
+creation, movement, and status updates use the JSON task board. A remaining
+`kanban.md` is a tombstoned snapshot, never a second live board.
 
 ## 6. Coordination State
 
@@ -424,7 +473,7 @@ Minimal message shape:
   "updated_at": "2026-05-31T12:00:00Z",
   "from": {
     "session": ".agents/mpi-kanban/state/sessions/source.json",
-    "agent": "codex",
+    "agent": "claude",
     "role": "implementer"
   },
   "to": {
@@ -480,31 +529,15 @@ Peer routing is opt-in and same-filesystem only. It must not scan every MPI
 project on the machine, broadcast globally, deliver across machines, or start a
 background delivery process.
 
-### 6.3 Interop Mode State
+### 6.3 Source Of Truth
 
-Durable source-of-truth mode state lives at:
+The JSON task board and the coordination state under
+`.agents/mpi-kanban/state/` are the source of truth. There is no pluggable
+source-of-truth mode.
 
-```text
-<project-root>/.agents/mpi-kanban/state/interop.json
-```
-
-When the file is absent, skills must treat the project as `file` mode.
-
-Supported `source_of_truth` values:
-
-- `file` - default portable mode. MPI workflow skills mutate
-  `.agents/mpi-kanban/board.json`, task workspaces, passive event logs, and
-  coordination state directly. Only unmigrated legacy projects may update
-  `kanban.md`; after `board.json` exists, `file` mode means the JSON/file
-  backed board.
-- `nimbalyst` - Nimbalyst sessions and trackers are canonical. MPI workflow
-  skills must not live-update both Nimbalyst and the JSON task board during
-  normal work. File import/export happens only through explicit sync
-  boundaries.
-
-The interop state records last environment detection, last sync/export times,
-and ID mappings between MPI task IDs and Nimbalyst trackers. Skills must not
-add Nimbalyst IDs or sync metadata to task card fields.
+`state/interop.json` was the mode file for the removed Nimbalyst integration.
+Skills must not read it, write it, or branch on it. `mpi-project-refresh`
+reports an orphaned copy left by an older install and offers to delete it.
 
 ## 7. Project Knowledge
 
@@ -562,8 +595,8 @@ matches the written plan.
    `Plan file:` during migration.
 5. If a complete handoff identifies the task card, plan, and task workspace,
    uses those pointers as the primary route and reads `state/index.json` only
-   for blockers such as active file claims, pending file states, open messages,
-   handoffs, and interop mode.
+   for blockers such as active file claims, pending file states, open
+   messages, and handoffs.
 6. Moves `todo` to `doing` when needed through the shared begin-implementation
    flow, setting `maturity: "in-progress"`, `status: "active"`, active session
    context, derived checklist items, and task events together.
@@ -617,7 +650,7 @@ workspace, handoff, rules, or memory files unless explicitly owned.
 
 ## 11. Handoff
 
-`mpi-handoff` writes:
+The **resume** exit of `mpi-end-session` writes:
 
 ```text
 .agents/mpi-kanban/state/handoffs/<uuid>.json
@@ -626,7 +659,7 @@ workspace, handoff, rules, or memory files unless explicitly owned.
 `docs/handoffs/` is legacy compatibility during migration. New canonical
 handoffs live in `.agents/mpi-kanban/state/handoffs/`.
 
-When a JSON task card is active, `mpi-handoff` also writes a lightweight
+When a JSON task card is active, the resume exit also writes a lightweight
 task-local pointer under `.agents/mpi-kanban/tasks/<id>/handoffs/` that
 references the canonical state handoff. The canonical handoff remains under
 `state/handoffs/`; task-local pointers are discovery aids for task lookup and
@@ -670,35 +703,61 @@ to a `done` JSON task card without an unresolved coordination status. Approved
 repairs remove closed records from active index arrays and preserve or archive
 the coordination record according to lifecycle rules.
 
-## 14. Cross-Agent Skill Distribution
+## 14. Packaging And Validation
 
-Mpi-Kanban is a 15-skill pack distributed through skills.sh. The install
-command always uses `--all`; missing `mpi-lib` is a user installation error.
+Mpi-Kanban is one Claude Code plugin: twelve workflow skills, the `mpi-lib`
+support skill, six hooks, and two agents, all from
+`.claude-plugin/plugin.json`. The install is all-or-nothing; a missing
+`mpi-lib` is a broken install, not a supported configuration.
 
-The pack intentionally accepts a non-standard shared support skill to avoid
-duplicating the reference library into every workflow skill. This keeps context
-use low because `mpi-lib` sibling files are loaded only when a workflow skill
-instructs the agent to read them.
+The plugin intentionally accepts a non-standard shared support skill rather
+than duplicating the reference library into every workflow skill. That keeps
+context use low: `mpi-lib` files load only when a workflow skill says to read
+one.
 
-Validation must check:
+`scripts/validate_plugin.py` must check:
 
-- every `skills/*/SKILL.md` has valid frontmatter;
-- every skill name matches its folder;
-- skill names/descriptions satisfy Agent Skills limits;
+- every `skills/*/SKILL.md` has valid frontmatter, and each skill name matches
+  its folder;
+- skill names and descriptions satisfy Agent Skills limits;
 - `skills/mpi-lib/SKILL.md` exists;
-- consuming skills include the `mpi-lib` discovery block;
-- interop mode templates and references are present;
-- no `${CLAUDE_PLUGIN_ROOT}` references remain;
-- `skills.sh.json` lists real skills.
+- `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` are valid,
+  and the manifest `version` matches the latest released `CHANGELOG.md`
+  heading (`validate_pack_version()`);
+- every hook named in `hooks/hooks.json` exists and is registered;
+- every agent a skill dispatches ships in `agents/`;
+- every `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/...` reference resolves to a real
+  file (`validate_lib_references()`);
+- the inline `maturity` lists in `mpi-continue` and `mpi-execute-parallel`
+  match `TASK_MATURITIES` in `skills/mpi-lib/scripts/validate_board.py`
+  (`validate_maturity_contract_docs()`);
+- the surfaces removed before 1.0 stay removed (`REMOVED_PATHS`);
+- stale-install detection stays wired: `pack_version` in the project-profile
+  template, `mpi-init`, and `mpi-project-refresh`.
+
+`scripts/smoke_hooks.py` runs every hook as a real subprocess, including the
+no-board case for each.
 
 ## 15. Acceptance Criteria
 
-- `npx skills add MadPonyInteractive/mpi-kanban --all -y -g` installs the pack.
-- `npx skills add MadPonyInteractive/mpi-kanban -l` lists all 15 skills.
+- `/plugin marketplace add MadPonyInteractive/mpi-kanban` followed by
+  `/plugin install mpi-kanban@mad-pony-interactive` installs skills, hooks, and
+  agents together, and creates no `~/.claude/skills/mpi-*` entries.
+- `/plugin list` reports the `version` from `.claude-plugin/plugin.json`.
 - Agents can answer "what is MPI-5?" through `mpi-continue`'s bounded
   read-only mode, which reads only the active board entry and direct linked
   task files.
-- Workflow skills resolve `mpi-lib` and read shared references successfully.
+- `${CLAUDE_PLUGIN_ROOT}` resolves in skill, agent, and hook content, and
+  workflow skills read shared references successfully.
+- Every hook is inert in a project with no `board.json`, and blocks with a
+  printed reason in a project that has one.
+- A destructive `git checkout -- <path>` is blocked; a code edit with no card
+  in `doing` is blocked; a write to another live session's claimed path is
+  blocked.
+- Work that splits into disjoint, independently verifiable file sets is
+  dispatched by `mpi-continue` without the user asking, with every excluded
+  card reported.
+- Two concurrent `createTask` calls never overwrite a card.
 - Task board schema uses locked JSON columns `todo`, `doing`, and `done`.
 - Task card IDs are system-assigned visible IDs such as `MPI-42`.
 - Legacy Markdown boards remain readable for migration and compatibility.

@@ -66,7 +66,7 @@ carry pending-change provenance, such as `complete`, `needs_review`,
 {
   "schema": "mpi-kanban/file-claim/v1",
   "id": "63f0a8e1-17e1-42ff-8b8e-b510a4f58ec8",
-  "path": "skills/mpi-handoff/SKILL.md",
+  "path": "skills/mpi-end-session/SKILL.md",
   "owner_session": ".agents/mpi-kanban/state/sessions/018f6e8a-7b9f-4f0b-85f3-6a11f6de2b1a.json",
   "owner_role": "implementer",
   "status": "claimed",

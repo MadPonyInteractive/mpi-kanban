@@ -6,13 +6,13 @@ helper instead of inventing IDs from timestamps or task titles.
 Generate one UUID:
 
 ```powershell
-python <mpi-lib-root>/scripts/new_uuid.py
+python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/new_uuid.py
 ```
 
 Generate several UUIDs:
 
 ```powershell
-python <mpi-lib-root>/scripts/new_uuid.py 5
+python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/new_uuid.py 5
 ```
 
 The helper emits lowercase UUIDv4 values, one per line. Use the same UUID for

@@ -201,7 +201,7 @@ def negotiate_claim(root: Path, requester: dict[str, Any], requested_path: str) 
 def route_to_peer(source_root: Path, peer_root: Path, source_session: str) -> Path:
     return send_message(
         peer_root,
-        {"session": source_session, "agent": "codex", "role": "implementer"},
+        {"session": source_session, "agent": "claude", "role": "implementer"},
         {"selector": "workspace", "value": str(peer_root)},
         "Peer workspace message smoke",
         "This verifies explicit same-machine peer workspace routing.",
@@ -251,7 +251,7 @@ def run_smoke(peer_root: Path | None = None) -> dict[str, Any]:
         ensure_state_root(peer)
 
         owner_session = ".agents/mpi-kanban/state/sessions/css-agent.json"
-        requester = {"session": ".agents/mpi-kanban/state/sessions/js-agent.json", "agent": "codex", "role": "implementer"}
+        requester = {"session": ".agents/mpi-kanban/state/sessions/js-agent.json", "agent": "claude", "role": "implementer"}
 
         first = send_message(
             source,
@@ -264,7 +264,7 @@ def run_smoke(peer_root: Path | None = None) -> dict[str, Any]:
         child = reply_to_message(
             source,
             first,
-            {"session": ".agents/mpi-kanban/state/sessions/reviewer.json", "agent": "codex", "role": "reviewer"},
+            {"session": ".agents/mpi-kanban/state/sessions/reviewer.json", "agent": "claude", "role": "reviewer"},
             "The contract is coherent.",
         )
         resolve_message(source, first, requester, "Parent request answered.")
