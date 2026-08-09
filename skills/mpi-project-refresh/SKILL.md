@@ -144,6 +144,11 @@ Report findings in these categories:
   This detects a downgrade or a second machine with an old install. It cannot
   detect that a newer release exists upstream; that needs a network call the
   pack does not make.
+- **Push policy:** `push_policy` missing from the profile frontmatter. Close-out
+  treats an absent value as `auto` and pushes, so a profile written before 1.0
+  silently opts into pushing. Propose the explicit line, ask which of `auto`,
+  `ask`, or `never` this repo wants, and never change an existing value without
+  approval. An invalid value is a finding too - close-out falls back to `auto`.
 - **Rules:** a `rules_dir` that does not exist, or exists with no file carrying
   a `## Sub-Agent Briefing` heading. Propose `seedFirstRule()` from
   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md`. Also report rules that have drifted from the

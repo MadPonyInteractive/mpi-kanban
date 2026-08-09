@@ -1,5 +1,27 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start.py\"",
+            "statusMessage": "Reading the Mpi-Kanban board state..."
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/precompact-handoff.py\"",
+            "statusMessage": "Checking for work a handoff should preserve..."
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -9,6 +31,11 @@
             "if": "Bash(git *)",
             "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-git.py\"",
             "statusMessage": "Checking for a destructive git command..."
+          },
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/guard-shell.py\"",
+            "statusMessage": "Checking the shell command form..."
           }
         ]
       },

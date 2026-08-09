@@ -6,8 +6,19 @@ mode_source: default
 setup_date: YYYY-MM-DD
 last_refresh: YYYY-MM-DD
 pack_version: <plugin.json version at setup/refresh time>
+push_policy: auto
 knowledge_index: .agents/mpi-kanban/project-knowledge-index.md
 ---
+
+<!--
+push_policy controls what `mpi-end-session` does after it commits:
+  auto   push (default)
+  ask    ask in one line, push on approval
+  never  do not push; report the branch as unpushed
+A rejected push retries once after `git fetch` + `git merge --ff-only`, then
+reports. It never force-pushes and never rebases a shared tree.
+-->
+
 
 # Project Profile
 

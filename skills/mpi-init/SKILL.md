@@ -132,6 +132,20 @@ different mode.
 Record mode in `.agents/mpi-kanban/project-profile.md` as `mode`,
 `mode_rationale`, and `mode_source`.
 
+Then ask once, in the same exchange:
+
+```text
+Should close-out push after it commits?
+- auto (push; default)
+- ask (ask each time)
+- never (commit only)
+```
+
+Default to `auto` if the user declines to answer. Record it as `push_policy` in
+the same frontmatter. This is asked at init because it is a per-repo trust
+decision - a shared trunk and a solo repo want different answers, and nobody
+wants to answer it every session.
+
 ### 3. Build the adoption proposal
 
 For existing or partial projects, read

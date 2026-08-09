@@ -14,13 +14,13 @@ docs/handoffs/YYYY-MM-DD-HH-MM-<slug>.json
 
 ## New Handoffs
 
-`mpi-handoff` should create a canonical handoff record in
+`mpi-end-session`, on its `resume` exit, creates a canonical handoff record in
 `.agents/mpi-kanban/state/handoffs/` using the schema in
-[schemas.md](schemas.md).
+[schemas.md](schemas.md). (Before 1.0 this was a separate `mpi-handoff` skill.)
 
-When compatibility with older resume prompts is useful, `mpi-handoff` may also
-write a small legacy pointer under `docs/handoffs/` that names the canonical
-handoff path. The canonical `.agents/` record is the source of truth.
+When compatibility with older resume prompts is useful, it may also write a
+small legacy pointer under `docs/handoffs/` that names the canonical handoff
+path. The canonical `.agents/` record is the source of truth.
 
 ## Continuing Work
 

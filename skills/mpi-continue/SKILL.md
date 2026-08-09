@@ -493,7 +493,8 @@ rather than accept the step. Do not run the "After verified work" steps. Stay in
 conversation, address the requested changes, and append once:
 
 ```text
-Context getting large? Run `mpi-handoff` before starting a new session.
+Context getting large? Run `mpi-end-session` and take the `resume` exit before
+starting a new session.
 ```
 
 ## Hard rules
