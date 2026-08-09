@@ -224,7 +224,7 @@ least one rule file exists. So seed one - but seed it from evidence, never from
 invention.
 
 1. Create `rules_dir` if missing.
-2. Write `<rules_dir>/project.md` from `<mpi-lib-root>/templates/rule.md`.
+2. Write `<rules_dir>/project.md` from `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/rule.md`.
 3. Fill it ONLY from what adoption already established - the project profile,
    the knowledge index, `AGENTS.md`/`CLAUDE.md`, and the repo conventions
    actually observed. Every line must trace to something read. A convention you
@@ -237,7 +237,7 @@ invention.
    is unknown, and say so in the report. An honest gap beats a confident guess.
 6. Register it in the config as `{name: project, file: project.md}`.
 7. Show the seeded file to the user in the proposal. It is a rule file, so the
-   per-file approval in `<mpi-lib-root>/project-knowledge/updates.md` applies.
+   per-file approval in `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/updates.md` applies.
 
 One rule is a starting point, not a target. `mpi-end-session` splits specific
 rules out of it as real conventions appear in real work.

@@ -5,7 +5,7 @@ board work should use `task-board-ops/_schema.md` and
 `.agents/mpi-kanban/board.json`. For legacy schema/regexes see `_schema.md`.
 For legacy mutations see `mutate.md`.
 
-References in this file resolve relative to `<mpi-lib-root>`, the installed
+References in this file resolve relative to `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib`, the installed
 root of the sibling `mpi-lib` support skill.
 
 ---
@@ -25,7 +25,7 @@ root of the sibling `mpi-lib` support skill.
 1. Call `findKanban()`.
 2. If found â†’ return path.
 3. If missing:
-   a. `Read` `<mpi-lib-root>/templates/kanban.md`.
+   a. `Read` `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/kanban.md`.
    b. `Write` contents to `<project-root>/.agents/mpi-kanban/kanban.md`. The
       Write tool will create the `.agents/mpi-kanban/` directory.
    c. Emit one-time setup notice in chat:

@@ -65,7 +65,7 @@ Inputs: `from`, `to`, `subject`, `body`, optional `related`, optional
 
 1. Call `ensureMessageRoot()`.
 2. Reread `state/index.json`.
-3. Generate a UUID with `python <mpi-lib-root>/scripts/new_uuid.py`. If that
+3. Generate a UUID with `python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/new_uuid.py`. If that
    script is missing, use `python -c "import uuid; print(uuid.uuid4())"`.
 4. Write `.agents/mpi-kanban/state/messages/<uuid>.json`:
    - `schema`: `mpi-kanban/message/v1`

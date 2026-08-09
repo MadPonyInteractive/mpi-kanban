@@ -5,19 +5,6 @@ description: MPI workflow pack - Execute a parallel batch with worker sub-agents
 
 # mpi-execute-parallel Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
-
 ## Purpose
 
 Run a parallel implementation batch. This skill only applies to explicitly
@@ -47,11 +34,11 @@ to both. Only selection differs.
 
 Shared coordination lifecycle references:
 
-- `<mpi-lib-root>/coordination-ops/lifecycle.md`
-- `<mpi-lib-root>/coordination-ops/statuses.md`
-- `<mpi-lib-root>/task-board-ops/_schema.md`
-- `<mpi-lib-root>/task-board-ops/read.md`
-- `<mpi-lib-root>/task-board-ops/mutate.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`
 
 Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
@@ -106,7 +93,7 @@ work the board, instead of naming a plan batch. It requires
 First, run the board validator:
 
 ```text
-python <mpi-lib-root>/scripts/validate_board.py <project-root>
+python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/validate_board.py <project-root>
 ```
 
 Exit non-zero: stop and report every violation line verbatim. Do not dispatch
@@ -155,7 +142,7 @@ are a validator failure and an ownership conflict between selected cards.
 Each selected card becomes one worker task: its `plan.md` is the task text, its
 derived ownership is the ownership, and its plan's `**Verify:**` or
 `## Verification` content is the verify instruction. Call `beginImplementation`
-from `<mpi-lib-root>/task-board-ops/mutate.md` for each selected card before
+from `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` for each selected card before
 its worker edits anything, so no card is implemented while still in `todo`.
 
 ## Briefing workers
@@ -226,7 +213,7 @@ finish:
 7. After user verifies, mark the batch tasks complete in the plan, update the
    active task workspace checklist/validation files, append
    `checklist.updated` or `validation.updated` events when meaningful, and use
-   `moveTask` / `writeTask` from `<mpi-lib-root>/task-board-ops/mutate.md` for
+   `moveTask` / `writeTask` from `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` for
    any card status, maturity, or column change. Never write invented maturity
    values: `active`, `accepted`, `done`, `implementing`, `implementation`,
    `validated`, `Validated`, `validation`, and `spec` are not maturities. The
@@ -243,8 +230,8 @@ finish:
 - Never dispatch a board batch without a passing `validate_board.py` run, and
   never select a card that has no `plan.md`.
 - Card-write preflight is mandatory before any `column`, `maturity`, or
-  `status` write: read `<mpi-lib-root>/task-board-ops/_schema.md` and
-  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  `status` write: read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` and
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. Do not derive legal values from
   existing cards.
 - Never let workers edit the plan, JSON board, task workspace, legacy kanban,
   handoff, rules, or memory files unless that path is explicitly their

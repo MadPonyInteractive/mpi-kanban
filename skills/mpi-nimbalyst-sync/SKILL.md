@@ -5,22 +5,6 @@ description: MPI workflow pack - Coordinate MPI Kanban and Nimbalyst source-of-t
 
 # mpi-nimbalyst-sync Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find
-the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve
-as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the
-user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
-
 ## Purpose
 
 Coordinate explicit boundaries between MPI Kanban's JSON task board and
@@ -40,10 +24,10 @@ Invocation: Use the installed Agent Skills invocation for this agent, or ask nat
 
 Read only what the command needs:
 
-- `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode contract.
-- `<mpi-lib-root>/task-board-ops/_schema.md` - JSON task board columns and
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/interop-ops/modes.md` - source-of-truth mode contract.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` - JSON task board columns and
   task-card shape.
-- `<mpi-lib-root>/kanban-ops/_schema.md` - legacy Markdown board shape for
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/_schema.md` - legacy Markdown board shape for
   migration and snapshots.
 - `docs/nimbalyst-interop.md` - Nimbalyst detection and tracker mapping design.
 

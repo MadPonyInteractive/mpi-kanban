@@ -74,6 +74,7 @@ metadata fields.
   "agent": "codex",
   "role": "implementer",
   "status": "active",
+  "claude_session_id": "cf6200bf-9db8-41ca-9260-f38bdd986d44",
   "task": ".agents/mpi-kanban/state/tasks/8b39a23b-bca6-4dd2-b1ab-64d90677d22e.json",
   "heartbeat_at": "2026-05-17T12:00:00Z",
   "allowed_actions": ["read", "edit_owned_files", "update_plan", "handoff"],

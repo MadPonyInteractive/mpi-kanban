@@ -5,19 +5,6 @@ description: MPI workflow pack - Continue active MPI work, show/read one board t
 
 # mpi-continue Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
-
 ## Purpose
 
 Continue active work intelligently. This skill replaces rigid "execute next"
@@ -40,10 +27,10 @@ values by grepping existing cards.
 When shared coordination state exists, `mpi-continue` also reads
 `.agents/mpi-kanban/state/index.json` first and follows its pointers only as
 needed. The shared contract is documented in
-`<mpi-lib-root>/docs/coordination/README.md`.
+`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/docs/coordination/README.md`.
 Lifecycle operations are documented in
-`<mpi-lib-root>/coordination-ops/lifecycle.md` and status values in
-`<mpi-lib-root>/coordination-ops/statuses.md`.
+`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md` and status values in
+`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md`.
 
 Plans are living documents. If implementation has drifted, update or annotate
 the plan instead of forcing the next unchecked item.
@@ -89,7 +76,7 @@ That is the default and it needs no approval.
   the end of the step under `Noticed, not actioned:` so the user decides.
 - Create a card only when the user explicitly asks for one in the current
   request. Then use `createTask` from
-  `<mpi-lib-root>/task-board-ops/mutate.md`. Never hand-write a `task.json`.
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. Never hand-write a `task.json`.
 
 Before proposing any new card, check the open `todo` and `doing` cards for one
 that already covers the same system, and extend that card instead. Several
@@ -115,7 +102,7 @@ matching IDs and ask the user to choose one. If no match exists, report that
 the task was not found on the active JSON board. Do not search sibling repos or
 legacy boards to "confirm" unless the user explicitly asks.
 
-For legacy boards, use `<mpi-lib-root>/kanban-ops/find.md` and read only the
+For legacy boards, use `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/find.md` and read only the
 matching entry block. Legacy boards do not have `MPI-*` IDs unless the
 title/body explicitly contains one.
 
@@ -159,10 +146,10 @@ files. `source_of_truth: "file"` means the JSON board and task workspaces when
 Use this mode when the user explicitly asks to move or set one task card's
 board state without asking to implement code.
 
-1. Resolve `<mpi-lib-root>`, then read
-   `<mpi-lib-root>/task-board-ops/_schema.md`,
-   `<mpi-lib-root>/task-board-ops/read.md`, and
-   `<mpi-lib-root>/task-board-ops/mutate.md` before writing anything. Do not
+1. Resolve `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib`, then read
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md`,
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md`, and
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` before writing anything. Do not
    derive allowed `column`, `maturity`, or `status` values from existing
    cards.
 2. Read `.agents/mpi-kanban/state/interop.json` when present. If
@@ -221,20 +208,20 @@ Which MPI plan or handoff should I continue from? Please paste the path.
 
 Lib pointers, read only when needed:
 
-- `<mpi-lib-root>/kanban-ops/find.md` - `findEntry`
-- `<mpi-lib-root>/kanban-ops/mutate.md` - `moveEntry`
-- `<mpi-lib-root>/kanban-ops/steps.md` - `addSteps`, `markStep`
-- `<mpi-lib-root>/task-board-ops/_schema.md` - JSON board and task-card schema
-- `<mpi-lib-root>/task-board-ops/read.md` - `findBoard`, `loadTask`, `findTask`
-- `<mpi-lib-root>/task-board-ops/mutate.md` - `moveTask`, `writeTask`,
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/find.md` - `findEntry`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/mutate.md` - `moveEntry`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/steps.md` - `addSteps`, `markStep`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` - JSON board and task-card schema
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`, `loadTask`, `findTask`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `moveTask`, `writeTask`,
   `ensureLinkedFiles`, `appendEvent`, `setAttention`,
   `beginImplementation`
-- `<mpi-lib-root>/plan-ops/derive.md` - derive stable checklist items from the
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/plan-ops/derive.md` - derive stable checklist items from the
   active plan
-- `<mpi-lib-root>/coordination-ops/lifecycle.md` - session/task/file claim lifecycle
-- `<mpi-lib-root>/coordination-ops/statuses.md` - state vocabulary
-- `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode gate
-- `<mpi-lib-root>/project-knowledge/indexing.md` - context-budget rules
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md` - session/task/file claim lifecycle
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md` - state vocabulary
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/interop-ops/modes.md` - source-of-truth mode gate
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/indexing.md` - context-budget rules
 
 1. Read the handoff if present. If it is a legacy `docs/handoffs/` pointer to a
    canonical `.agents/` handoff, load the canonical handoff before continuing.
@@ -248,7 +235,7 @@ Lib pointers, read only when needed:
    Pick the topic block matching the active plan. Load only the listed
    docs/rules; do not rediscover the whole project. If the profile is
    absent, fall back to the existing pre-condition behavior.
-3. Read `<mpi-lib-root>/coordination-ops/lifecycle.md`. Call `ensureStateRoot()` when
+3. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md`. Call `ensureStateRoot()` when
    coordination state is relevant, then read `state/index.json` as the active
    coordination facade. For a complete handoff route, use the index only for
    blockers and current pointers: `active_file_claims`, `pending_file_states`,
@@ -273,16 +260,16 @@ Lib pointers, read only when needed:
    coordination record for the active JSON task card and plan. Legacy kanban
    title may be used only for unmigrated projects.
 7. Read the active plan.
-8. Read `<mpi-lib-root>/task-board-ops/read.md` and locate the active task by
+8. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` and locate the active task by
    handoff task ID first when available, otherwise by direct task ID, linked
    plan path, or required attention in `doing`. If `board.json` is missing, use
    legacy `kanban-ops/find.md` compatibility to locate a kanban entry whose
    body contains `Plan file: <planPath>`.
-9. Read `<mpi-lib-root>/plan-ops/derive.md` before presenting the Continue
+9. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/plan-ops/derive.md` before presenting the Continue
    Brief so the expected checklist shape is known.
 10. In `file` mode, when implementation starts or resumes, use
    `beginImplementation(id, actor, planPath, sessionTitle)` from
-   `<mpi-lib-root>/task-board-ops/mutate.md`. It must move `todo -> doing`
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. It must move `todo -> doing`
    when needed, set `maturity: "in-progress"`, set `status: "active"`, set
    active session context, derive checklist items from the active plan, and
    append events together. Do not leave a `doing` card with
@@ -514,8 +501,8 @@ Context getting large? Run `mpi-handoff` before starting a new session.
 - Approval before implementation is mandatory.
 - Card-write preflight is mandatory before any `column`, `maturity`, or
   `status` write: use the `## Card contract` values above, and read
-  `<mpi-lib-root>/task-board-ops/_schema.md` and
-  `<mpi-lib-root>/task-board-ops/mutate.md` for the write recipes. Do not
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` and
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` for the write recipes. Do not
   derive legal values from existing cards.
 - Never create a task card unless the user asked for one in the current
   request. Discovered work folds into the active card by default; see

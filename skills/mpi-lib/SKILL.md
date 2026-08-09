@@ -3,7 +3,6 @@ name: mpi-lib
 description: MPI workflow pack - shared reference library for the mpi-kanban skills. Agents may read its reference files directly for card/task-board rules; do not run it as a user workflow.
 metadata:
   author: Mad Pony Interactive
-  version: "0.10.0"
 ---
 
 # mpi-lib Support Skill
@@ -13,15 +12,14 @@ workflow. Agents may read its reference files directly when they need MPI
 task-board, coordination, or workflow rules; do not run `mpi-lib` itself as the
 workflow.
 
-Other `mpi-*` skills locate this sibling skill at first use, cache its root
-path as `<mpi-lib-root>`, and read individual reference files only when needed.
+Other `mpi-*` skills read this library's reference files directly at
+`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/<sub/path>.md`, only when needed.
 
 ## Pack Version
 
-The installed pack version is the `metadata.version` value in this file's
-frontmatter. It is the only version stamp the pack ships, and it is bumped at
-release. Read it from `<mpi-lib-root>/SKILL.md` to find out which release is
-installed.
+The installed pack version is the `version` field in
+`${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`. It is the only version stamp
+the pack ships, and `/release` bumps it.
 
 A project records the version it was last refreshed with as `pack_version` in
 `.agents/mpi-kanban/project-profile.md` frontmatter. `mpi-project-refresh`
@@ -32,9 +30,9 @@ Nothing here reaches the network, so the pack cannot tell that a newer release
 exists upstream - only that this install is older than one this project has
 already seen. To update, the user runs:
 
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
+`/plugin update mpi-kanban@mad-pony-interactive`
 
-The pack never reinstalls itself.
+The plugin never reinstalls itself.
 
 ## Reference Index
 
@@ -52,7 +50,7 @@ The pack never reinstalls itself.
 - `project-intent/` - project mode contracts.
 - `project-knowledge/` - project profile and knowledge-index contracts.
 - `scripts/validate_board.py` - runnable live-board check:
-  `python <mpi-lib-root>/scripts/validate_board.py <project-root>`. Exits 0 when
+  `python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/validate_board.py <project-root>`. Exits 0 when
   the board is consistent, 1 with one line per violation.
 - `templates/board.json` - JSON board bootstrap template.
 - `templates/interop.json` - default source-of-truth mode template.

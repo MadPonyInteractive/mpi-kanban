@@ -5,19 +5,6 @@ description: MPI workflow pack - Send or manage same-filesystem async coordinati
 
 # mpi-message Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
-
 ## Purpose
 
 Create and manage durable MPI coordination messages under
@@ -33,14 +20,14 @@ broadcast across projects, or deliver messages to remote machines.
 
 Read these references as needed:
 
-- `<mpi-lib-root>/coordination-ops/messages.md` - message root, send, inbox,
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/messages.md` - message root, send, inbox,
   acknowledge, reply, resolve, and peer-route operations
-- `<mpi-lib-root>/coordination-ops/lifecycle.md` - state root and file-claim
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md` - state root and file-claim
   safety rules
-- `<mpi-lib-root>/coordination-ops/statuses.md` - message statuses and
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md` - message statuses and
   recipient selectors
-- `<mpi-lib-root>/docs/coordination/schemas.md` - message JSON examples
-- `<mpi-lib-root>/docs/coordination/state-layout.md` - state layout and
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/docs/coordination/schemas.md` - message JSON examples
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/docs/coordination/state-layout.md` - state layout and
   workspace scope
 
 ## Invocation
@@ -57,8 +44,8 @@ Use the installed Agent Skills invocation for this agent, or ask naturally:
 
 ## Pre-conditions
 
-1. Resolve `<mpi-lib-root>`.
-2. Read `<mpi-lib-root>/coordination-ops/messages.md`.
+1. Resolve `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib`.
+2. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/messages.md`.
 3. Read `.agents/mpi-kanban/state/index.json` when it exists. If it is missing
    and the user only wants to read the inbox, report that no MPI coordination
    inbox exists yet.

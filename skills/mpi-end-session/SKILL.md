@@ -5,19 +5,6 @@ description: MPI workflow pack - MPI end session workflow. Close session, sync r
 
 # mpi-end-session Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
-
 Wrap up the current session cleanly: sync docs/rules with code changes, commit
 touched files, persist any new memory, and close out the active JSON task card.
 Legacy Markdown kanban close-out is compatibility behavior only when no JSON
@@ -35,13 +22,13 @@ Invocation: Use the installed Agent Skills invocation for this agent, or ask nat
 
 Read these references when `.agents/mpi-kanban/state/index.json` exists:
 
-- `<mpi-lib-root>/docs/coordination/README.md`
-- `<mpi-lib-root>/coordination-ops/lifecycle.md`
-- `<mpi-lib-root>/coordination-ops/statuses.md`
-- `<mpi-lib-root>/interop-ops/modes.md`
-- `<mpi-lib-root>/task-board-ops/_schema.md`
-- `<mpi-lib-root>/task-board-ops/read.md`
-- `<mpi-lib-root>/task-board-ops/mutate.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/docs/coordination/README.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/interop-ops/modes.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`
 
 Reread the active session, task, file claim, and handoff records before
 committing. A released file claim means no active writer owns the file; it does
@@ -89,7 +76,7 @@ For each changed file, decide whether a rule or doc needs to update:
 - A convention this session established or enforced that NO existing rule
   file covers -> propose a new rule file. This is how a project's rules grow:
   the work proves the convention, then the rule records it. Draft it from
-  `<mpi-lib-root>/templates/rule.md`, give it a `## Sub-Agent Briefing`
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/rule.md`, give it a `## Sub-Agent Briefing`
   section, and add it to the `rules` list in `.agents/mpi-kanban.local.md` so
   `mpi-brief-rule` can dispatch it. Propose at most one or two per session,
   and only for conventions that actually bit someone in this session.
@@ -106,7 +93,7 @@ strictly required.
 When `.agents/mpi-kanban/project-profile.md` or
 `.agents/mpi-kanban/project-knowledge-index.md` exists, check whether this
 session's changes affected architecture, conventions, important commands, or
-agent guidance. Refer to `<mpi-lib-root>/project-knowledge/updates.md` for the
+agent guidance. Refer to `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/updates.md` for the
 update shape.
 
 If architecture, commands, conventions, topic coverage, or AGENTS/CLAUDE
@@ -129,12 +116,12 @@ Per `~/.claude/CLAUDE.md`:
 Before committing, check the live board:
 
 ```text
-python <mpi-lib-root>/scripts/validate_board.py <project-root>
+python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/validate_board.py <project-root>
 ```
 
 - Exit 0: continue.
 - Exit non-zero: report every violation line verbatim and fix the board through
-  `<mpi-lib-root>/task-board-ops/mutate.md` recipes before committing. Do not
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` recipes before committing. Do not
   commit a board the validator rejects, and do not hand-edit `task.json` to
   silence it.
 - Python missing, script missing, or any other launch failure: skip the check,
@@ -161,14 +148,14 @@ never does is `git push`.
 
 Lib pointers, read each only when its recipe is needed:
 
-- `<mpi-lib-root>/task-board-ops/read.md` - `findBoard`, `findTask`, `loadTask`
-- `<mpi-lib-root>/task-board-ops/mutate.md` - `moveTask`, `writeTask`,
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`, `findTask`, `loadTask`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `moveTask`, `writeTask`,
   `ensureLinkedFiles`, `appendEvent`, `setAttention`
-- `<mpi-lib-root>/task-board-ops/validate.md` - validation checks when board
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/validate.md` - validation checks when board
   state is inconsistent
-- `<mpi-lib-root>/kanban-ops/find.md` - legacy `findKanban`, `findEntry`
-- `<mpi-lib-root>/kanban-ops/steps.md` - legacy `allStepsDone`
-- `<mpi-lib-root>/kanban-ops/mutate.md` - legacy `moveEntry`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/find.md` - legacy `findKanban`, `findEntry`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/steps.md` - legacy `allStepsDone`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/mutate.md` - legacy `moveEntry`
 
 JSON board steps:
 
@@ -182,7 +169,7 @@ If interop mode is `nimbalyst`, skip all MPI board movement in this section and
 report: "Interop mode is nimbalyst - Nimbalyst trackers/sessions are canonical.
 Skipping task-board close-out; use mpi-nimbalyst-sync for a board snapshot."
 
-1. Read `<mpi-lib-root>/task-board-ops/read.md` and call `findBoard()`.
+1. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` and call `findBoard()`.
 2. Identify the active plan: the plan file most recently touched in this
    session from `git diff --stat HEAD` or conversation context.
 3. If `board.json` exists, locate the task by explicit task ID, active plan
@@ -200,7 +187,7 @@ Skipping task-board close-out; use mpi-nimbalyst-sync for a board snapshot."
    session's `git diff --stat HEAD` that belong to this task's plan), the Doing
    phase was skipped. Before any `done` move, call
    `beginImplementation(id, actor, planPath, sessionTitle)` from
-   `<mpi-lib-root>/task-board-ops/mutate.md` to backfill `todo -> doing`, set
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` to backfill `todo -> doing`, set
    `maturity: "in-progress"`, and derive the checklist, then continue with the
    normal completion gate below. Print one line:
    `Note: card "<id>" skipped the Doing phase; auto-corrected through doing before done.`
@@ -238,7 +225,7 @@ Skipping task-board close-out; use mpi-nimbalyst-sync for a board snapshot."
    final completion in the current request.
 
 After commit/task-board close-out, close or complete the active coordination
-session and task according to `<mpi-lib-root>/coordination-ops/lifecycle.md`.
+session and task according to `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md`.
 Remove closed records from active index arrays, but preserve pending records
 that still need cleanup, review, verification, or integration.
 
@@ -279,8 +266,8 @@ items explicitly.
   committing is enough, and the user pushes when ready.
 - Never commit over another fresh active writer's claim.
 - Card-write preflight is mandatory before any `column`, `maturity`, or
-  `status` write: read `<mpi-lib-root>/task-board-ops/_schema.md` and
-  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  `status` write: read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` and
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. Do not derive legal values from
   existing cards.
 - Never treat task-card badges, attention, or legacy kanban tags as
   coordination authority; reread `.agents/mpi-kanban/state/`.

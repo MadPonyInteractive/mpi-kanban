@@ -1,14 +1,17 @@
-# Codex Entry Point for mpi-kanban
+# Agent Entry Point for mpi-kanban
 
-This repository is the source for the Mpi-Kanban Agent Skills pack.
-Distribution is npx-only through skills.sh:
+This repository is the source for the Mpi-Kanban Claude Code plugin. It ships
+its skills, hooks, and agents from one manifest at
+`.claude-plugin/plugin.json`, published through the marketplace entry in
+`.claude-plugin/marketplace.json`:
 
 ```text
-npx skills add MadPonyInteractive/mpi-kanban --all -y -g
+/plugin marketplace add MadPonyInteractive/mpi-kanban
+/plugin install mpi-kanban@mad-pony-interactive
 ```
 
-The pack is all-or-nothing. The workflow skills depend on `skills/mpi-lib/`;
-partial installs are unsupported.
+The plugin is all-or-nothing. The workflow skills depend on
+`skills/mpi-lib/`.
 
 ## Source of Truth
 
@@ -33,9 +36,10 @@ interpretation.
   board/task templates.
 - Shared templates live in `skills/mpi-lib/templates/`.
 
-Consuming skills locate `mpi-lib` by checking standard Agent Skills install
-paths such as `~/.agents/skills/mpi-lib`, `.agents/skills/mpi-lib`,
-`~/.claude/skills/mpi-lib`, and `.claude/skills/mpi-lib`.
+Consuming skills read `mpi-lib` references at
+`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/<sub/path>.md`. The placeholder is
+substituted anywhere it appears in skill and agent content, so there is no
+discovery probe.
 
 ## Companion VS Code Extension
 

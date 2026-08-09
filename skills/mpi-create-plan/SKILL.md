@@ -5,19 +5,6 @@ description: MPI workflow pack - Create a compact/default MPI plan for normal wo
 
 # mpi-create-plan Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
-
 ## Purpose
 
 Create a compact plan in the JSON task workspace at
@@ -85,7 +72,7 @@ because several files may change.
    `.agents/mpi-kanban/project-profile.md` and
    `.agents/mpi-kanban/project-knowledge-index.md` when they exist. Follow
    the context-budget rules in
-   `<mpi-lib-root>/project-knowledge/indexing.md`: read pointer
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/indexing.md`: read pointer
    files first, then only the topic-matching docs/rules. Do not scan all
    rules and docs.
 3. If the goal is clearly large or uncertain, or if independent parallel
@@ -94,7 +81,7 @@ because several files may change.
 4. **Front-load decisions (scalable-foundation).** When project mode is
    `scalable-foundation`, before writing the plan, exercise the mode's
    clarification and proactive-engineering behavior from
-   `<mpi-lib-root>/project-intent/modes.md`: surface the architecture, pattern,
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-intent/modes.md`: surface the architecture, pattern,
    and library decisions this work implies, push back where a stronger
    foundation is warranted, name future-proofing concerns the user has not
    raised, and resolve open questions with the user now. The goal is an
@@ -113,12 +100,12 @@ because several files may change.
 
 Lib pointers, read only when needed:
 
-- `<mpi-lib-root>/task-board-ops/_schema.md` - JSON board and task-card shape.
-- `<mpi-lib-root>/task-board-ops/read.md` - `findBoard`, `ensureBoard`,
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` - JSON board and task-card shape.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`, `ensureBoard`,
   `loadTask`, `findTask`.
-- `<mpi-lib-root>/task-board-ops/mutate.md` - `createTask`, `writeTask`,
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `createTask`, `writeTask`,
   `ensureLinkedFiles`, `attachPlan`.
-- `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode gate.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/interop-ops/modes.md` - source-of-truth mode gate.
 
 Before mutating `board.json`, read `.agents/mpi-kanban/state/interop.json`
 when it exists. If `source_of_truth` is `nimbalyst`, do not move or create MPI
@@ -168,8 +155,8 @@ through `mpi-continue`, which moves the card To do -> Doing before any edits.
 
 - Do not implement.
 - Card-write preflight is mandatory before any `column`, `maturity`, or
-  `status` write: read `<mpi-lib-root>/task-board-ops/_schema.md` and
-  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  `status` write: read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` and
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. Do not derive legal values from
   existing cards.
 - Do not let implementation begin from a `todo` card. Implementation must run
   through `mpi-continue`, which calls `beginImplementation` to move the card

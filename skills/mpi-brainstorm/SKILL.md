@@ -5,19 +5,6 @@ description: MPI workflow pack - MPI brainstorm workflow. Collaboratively explor
 
 # mpi-brainstorm Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
-
 Help turn ideas into fully formed designs through natural collaborative
 dialogue.
 
@@ -75,13 +62,13 @@ context lean.
 
 Lib pointers, read each only when its recipe is actually needed:
 
-- `<mpi-lib-root>/task-board-ops/_schema.md` - JSON task-card shape.
-- `<mpi-lib-root>/task-board-ops/read.md` - `ensureBoard`, `findTask`.
-- `<mpi-lib-root>/task-board-ops/mutate.md` - `createTask`, event behavior.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` - JSON task-card shape.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `ensureBoard`, `findTask`.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `createTask`, event behavior.
 
 Steps:
 
-1. Read `<mpi-lib-root>/task-board-ops/read.md` for `ensureBoard`. Call
+1. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` for `ensureBoard`. Call
    `ensureBoard()` through the `createTask` recipe. If a legacy
    `.agents/mpi-kanban/kanban.md` exists, leave it untouched and treat it only
    as a migration source or snapshot.
@@ -99,7 +86,7 @@ Steps:
    the revised title. Exact duplicate titles make later title-based lookup
    ambiguous.
 
-4. Read `<mpi-lib-root>/task-board-ops/mutate.md` for `createTask`. Call
+4. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` for `createTask`. Call
    `createTask(input)`. The recipe allocates the system task ID; never ask the
    user to supply or choose an ID.
 
@@ -149,8 +136,8 @@ After the todo task is captured:
 
 - No design or code work before the user approves the design.
 - Card-write preflight is mandatory before creating or updating a JSON task:
-  read `<mpi-lib-root>/task-board-ops/_schema.md` and
-  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` and
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. Do not derive legal values from
   existing cards.
 - The todo task is created by THIS skill, not by the user and not by the next
   skill in the chain.

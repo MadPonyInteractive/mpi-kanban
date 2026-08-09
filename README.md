@@ -1,6 +1,6 @@
 # Mpi-Kanban
 
-An Agent Skills pack that lets multiple AI agents work side by side on the
+A Claude Code plugin that lets multiple AI agents work side by side on the
 same project - even on the same files - without overwriting each other.
 Agents share a live coordination state so one can implement while another
 reviews, verifies, or integrates, and a visible JSON task board keeps you in
@@ -17,36 +17,25 @@ Skills: `mpi-init`, `mpi-project-refresh`, `mpi-brainstorm`,
 
 ## Install
 
-Install the complete pack with skills.sh / `npx skills`:
-
 ```text
-npx skills add MadPonyInteractive/mpi-kanban --all -y -g
+/plugin marketplace add MadPonyInteractive/mpi-kanban
+/plugin install mpi-kanban@mad-pony-interactive
 ```
 
-The `--all` flag is required. The workflow skills locate shared reference
-docs through the sibling `mpi-lib` support skill; partial installs are
-unsupported.
-
-> **Red `Failed to install` lines are expected.** `--all` targets every agent
-> the `skills` CLI knows about, and some (e.g. `PromptScript`) reject the `-g`
-> global flag. The pack still installs for every compatible agent — verify the
-> skill folders exist under `~/.agents/skills/`.
-
-More detail: [docs/install.md](docs/install.md).
+> **Upgrading from the pre-1.0 skills pack?** Remove it first, or every
+> request matches two skills and one of them runs the old contract.
+> [docs/install.md](docs/install.md) leads with the removal commands.
 
 ## Update
 
-Update the installed pack with the same command:
-
 ```text
-npx skills add MadPonyInteractive/mpi-kanban --all -y -g
+/plugin update mpi-kanban@mad-pony-interactive
 ```
 
-Restart your agent sessions after updating so they reload the installed skills.
-
-To see which version you have, `grep version ~/.agents/skills/mpi-lib/SKILL.md`.
-`mpi-project-refresh` reports it too, and flags an install older than the one
-the project last recorded. See [docs/install.md](docs/install.md).
+The version is the `version` field in `.claude-plugin/plugin.json`; `/plugin
+list` shows it. `mpi-project-refresh` reports it too, and flags an install
+older than the one the project last recorded. See
+[docs/install.md](docs/install.md).
 
 ## Use
 
@@ -149,11 +138,11 @@ The `mpi-lib` support skill ships a runnable script that validates any
 project's live JSON task board:
 
 ```text
-python <mpi-lib-root>/scripts/validate_board.py <project-root>
+python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/validate_board.py" <project-root>
 ```
 
-`<mpi-lib-root>` is the installed path of the `mpi-lib` skill (for example
-`~/.agents/skills/mpi-lib` or `~/.claude/skills/mpi-lib`).
+`${CLAUDE_PLUGIN_ROOT}` resolves inside skill and agent content; from a plain
+terminal use the install path `/plugin list` reports.
 `<project-root>` is the project directory containing
 `.agents/mpi-kanban/board.json`; it defaults to the current directory.
 A project with no `board.json` is not an error.
@@ -254,12 +243,9 @@ using the template at
 
 ## Migration
 
-Older releases used Claude Code and Codex plugin manifests. Those install
-surfaces are removed. Reinstall through skills.sh:
-
-```text
-npx skills add MadPonyInteractive/mpi-kanban --all -y -g
-```
+Releases 0.7 through 0.10 installed as an all-or-nothing Agent Skills pack.
+Remove those 15 skill folders before installing the plugin - see
+[docs/install.md](docs/install.md), which leads with the removal.
 
 **Removed skills.** The separate `mpi-project-setup` and `mpi-project-mode`
 skills no longer exist. Use `mpi-init` for onboarding/adoption and
@@ -277,16 +263,16 @@ or deleting legacy directories.)
 profile/index, outdated mode), run `mpi-project-refresh`. It proposes the
 migration and knowledge updates without re-running onboarding.
 
-If a workflow skill cannot find `mpi-lib`, reinstall with the full command
-above.
+If a workflow skill cannot find `mpi-lib`, the plugin install is broken;
+reinstall it.
 
 ## Development
 
 - [SPEC.md](SPEC.md) is the design source of truth.
 - [PLAN.md](PLAN.md) tracks implementation phases.
 - Run `python scripts/validate_plugin.py` before release.
-- Update your local installed copy from this checkout with:
-  `npx skills add . --all -y -g`.
+- Test this checkout without installing it: `claude --plugin-dir .`.
+- Validate the manifest with `claude plugin validate . --strict`.
 - Release by tagging and pushing; `.github/workflows/release.yml` builds the
   GitHub Release from `CHANGELOG.md`.
 

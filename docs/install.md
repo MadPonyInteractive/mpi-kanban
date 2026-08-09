@@ -1,48 +1,68 @@
 # Install Mpi-Kanban
 
-Mpi-Kanban is distributed as an all-or-nothing Agent Skills pack through
-skills.sh / `npx skills`.
+Mpi-Kanban is a Claude Code plugin. Skills, enforcement hooks, and agents all
+ship from one manifest, so there is nothing to install per component.
+
+## Remove the pre-1.0 skills pack first
+
+Releases before 1.0 installed as an all-or-nothing Agent Skills pack. Plugin
+skills are namespaced (`mpi-kanban:mpi-continue`), so they cannot collide by
+name - but both sets load their descriptions, and those descriptions carry the
+same trigger phrases. With both installed the agent sees two skills matching
+"continue MPI-42", one of them running the pre-1.0 contract. Remove the old
+pack before installing the plugin.
+
+Remove the symlinks first, then the real directories:
+
+```powershell
+$pack = "mpi-archive","mpi-brainstorm","mpi-brief-rule","mpi-cleanup",
+        "mpi-continue","mpi-create-large-plan","mpi-create-plan",
+        "mpi-end-session","mpi-execute-parallel","mpi-handoff","mpi-init",
+        "mpi-lib","mpi-message","mpi-nimbalyst-sync","mpi-project-refresh"
+foreach ($n in $pack) {
+  Remove-Item -Recurse -Force "$HOME/.claude/skills/$n" -ErrorAction SilentlyContinue
+  Remove-Item -Recurse -Force "$HOME/.agents/skills/$n" -ErrorAction SilentlyContinue
+}
+```
+
+```bash
+for n in mpi-archive mpi-brainstorm mpi-brief-rule mpi-cleanup mpi-continue \
+         mpi-create-large-plan mpi-create-plan mpi-end-session \
+         mpi-execute-parallel mpi-handoff mpi-init mpi-lib mpi-message \
+         mpi-nimbalyst-sync mpi-project-refresh; do
+  rm -rf "$HOME/.claude/skills/$n" "$HOME/.agents/skills/$n"
+done
+```
+
+Those 15 names are the whole pack. **Delete nothing else.** Projects commonly
+hold their own project-scope skills with `mpi-` names - `mpi-end`,
+`mpi-release`, `mpi-version-bump` and similar. Those are yours, not the pack's.
+
+`mpi-init` and `mpi-project-refresh` both check for leftovers and report them as
+a blocking finding with the removal commands, so a second machine cannot miss
+this.
 
 ## Install
 
 ```text
-npx skills add MadPonyInteractive/mpi-kanban --all -y -g
+/plugin marketplace add MadPonyInteractive/mpi-kanban
+/plugin install mpi-kanban@mad-pony-interactive
 ```
-
-The `--all` flag is required. The workflow skills depend on the `mpi-lib`
-support skill; partial installs are unsupported.
-
-> **Expected output:** `--all` targets every agent the `skills` CLI knows
-> about. Some agents (for example `PromptScript`) reject the `-g` global flag
-> and show a red `Failed to install` line for each skill. This is normal — the
-> pack still installs correctly for every compatible agent. Confirm success by
-> checking that the skill folders exist under `~/.agents/skills/` (or, when an
-> agent symlinks, `~/.claude/skills/`).
 
 ## Update
 
-Run the same command again:
-
 ```text
-npx skills add MadPonyInteractive/mpi-kanban --all -y -g
+/plugin update mpi-kanban@mad-pony-interactive
 ```
-
-Restart or reload the agent if it caches skill metadata for the current
-session.
 
 ### Which version is installed
 
-The pack stamps its version in the `mpi-lib` skill frontmatter:
-
-```text
-grep version ~/.agents/skills/mpi-lib/SKILL.md
-```
-
-`mpi-project-refresh` prints the same value in every report and warns when the
-install is older than the version the project last recorded. It compares
-against the project, not the network, so it catches a downgrade or a second
-machine running an old install - not "a newer release exists upstream". Nothing
-here updates itself; run the command above.
+The plugin ships exactly one version stamp: the `version` field in
+`.claude-plugin/plugin.json`. `/plugin list` shows it, and
+`mpi-project-refresh` prints it in every report and warns when the install is
+older than the version the project last recorded. That comparison is against
+the project, not the network, so it catches a downgrade or a second machine
+running an old install - not "a newer release exists upstream".
 
 ## Board Validator
 
@@ -50,32 +70,27 @@ To confirm a project's board is consistent after installing or after a session
 ends unexpectedly, run:
 
 ```text
-python <mpi-lib-root>/scripts/validate_board.py <project-root>
+python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/validate_board.py" <project-root>
 ```
 
-Replace `<mpi-lib-root>` with the installed path of the `mpi-lib` skill (for
-example `~/.agents/skills/mpi-lib`). `<project-root>` defaults to the current
-directory. A project with no `board.json` is not an error. Exit 0 means the
-board is consistent; exit 1 prints one line per violation.
+`${CLAUDE_PLUGIN_ROOT}` resolves inside skill and agent content; from a plain
+terminal, use the install path `/plugin list` reports. `<project-root>`
+defaults to the current directory. A project with no `board.json` is not an
+error. Exit 0 means the board is consistent; exit 1 prints one line per
+violation.
 
-## Agent Notes
+## Invoking the skills
 
-Different agents expose installed skills differently. Use the native Agent
-Skills invocation for your tool, or ask naturally:
+Ask naturally, or use the namespaced skill name:
 
 ```text
 what is MPI-5?
 set MPI-5 to validating
 continue this MPI plan
 read inbox
-tell another agent
 create an MPI handoff
 run MPI cleanup
 ```
-
-The skill folders install under Agent Skills directories such as
-`~/.agents/skills/`, `.agents/skills/`, `~/.claude/skills/`, or
-`.claude/skills/` depending on agent and install scope.
 
 ## Board Files
 
@@ -125,26 +140,15 @@ the two roots.
 
 ## Migration From Old Installs
 
-Older releases used Claude Code and Codex plugin packaging. Those install
-surfaces are removed in the universal skills release.
+Pre-1.0 releases installed as an Agent Skills pack; releases before that
+used plugin packaging. Remove whichever you have before installing, per
+[Remove the pre-1.0 skills pack first](#remove-the-pre-10-skills-pack-first).
 
-For old Claude plugin installs, uninstall the plugin package, then install the
-skills pack:
+If a very old plugin install is still registered:
 
 ```text
 /plugin uninstall mpi-kanban@mad-pony-interactive --scope user
-npx skills add MadPonyInteractive/mpi-kanban --all -y -g
 ```
-
-For old Codex plugin installs, remove the old Codex plugin registration/cache
-through Codex's normal plugin removal flow, then install the skills pack:
-
-```text
-npx skills add MadPonyInteractive/mpi-kanban --all -y -g
-```
-
-If a workflow skill reports that it cannot find `mpi-lib`, reinstall with the
-full command above.
 
 After installing in a project, run `mpi-init`. It is the single onboarding
 entrypoint: it creates or migrates the JSON board, writes the project profile

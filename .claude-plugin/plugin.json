@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "mpi-kanban",
+  "displayName": "Mpi-Kanban",
+  "version": "0.10.0",
+  "description": "Multi-agent kanban workflow for Claude Code: a JSON task board, coordination state, enforcement hooks, and skills for planning, parallel execution, handoffs, and close-out.",
+  "author": {
+    "name": "Mad Pony Interactive",
+    "url": "https://github.com/MadPonyInteractive"
+  },
+  "homepage": "https://github.com/MadPonyInteractive/mpi-kanban",
+  "repository": "https://github.com/MadPonyInteractive/mpi-kanban",
+  "license": "MIT",
+  "keywords": ["kanban", "task-board", "multi-agent", "workflow", "planning", "handoff"]
+}

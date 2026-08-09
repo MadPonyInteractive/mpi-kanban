@@ -5,18 +5,6 @@ description: MPI workflow pack - Extract and return Sub-Agent Briefing text from
 
 # mpi-brief-rule Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 Extract and return the `## Sub-Agent Briefing` section from configured project
 rules, or from a configured bundle of rules. Used as a D4 (Agent Ã¢â€ â€™ Sub-Agent)
 dispatch mechanism so sub-agents receive rule briefings without manual
@@ -36,12 +24,12 @@ The list is project-specific Ã¢â‚¬â€ the plugin ships no hardcoded ru
 
 All recipes (`loadConfig`, `resolveRulePath`, `resolveBundle`, `getRuleList`,
 `getBundleList`, `loadCriticalSnapshot`, bootstrap notice) live in
-`<mpi-lib-root>/config-ops.md`. Read it once when you actually
-need the first recipe Ã¢â‚¬â€ not before. Resolve the file from `<mpi-lib-root>`.
+`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md`. Read it once when you actually
+need the first recipe Ã¢â‚¬â€ not before. Resolve the file from `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib`.
 
 1. **Load config.** Call `loadConfig()`.
    - If `null` (file missing), emit the bootstrap notice from
-     `<mpi-lib-root>/config-ops.md` ("No mpi-kanban config found..."), and stop.
+     `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md` ("No mpi-kanban config found..."), and stop.
      Do NOT auto-create the config here. `mpi-init` is the skill that creates
      it, and `mpi-project-refresh` reports it missing; the notice tells the user
      to run one of them. Say plainly that a sub-agent dispatched right now would

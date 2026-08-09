@@ -28,7 +28,7 @@ or an approved migration.
 1. Call `findBoard()`.
 2. If found, return it.
 3. If missing:
-   - Read `<mpi-lib-root>/templates/board.json`.
+   - Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/board.json`.
    - Write it to `<project-root>/.agents/mpi-kanban/board.json`.
    - Create an empty `<project-root>/.agents/mpi-kanban/events.jsonl`.
    - Create `<project-root>/.agents/mpi-kanban/tasks/`.
@@ -68,7 +68,7 @@ Never accept a user-supplied task ID for a new task.
 If `maturity` is invalid or incoherent, report it as board drift before using
 the task. Do not preserve labels such as `Validated`, `spec`, `active`, `done`,
 `implementing`, or `implementation` as maturity values during the next write;
-use `<mpi-lib-root>/task-board-ops/mutate.md` to correct them.
+use `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` to correct them.
 
 ---
 

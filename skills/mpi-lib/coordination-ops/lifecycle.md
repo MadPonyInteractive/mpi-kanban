@@ -80,15 +80,20 @@ Inputs: `agent`, `role`, optional `task`, optional display `name`.
 
 1. Read `state/index.json`.
 2. Reuse the current session record when the session path is already known.
-   Otherwise generate a UUID with `python <mpi-lib-root>/scripts/new_uuid.py`.
+   Otherwise generate a UUID with `python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/new_uuid.py`.
    If that script is missing, use `python -c "import uuid; print(uuid.uuid4())"`.
    Never skip session registration because the helper could not be found.
 3. Write or update `sessions/<uuid>.json`:
    - `schema`: `mpi-kanban/session/v1`
    - `status`: `active`
    - `heartbeat_at`: current ISO-8601 timestamp
+   - `claude_session_id`: the current Claude Code session id, when it is known
    - `allowed_actions`: from `docs/coordination/roles.md`
    - `recent_events`: append `session_started` or `heartbeat_renewed`
+
+   `claude_session_id` is what lets the `guard-claim` hook tell your own claims
+   from a peer's. Without it a claim is unattributable, and the hook allows the
+   write rather than blocking an agent out of files it claimed itself.
 4. Add the session path to `active_sessions` if missing.
 
 ## Operation: Renew Heartbeat

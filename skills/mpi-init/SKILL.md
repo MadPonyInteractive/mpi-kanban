@@ -5,19 +5,6 @@ description: MPI workflow pack - Initialize or adopt Mpi-Kanban in a new or exis
 
 # mpi-init Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
-
 ## Purpose
 
 Onboard a project into Mpi-Kanban. This is the single entrypoint for new
@@ -43,19 +30,19 @@ state requires an approval proposal.
 
 Read only the references needed for the path being executed:
 
-- `<mpi-lib-root>/task-board-ops/_schema.md` - JSON board and task-card shape.
-- `<mpi-lib-root>/task-board-ops/read.md` - `findBoard`, `ensureBoard`.
-- `<mpi-lib-root>/task-board-ops/mutate.md` - `createTask`.
-- `<mpi-lib-root>/task-board-ops/migrate.md` - legacy Markdown board migration.
-- `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode state.
-- `<mpi-lib-root>/project-intent/modes.md` - mode contracts and defaults.
-- `<mpi-lib-root>/project-knowledge/profile-schema.md` - profile shape.
-- `<mpi-lib-root>/project-knowledge/index-schema.md` - index shape.
-- `<mpi-lib-root>/project-knowledge/adoption.md` - source inspection and
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` - JSON board and task-card shape.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`, `ensureBoard`.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `createTask`.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/migrate.md` - legacy Markdown board migration.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/interop-ops/modes.md` - source-of-truth mode state.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-intent/modes.md` - mode contracts and defaults.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/profile-schema.md` - profile shape.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/index-schema.md` - index shape.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/adoption.md` - source inspection and
   adoption map.
-- `<mpi-lib-root>/project-knowledge/updates.md` - approval and preservation
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/updates.md` - approval and preservation
   rules.
-- `<mpi-lib-root>/config-ops.md` - `scaffoldConfig()`, the sub-agent briefing
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md` - `scaffoldConfig()`, the sub-agent briefing
   config at `.agents/mpi-kanban.local.md`.
 
 ## Inputs
@@ -74,6 +61,31 @@ candidates are `backlog.md`, `todo.md`, `TODO.md`, `ideas.md`, `notes.md`, or a
 `## Backlog` section inside `README.md` or `CLAUDE.md`.
 
 ## Process
+
+### 0. Legacy skills-pack preflight
+
+Before anything else, check whether the pre-1.0 Agent Skills pack is still
+installed:
+
+```text
+ls -d ~/.claude/skills/mpi-* ~/.agents/skills/mpi-* 2>/dev/null
+```
+
+Exactly these 15 names are the old pack: `mpi-archive`, `mpi-brainstorm`, `mpi-brief-rule`, `mpi-cleanup`,
+`mpi-continue`, `mpi-create-large-plan`, `mpi-create-plan`,
+`mpi-end-session`, `mpi-execute-parallel`, `mpi-handoff`, `mpi-init`,
+`mpi-lib`, `mpi-message`, `mpi-nimbalyst-sync`, `mpi-project-refresh`.
+
+If any of them exists, stop and report it as a blocking finding before doing
+any other work. Plugin skills are namespaced, so they cannot collide by name,
+but both sets load their descriptions and those descriptions carry the same
+trigger phrases - every request then matches two skills, one of them running
+the pre-1.0 contract. Give the removal commands from `docs/install.md`
+(symlinks under `~/.claude/skills/` first, then the real directories under
+`~/.agents/skills/`) and do not initialize until the user confirms removal.
+
+Any other `mpi-*` skill is a project-scope skill the user owns - `mpi-end`,
+`mpi-release`, `mpi-version-bump` and similar. Never propose deleting those.
 
 ### 1. Detect project state
 
@@ -102,7 +114,7 @@ maintenance. Do not rewrite files.
 
 ### 2. Ask or infer project mode
 
-Read `<mpi-lib-root>/project-intent/modes.md`.
+Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-intent/modes.md`.
 
 For fresh or partial projects, ask:
 
@@ -123,7 +135,7 @@ Record mode in `.agents/mpi-kanban/project-profile.md` as `mode`,
 ### 3. Build the adoption proposal
 
 For existing or partial projects, read
-`<mpi-lib-root>/project-knowledge/adoption.md` and inspect the conventional
+`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/adoption.md` and inspect the conventional
 sources within the listed budget.
 
 The proposal must include:
@@ -157,7 +169,7 @@ The proposal must include:
    briefing, so propose it even when the scan finds no rules yet.
 10. First-rule action when the project has no rule file carrying a briefing:
    propose seeding `<rules_dir>/project.md` with `seedFirstRule()` from
-   `<mpi-lib-root>/config-ops.md`, drafted only from what this adoption pass
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md`, drafted only from what this adoption pass
    actually read. Show the drafted file in the proposal; it is a rule file, so
    it needs its own approval.
 
@@ -179,7 +191,7 @@ After approval, apply only approved changes:
 2. Create or migrate `.agents/mpi-kanban/board.json`, `events.jsonl`, and
    `tasks/`:
    - use `ensureBoard()` for empty boards;
-   - use `<mpi-lib-root>/task-board-ops/migrate.md` for legacy boards;
+   - use `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/migrate.md` for legacy boards;
    - preserve legacy snapshots;
    - prefer moving migrated `.agents/mpi-kanban/kanban.md` to
      `.agents/mpi-kanban/legacy/kanban-<timestamp>.md`;
@@ -187,29 +199,29 @@ After approval, apply only approved changes:
      that says `SUPERSEDED - DO NOT EDIT` and points to `board.json`;
    - never delete legacy directories without explicit approval.
 3. Create `.agents/mpi-kanban/state/interop.json` from
-   `<mpi-lib-root>/templates/interop.json` when missing. Default
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/interop.json` when missing. Default
    `source_of_truth` is `file`.
    In file mode, `file` means the JSON board and task workspaces, not
    `kanban.md`.
 4. Create or update `.agents/mpi-kanban/project-profile.md` from
-   `<mpi-lib-root>/templates/project-profile.md`. Set `pack_version` to the
-   `metadata.version` value in `<mpi-lib-root>/SKILL.md`; that is what
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/project-profile.md`. Set `pack_version` to the
+   `version` field in `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`; that is what
    `mpi-project-refresh` later compares an install against.
 5. Create or update `.agents/mpi-kanban/project-knowledge-index.md` from
-   `<mpi-lib-root>/templates/project-knowledge-index.md`.
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/project-knowledge-index.md`.
 6. Update `.agents/mpi-kanban/state/index.json` so `board` points at
    `.agents/mpi-kanban/board.json` when that file exists.
 7. Apply approved `AGENTS.md` / `CLAUDE.md` pointer additions only.
 8. Apply approved boot-doc repairs that remove active `kanban.md`
    continuation instructions.
 9. Apply approved rule-file or memory-pointer changes per
-   `<mpi-lib-root>/project-knowledge/updates.md`.
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/updates.md`.
 10. If a backlog source was provided, import parsed tasks after the board
     exists.
 11. Write the approved seed rule file, if any, from
-    `<mpi-lib-root>/templates/rule.md`.
+    `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/rule.md`.
 12. Create `.agents/mpi-kanban.local.md` with `scaffoldConfig()` from
-    `<mpi-lib-root>/config-ops.md` when it is missing. Run this after any
+    `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md` when it is missing. Run this after any
     approved rule-file writes so the briefing scan sees them. Never overwrite
     an existing config.
 
@@ -257,8 +269,8 @@ Next: use `mpi-brainstorm`, `mpi-create-plan`, or `mpi-continue`.
 - `mpi-init` is the only onboarding/adoption skill. Do not route to a separate
   setup flow.
 - Card-write preflight is mandatory before creating or importing JSON tasks:
-  read `<mpi-lib-root>/task-board-ops/_schema.md` and
-  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` and
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. Do not derive legal values from
   existing cards or legacy Markdown entries.
 - `mpi-init` may create the initial profile/index and record project mode.
 - `mpi-init` is the only skill that creates `.agents/mpi-kanban.local.md`.
@@ -268,5 +280,5 @@ Next: use `mpi-brainstorm`, `mpi-create-plan`, or `mpi-continue`.
 - Never let `source_of_truth: file` mean the legacy Markdown board when
   `board.json` exists.
 - Never overwrite existing profile/index/rules/memory without approval.
-- Never create task-card fields beyond `<mpi-lib-root>/task-board-ops/_schema.md`.
+- Never create task-card fields beyond `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md`.
 - Never delete legacy MPI files automatically.

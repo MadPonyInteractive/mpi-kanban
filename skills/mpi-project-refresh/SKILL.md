@@ -5,19 +5,6 @@ description: MPI workflow pack - Maintain an existing Mpi-Kanban project. Audits
 
 # mpi-project-refresh Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
-
 ## Purpose
 
 Maintain a project that already uses Mpi-Kanban. Refresh audits drift, proposes
@@ -36,18 +23,18 @@ before the user approves the refresh proposal.
 
 ## Required reading
 
-- `<mpi-lib-root>/project-knowledge/updates.md` - approval, preservation, drift
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/updates.md` - approval, preservation, drift
   detection rules.
-- `<mpi-lib-root>/project-knowledge/adoption.md` - classification vocabulary for
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/adoption.md` - classification vocabulary for
   newly discovered or changed sources.
-- `<mpi-lib-root>/project-knowledge/indexing.md` - context-budget rules.
-- `<mpi-lib-root>/project-intent/modes.md` - mode contracts and transitions.
-- `<mpi-lib-root>/project-knowledge/profile-schema.md` - profile fields.
-- `<mpi-lib-root>/project-knowledge/index-schema.md` - index fields.
-- `<mpi-lib-root>/task-board-ops/validate.md` - JSON board validation checks.
-- `<mpi-lib-root>/task-board-ops/migrate.md` - legacy board migration proposals.
-- `<mpi-lib-root>/interop-ops/modes.md` - source-of-truth mode state.
-- `<mpi-lib-root>/config-ops.md` - sub-agent briefing config shape and
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/indexing.md` - context-budget rules.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-intent/modes.md` - mode contracts and transitions.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/profile-schema.md` - profile fields.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/index-schema.md` - index fields.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/validate.md` - JSON board validation checks.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/migrate.md` - legacy board migration proposals.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/interop-ops/modes.md` - source-of-truth mode state.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md` - sub-agent briefing config shape and
   `scaffoldConfig()`.
 
 ## Pre-condition
@@ -87,7 +74,7 @@ enough to validate shape and source-of-truth mode:
   `AGENTS.md`, `CLAUDE.md`, `README.md`, project memory indexes, and obvious
   docs under `docs/` that are listed by the profile/index
 
-Also read `metadata.version` from `<mpi-lib-root>/SKILL.md`. That is the
+Also read `version` from `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`. That is the
 installed pack version, and it goes in the final report every time - a refresh
 report that does not name the version it was produced by cannot be trusted
 later.
@@ -130,7 +117,17 @@ Report findings in these categories:
   resolves. A missing config is a finding, not a silent default: it makes
   `mpi-brief-rule` stop for every rule name, so every sub-agent dispatched
   from this project runs with no briefing.
-- **Pack install:** compare the installed `metadata.version` against
+- **Legacy skills pack:** check `ls -d ~/.claude/skills/mpi-*
+  ~/.agents/skills/mpi-* 2>/dev/null` for the 15 pre-1.0 pack names
+  (`mpi-archive`, `mpi-brainstorm`, `mpi-brief-rule`, `mpi-cleanup`,
+  `mpi-continue`, `mpi-create-large-plan`, `mpi-create-plan`,
+  `mpi-end-session`, `mpi-execute-parallel`, `mpi-handoff`, `mpi-init`,
+  `mpi-lib`, `mpi-message`, `mpi-nimbalyst-sync`, `mpi-project-refresh`).
+  Any survivor means every request matches two skills, one of them running the
+  pre-1.0 contract. Report it above every other finding with the removal
+  commands from `docs/install.md`. Any other `mpi-*` skill is a project-scope
+  skill the user owns; never propose deleting those.
+- **Pack install:** compare the installed plugin `version` against
   `pack_version` in the profile frontmatter. Compare the numbers component by
   component, never as strings: `0.9.0` is older than `0.10.0` but sorts after
   it, so a string comparison reports the stale install as current. Cases:
@@ -138,7 +135,7 @@ Report findings in these categories:
     first, above every other finding, and say plainly that the rest of this
     report was produced by an old auditor and may be missing checks that exist
     in the recorded release. Tell the user to reinstall with
-    `npx skills add MadPonyInteractive/mpi-kanban --all -y -g` and re-run the
+    `/plugin update mpi-kanban@mad-pony-interactive` and re-run the
     refresh. Never reinstall automatically.
   - `pack_version` **missing** - the profile predates the stamp. Propose
     adding it, no warning.
@@ -149,7 +146,7 @@ Report findings in these categories:
   pack does not make.
 - **Rules:** a `rules_dir` that does not exist, or exists with no file carrying
   a `## Sub-Agent Briefing` heading. Propose `seedFirstRule()` from
-  `<mpi-lib-root>/config-ops.md`. Also report rules that have drifted from the
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md`. Also report rules that have drifted from the
   code they govern, and conventions now enforced in several places with no rule
   of their own.
 
@@ -158,7 +155,7 @@ user instead of scanning everything.
 
 ### 3. Mode review and change path
 
-Read `<mpi-lib-root>/project-intent/modes.md`. Report:
+Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-intent/modes.md`. Report:
 
 ```text
 Current mode: <mode or "not recorded">
@@ -201,11 +198,11 @@ Approve this refresh? Reply "yes" to apply all, "yes except <list>" to skip some
 After approval, in order:
 
 1. Create missing profile/index only for partial MPI state, using
-   `<mpi-lib-root>/templates/project-profile.md` and
-   `<mpi-lib-root>/templates/project-knowledge-index.md`.
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/project-profile.md` and
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/project-knowledge-index.md`.
 2. Update `.agents/mpi-kanban/project-profile.md` per approved findings.
-   Bump `last_refresh` to today. Set `pack_version` to the installed
-   `metadata.version`, unless the installed version is older than the recorded
+   Bump `last_refresh` to today. Set `pack_version` to the installed plugin
+   `version`, unless the installed version is older than the recorded
    one - never lower `pack_version`, or the stale install erases the evidence
    that it is stale.
 3. Update `.agents/mpi-kanban/project-knowledge-index.md` per approved findings.
@@ -233,7 +230,7 @@ After approval, in order:
     content; pointer-first additions only.
 12. Apply approved sub-agent briefing config repairs. Create a missing
     `.agents/mpi-kanban.local.md` with `scaffoldConfig()` from
-    `<mpi-lib-root>/config-ops.md`, seeding a first rule when the project has
+    `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md`, seeding a first rule when the project has
     none. For an existing config, only add or correct approved `rules` entries
     and pointers; never rewrite it wholesale and never drop entries the user
     added by hand.
@@ -259,8 +256,8 @@ Refresh applied.
 - Do not route to separate setup or mode skills; those flows are retired.
 - Card-write preflight is mandatory before any approved board repair that
   writes `column`, `maturity`, or `status`: read
-  `<mpi-lib-root>/task-board-ops/_schema.md` and
-  `<mpi-lib-root>/task-board-ops/mutate.md`. Do not derive legal values from
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` and
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. Do not derive legal values from
   existing cards.
 - Never create or edit a rule file without explicit per-file approval.
 - Never auto-delete or auto-overwrite a memory entry.

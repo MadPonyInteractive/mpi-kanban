@@ -1,0 +1,16 @@
+{
+  "name": "mad-pony-interactive",
+  "owner": {
+    "name": "Mad Pony Interactive",
+    "url": "https://github.com/MadPonyInteractive"
+  },
+  "description": "Mad Pony Interactive plugins for Claude Code.",
+  "plugins": [
+    {
+      "name": "mpi-kanban",
+      "source": "./",
+      "category": "workflow",
+      "tags": ["kanban", "multi-agent", "planning", "coordination"]
+    }
+  ]
+}

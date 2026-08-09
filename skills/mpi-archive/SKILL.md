@@ -5,19 +5,6 @@ description: MPI workflow pack - Archive completed JSON task-board tasks and leg
 
 # mpi-archive Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
-
 Archive completed work out of the active human board. For JSON-board projects,
 the active board is `.agents/mpi-kanban/board.json` plus task workspaces under
 `.agents/mpi-kanban/tasks/<id>/`. Legacy `.agents/mpi-kanban/kanban.md`
@@ -46,21 +33,21 @@ a task ID, or providing an exact legacy title, ask which tasks to archive.
 
 Lib pointers:
 
-- `<mpi-lib-root>/task-board-ops/_schema.md` - JSON board and task workspace
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` - JSON board and task workspace
   contract.
-- `<mpi-lib-root>/task-board-ops/read.md` - `findBoard`, `loadTask`,
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`, `loadTask`,
   `listTasks`.
-- `<mpi-lib-root>/task-board-ops/mutate.md` - `appendEvent` and structured
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `appendEvent` and structured
   board/task writes.
-- `<mpi-lib-root>/task-board-ops/validate.md` - board validation checks before
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/validate.md` - board validation checks before
   and after archive.
-- `<mpi-lib-root>/coordination-ops/messages.md` - read relevant unresolved
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/messages.md` - read relevant unresolved
   messages before removing tasks from the active board.
-- `<mpi-lib-root>/kanban-ops/archive.md` - legacy archive file selection,
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/archive.md` - legacy archive file selection,
   rotation, and move procedure.
-- `<mpi-lib-root>/kanban-ops/find.md` - legacy `findKanban`.
-- `<mpi-lib-root>/kanban-ops/_schema.md` - legacy column and entry block shape.
-- `<mpi-lib-root>/kanban-ops/errors.md` - legacy error wording.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/find.md` - legacy `findKanban`.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/_schema.md` - legacy column and entry block shape.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/errors.md` - legacy error wording.
 
 Steps:
 

@@ -5,29 +5,17 @@ description: MPI workflow pack - Create an MPI handoff. Preserve current MPI wor
 
 # mpi-handoff Skill
 
-## Locating shared references
-
-Shared reference docs live in the sibling skill `mpi-lib`. At first use, find the first existing directory from this candidate list:
-
-1. `~/.agents/skills/mpi-lib`
-2. `.agents/skills/mpi-lib`
-3. `~/.claude/skills/mpi-lib`
-4. `.claude/skills/mpi-lib`
-
-Cache that root path for the rest of this session. All references below resolve as `<mpi-lib-root>/<sub/path>.md`. If no candidate exists, stop and tell the user to reinstall the complete pack with:
-
-`npx skills add MadPonyInteractive/mpi-kanban --all -y -g`
 Preserves current MPI work and produces a canonical handoff document at
 `.agents/mpi-kanban/state/handoffs/<uuid>.json` that a fresh session can load
 to resume with `mpi-continue` without re-explanation.
 
 Shared coordination contract reference:
 
-- `<mpi-lib-root>/docs/coordination/README.md`
-- `<mpi-lib-root>/docs/coordination/handoff-migration.md`
-- `<mpi-lib-root>/docs/coordination/schemas.md`
-- `<mpi-lib-root>/coordination-ops/lifecycle.md`
-- `<mpi-lib-root>/coordination-ops/statuses.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/docs/coordination/README.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/docs/coordination/handoff-migration.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/docs/coordination/schemas.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md`
 
 Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
@@ -69,16 +57,16 @@ workspace, agent, role, or user. Treat statuses `open`, `acknowledged`, and
 handoff context. This is an async boundary check only; do not promise live
 interruption, remote delivery, global broadcast, or a background broker.
 
-Read `<mpi-lib-root>/coordination-ops/lifecycle.md`. If coordination state is active,
+Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md`. If coordination state is active,
 renew or identify the current session and task before writing the handoff.
 
 ### Step 3 - Look up the active task card
 
 Read these references:
 
-- `<mpi-lib-root>/task-board-ops/_schema.md`
-- `<mpi-lib-root>/task-board-ops/read.md`
-- `<mpi-lib-root>/kanban-ops/find.md` only for legacy compatibility
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/find.md` only for legacy compatibility
 
 Then:
 
@@ -122,7 +110,7 @@ Do not commit. Do not run cleanup.
 ### Step 5 - Write the handoff document
 
 Create file at `.agents/mpi-kanban/state/handoffs/<uuid>.json` and create the
-directory if missing. Generate `<uuid>` with `python <mpi-lib-root>/scripts/new_uuid.py`, or with
+directory if missing. Generate `<uuid>` with `python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/new_uuid.py`, or with
 `python -c "import uuid; print(uuid.uuid4())"` if that script is missing. Use
 the same value for the filename and the JSON `id`.
 

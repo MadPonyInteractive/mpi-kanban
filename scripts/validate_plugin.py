@@ -49,8 +49,28 @@ LEGACY_CONTEXT = re.compile(
     re.IGNORECASE,
 )
 
+PLUGIN_ROOT = "$" + "{CLAUDE_PLUGIN_ROOT}"
+PLUGIN_LIB = PLUGIN_ROOT + "/skills/mpi-lib"
+MANIFEST = ".claude-plugin/plugin.json"
+MARKETPLACE = ".claude-plugin/marketplace.json"
+SCRIPT_REF = r"hooks/[A-Za-z0-9_./-]+[.]py"
+HOOK_EVENTS = {
+    "SessionStart",
+    "SessionEnd",
+    "UserPromptSubmit",
+    "PreToolUse",
+    "PostToolUse",
+    "PostToolUseFailure",
+    "Stop",
+    "SubagentStart",
+    "SubagentStop",
+    "PreCompact",
+    "PostCompact",
+    "Notification",
+}
+
 REMOVED_PATHS = (
-    ".claude-plugin",
+    "skills.sh.json",
     ".codex-plugin",
     ".agents/plugins",
     "plugins/MadPonyInteractive/mpi-kanban",
@@ -172,12 +192,6 @@ def validate_mpi_lib_present() -> None:
         if not (mpi_lib / rel).exists():
             fail(f"mpi-lib missing required reference: {rel}")
 
-    for skill_dir in skill_dirs():
-        if skill_dir.name == "mpi-lib":
-            continue
-        text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
-        if "## Locating shared references" not in text or "<mpi-lib-root>" not in text:
-            fail(f"{skill_dir.name}/SKILL.md: missing mpi-lib discovery block")
 
 
 def validate_pack_version() -> None:
@@ -186,14 +200,10 @@ def validate_pack_version() -> None:
     It sat at 0.8.4 through two releases because nothing checked it, which is
     exactly the silent staleness the stamp exists to detect.
     """
-    skill = ROOT / "skills" / "mpi-lib" / "SKILL.md"
-    if not skill.exists():
-        return
-    frontmatter = parse_frontmatter(skill.read_text(encoding="utf-8")) or {}
-    metadata = frontmatter.get("metadata")
-    stamped = metadata.get("version") if isinstance(metadata, dict) else None
+    manifest = load_json(ROOT / MANIFEST, "plugin.json")
+    stamped = manifest.get("version") if isinstance(manifest, dict) else None
     if not stamped:
-        fail("skills/mpi-lib/SKILL.md: missing metadata.version pack stamp")
+        fail(f"{MANIFEST}: missing version stamp")
         return
 
     changelog = ROOT / "CHANGELOG.md"
@@ -208,7 +218,7 @@ def validate_pack_version() -> None:
         return
     if stamped != released.group(1):
         fail(
-            f"skills/mpi-lib/SKILL.md metadata.version is {stamped} but the latest "
+            f"{MANIFEST} version is {stamped} but the latest "
             f"CHANGELOG release is {released.group(1)}; bump the stamp or the pack "
             "ships claiming to be an older release"
         )
@@ -453,11 +463,10 @@ def validate_interop_state() -> None:
 
 def validate_no_stale_runtime_refs() -> None:
     patterns = (
-        "$" + "{CLAUDE_PLUGIN_ROOT}",
-        "/" + "mpi-kanban:",
+        "<mpi-lib" + "-root>",
+        "npx skills" + " add",
         "Codex" + " users",
-        "Claude Code" + " users",
-        "plugin" + " root",
+        "~/.agents/skills" + "/mpi-lib",
     )
     active_roots = [ROOT / "skills"]
     active_files = [
@@ -484,10 +493,10 @@ def validate_coordination_wiring() -> None:
     for path in skills.rglob("*.md"):
         text = path.read_text(encoding="utf-8", errors="ignore")
         for match in re.finditer(r"\S*scripts/new_uuid\.py", text):
-            if match.group(0) != "<mpi-lib-root>/scripts/new_uuid.py":
+            if match.group(0) != PLUGIN_LIB + "/scripts/new_uuid.py":
                 fail(
                     f"{path.relative_to(ROOT)}: new_uuid.py reference "
-                    f"{match.group(0)!r} is not anchored to <mpi-lib-root>"
+                    f"{match.group(0)!r} is not anchored to {PLUGIN_LIB}"
                 )
 
     init = skills / "mpi-init" / "SKILL.md"
@@ -498,29 +507,80 @@ def validate_coordination_wiring() -> None:
         fail("mpi-project-refresh/SKILL.md must report a missing mpi-kanban.local.md")
 
 
-def validate_skills_sh_json(skill_names: set[str]) -> None:
-    path = ROOT / "skills.sh.json"
-    if not path.exists():
-        fail("missing skills.sh.json")
-        return
-    data = json.loads(path.read_text(encoding="utf-8"))
-    groups = data.get("groupings")
-    if not isinstance(groups, list) or not groups:
-        fail("skills.sh.json must define non-empty groupings")
-        return
-    listed: set[str] = set()
-    for group in groups:
-        skills = group.get("skills") if isinstance(group, dict) else None
-        if not isinstance(skills, list) or not skills:
-            fail("skills.sh.json groupings[*].skills must be non-empty lists")
-            continue
-        listed.update(str(skill) for skill in skills)
-    missing = skill_names - listed
-    extra = listed - skill_names
-    if missing:
-        fail(f"skills.sh.json missing skills: {sorted(missing)}")
-    if extra:
-        fail(f"skills.sh.json lists unknown skills: {sorted(extra)}")
+def validate_plugin_manifest(skill_names: set[str]) -> None:
+    """The plugin manifest and its marketplace entry are the install contract."""
+    manifest = load_json(ROOT / MANIFEST, "plugin.json")
+    if isinstance(manifest, dict):
+        if manifest.get("name") != "mpi-kanban":
+            fail(f'{MANIFEST}: name must be "mpi-kanban"')
+        for field in ("description", "version", "license", "repository"):
+            if not manifest.get(field):
+                fail(f"{MANIFEST}: missing {field}")
+
+    market = load_json(ROOT / MARKETPLACE, "marketplace.json")
+    if isinstance(market, dict):
+        if not market.get("owner"):
+            fail(f"{MARKETPLACE}: missing owner")
+        entries = market.get("plugins")
+        entries = entries if isinstance(entries, list) else []
+        entry = next(
+            (e for e in entries if isinstance(e, dict) and e.get("name") == "mpi-kanban"),
+            None,
+        )
+        if entry is None:
+            fail(f"{MARKETPLACE}: no mpi-kanban plugin entry")
+        else:
+            if entry.get("source") != "./":
+                fail(f'{MARKETPLACE}: mpi-kanban source must be "./"')
+            if "version" in entry:
+                fail(
+                    f"{MARKETPLACE}: the entry must not carry a version; "
+                    "plugin.json is the only stamp"
+                )
+
+    if not skill_names:
+        fail("no skills found under skills/")
+
+
+def validate_plugin_hooks() -> None:
+    """Hooks and agents are optional on disk, but must be well formed if present."""
+    hooks_file = ROOT / "hooks" / "hooks.json"
+    if hooks_file.exists():
+        config = load_json(hooks_file, "hooks/hooks.json")
+        events = config.get("hooks") if isinstance(config, dict) else None
+        if not isinstance(events, dict) or not events:
+            fail("hooks/hooks.json: missing a non-empty `hooks` object")
+            events = {}
+        for event, matchers in events.items():
+            if event not in HOOK_EVENTS:
+                fail(f"hooks/hooks.json: unknown hook event {event!r}")
+            for matcher in matchers if isinstance(matchers, list) else []:
+                for hook in (matcher or {}).get("hooks", []):
+                    command = hook.get("command", "")
+                    if hook.get("type") == "command" and PLUGIN_ROOT not in command:
+                        fail(
+                            f"hooks/hooks.json: {event} command is not anchored to "
+                            f"{PLUGIN_ROOT}: {command!r}"
+                        )
+                    for rel in re.findall(SCRIPT_REF, command):
+                        if not (ROOT / rel).exists():
+                            fail(f"hooks/hooks.json: {event} references missing {rel}")
+
+    agents_dir = ROOT / "agents"
+    if agents_dir.exists():
+        for agent in sorted(agents_dir.glob("*.md")):
+            frontmatter = parse_frontmatter(agent.read_text(encoding="utf-8")) or {}
+            for field in ("name", "description"):
+                if not frontmatter.get(field):
+                    fail(f"agents/{agent.name}: missing {field}")
+            for banned in ("hooks", "mcpServers", "permissionMode"):
+                if banned in frontmatter:
+                    fail(
+                        f"agents/{agent.name}: {banned} is not supported for "
+                        "plugin-shipped agents"
+                    )
+            if frontmatter.get("isolation") not in (None, "worktree"):
+                fail(f"agents/{agent.name}: the only valid isolation is worktree")
 
 
 def validate_removed_surfaces() -> None:
@@ -548,7 +608,8 @@ def main() -> int:
     validate_interop_state()
     validate_no_stale_runtime_refs()
     validate_coordination_wiring()
-    validate_skills_sh_json(skill_names)
+    validate_plugin_manifest(skill_names)
+    validate_plugin_hooks()
     validate_removed_surfaces()
     check_no_symlinks()
 

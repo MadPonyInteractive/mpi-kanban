@@ -1,4 +1,4 @@
-name: Validate skill pack
+name: Validate plugin
 
 on:
   push:
@@ -17,5 +17,5 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run skill pack validator
+      - name: Run plugin validator
         run: python scripts/validate_plugin.py
