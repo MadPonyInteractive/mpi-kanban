@@ -186,6 +186,18 @@ The proposal must include:
    `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md`, drafted only from what this adoption pass
    actually read. Show the drafted file in the proposal; it is a rule file, so
    it needs its own approval.
+11. Behaviour rules action when `<rules_dir>/behaviour.md` does not exist:
+   propose it from
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/behaviour-rules.md`. It is
+   generic agent conduct - claims discipline, shell style, changelog restraint,
+   multi-agent isolation, reporting style - so it ships with the pack and needs
+   no drafting. It is still a rule file and needs its own approval.
+12. Worker archetype action when `.agents/mpi-kanban.local.md` declares bundles
+   or rules that no `.claude/agents/<name>.md` implements: propose one stub per
+   declared name from
+   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/worker-agent.md`, listing the
+   names. Propose only from names the project already declared - never from
+   directory structure, and never a worker nobody asked for.
 
 End with:
 
@@ -234,7 +246,15 @@ After approval, apply only approved changes:
     exists.
 11. Write the approved seed rule file, if any, from
     `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/rule.md`.
-12. Create `.agents/mpi-kanban.local.md` with `scaffoldConfig()` from
+12. Write the approved behaviour rules to `<rules_dir>/behaviour.md` from
+    `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/behaviour-rules.md`,
+    verbatim. Never overwrite an existing file at that path.
+13. Write the approved worker archetype stubs to `.claude/agents/<name>.md`
+    from `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/worker-agent.md`, one
+    per declared bundle or rule that had none, with the placeholders filled
+    from that declaration. Never overwrite an existing agent definition, and
+    never write one for a name the project did not declare.
+14. Create `.agents/mpi-kanban.local.md` with `scaffoldConfig()` from
     `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md` when it is missing. Run this after any
     approved rule-file writes so the briefing scan sees them. Never overwrite
     an existing config.

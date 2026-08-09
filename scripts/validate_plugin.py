@@ -187,6 +187,8 @@ def validate_mpi_lib_present() -> None:
         "templates/project-profile.md",
         "templates/project-knowledge-index.md",
         "templates/rule.md",
+        "templates/behaviour-rules.md",
+        "templates/worker-agent.md",
     )
     for rel in required:
         if not (mpi_lib / rel).exists():
@@ -581,6 +583,14 @@ def validate_plugin_hooks() -> None:
                     )
             if frontmatter.get("isolation") not in (None, "worktree"):
                 fail(f"agents/{agent.name}: the only valid isolation is worktree")
+
+    # A skill naming an agent that does not ship is a dead reference; the skill
+    # silently skips that step instead of failing.
+    for skill in sorted((ROOT / "skills").glob("*/SKILL.md")):
+        # `(?<![\w./])` keeps `.agents/mpi-kanban.local.md` out of the match.
+        for rel in re.findall(r"(?<![\w./])agents/[\w-]+\.md", skill.read_text(encoding="utf-8")):
+            if not (ROOT / rel).exists():
+                fail(f"{skill.parent.name}: references missing {rel}")
 
 
 def validate_removed_surfaces() -> None:

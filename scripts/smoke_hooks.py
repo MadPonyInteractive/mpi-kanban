@@ -103,6 +103,12 @@ def main():
         code, err = run("guard-card.py", edit_payload(root, ".agents/mpi-kanban/tasks/MPI-2/task.json"))
         checks.append(("guard-card blocks a second card", code == 2 and "MPI-1" in err))
 
+        code, _ = run("guard-card.py", edit_payload(root, ".agents/mpi-kanban/tasks/MPI-2/task.json"))
+        checks.append(("guard-card lets the justified second card through on retry", code == 0))
+
+        code, err = run("guard-card.py", edit_payload(root, ".agents/mpi-kanban/tasks/MPI-3/task.json"))
+        checks.append(("guard-card still blocks a third card", code == 2 and "MPI-1" in err))
+
         code, err = run("guard-shell.py", bash_payload(root, "cat <<'EOF'\nhello\nEOF"))
         checks.append(("guard-shell blocks a heredoc", code == 2 and "heredoc" in err))
 

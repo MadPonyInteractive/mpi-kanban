@@ -34,8 +34,12 @@ Lifecycle ordering is mandatory:
 - Needs validation/yellow card: keep the card in `doing`, write or update
   `validation.md` first, then set `maturity: "validating"`. Do not move to
   `done` just because validation is needed.
-- Done card: move to `done` only after validation state exists and final
-  completion is explicitly approved; set `maturity: "complete"`.
+- Done card: move to `done` once `validation.md` records evidence that the work
+  holds - the command that ran and passed, or the user's own confirmation - and
+  set `maturity: "complete"`. Evidence closes a card; a passing check is not
+  worth a round trip. Ask first only when the card's verification genuinely
+  needs human eyes (a UI/UX surface, a judgement call) and that has not
+  happened yet. Never close a card on an unrun or failed check.
 - Event logs: append meaningful `task.moved`, `task.updated`,
   `checklist.updated`, or `validation.updated` records to both the card's
   `tasks/<id>/events.jsonl` and the global `.agents/mpi-kanban/events.jsonl`.
@@ -200,6 +204,12 @@ Default empty content:
 Always create `handoffs/` and `research/` as directories when their links are
 used. Never delete unknown files from a task folder.
 
+`files.json` exists in two shapes in the wild: the object form above, and a
+bare `[]` array, which is what the VS Code extension writes when it migrates a
+legacy Markdown board. Readers must accept both - a list is the file list, an
+object carries it under `files`. Write the object form. Entries are repo-
+relative paths or globs, for example `["src/api/**", "docs/install.md"]`.
+
 ---
 
 ## `attachPlan(id, planMarkdown, actor)`
@@ -239,8 +249,8 @@ than moved straight to `done`.
 5. Stop and report drift if the task is in `done`; do not silently reopen a
    completed card.
 6. Call `ensureLinkedFiles(id, { "plan": "plan.md", "checklist":
-   "checklist.md", "validation": "validation.md", "events": "events.jsonl",
-   "handoffs": "handoffs/" })`.
+   "checklist.md", "validation": "validation.md", "files": "files.json",
+   "events": "events.jsonl", "handoffs": "handoffs/" })`.
 7. If `planPath` points at the task workspace plan, derive checklist items from
    the plan:
    - phased plan: phase titles, stripped of `Phase N:` prefix;
@@ -249,12 +259,27 @@ than moved straight to `done`.
      `plan-ops/derive.md`.
 8. Preserve checked checklist items that still match derived item text. Rewrite
    stale derived items only when the plan changed or the checklist was missing.
-9. Call `writeTask(id, { "maturity": "in-progress", "status": "active",
+9. Write ownership into `files.json`. This is the transition where ownership
+   becomes knowable: at creation it is a guess, and a card that never records
+   it can never be dispatched.
+   - Derive the list from the first source that yields paths: `Ownership:`
+     lines in the plan; the files, directories and globs the plan names; the
+     file whose edit triggered this transition.
+   - Write the derived list to `.agents/mpi-kanban/tasks/<id>/files.json` in
+     the object form, and keep `"files": "files.json"` in `links`.
+   - Report what was written and which source it came from. Never write
+     ownership silently.
+   - When the plan names nothing and no triggering file is known, leave the
+     list empty and say so. An empty list means "not dispatchable", which is
+     honest; an invented one sends a worker at files nobody chose.
+   - Merge with an existing non-empty list rather than replacing it, and do not
+     drop a path the card already owned.
+10. Call `writeTask(id, { "maturity": "in-progress", "status": "active",
    "activeSessionTitle": sessionTitle, "links": { ...existingLinks,
    "plan": "plan.md", "checklist": "checklist.md", "validation":
-   "validation.md", "events": "events.jsonl", "handoffs": "handoffs/" } },
-   actor)`.
-10. Append `checklist.updated` when checklist items are created or changed.
+   "validation.md", "files": "files.json", "events": "events.jsonl",
+   "handoffs": "handoffs/" } }, actor)`.
+11. Append `checklist.updated` when checklist items are created or changed.
 
 Do not set `maturity: "implementing"`; that is a Nimbalyst phase and maps to
 MPI `in-progress`.

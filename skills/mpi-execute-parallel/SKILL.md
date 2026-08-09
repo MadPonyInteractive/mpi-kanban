@@ -75,6 +75,10 @@ Abort and explain why if any task is missing:
 - `**Verify:**`,
 - disjoint ownership from every other task in the batch.
 
+When a task declares no `Ownership:`, infer it by grepping the paths, globs and
+modules the task names, and report it as inferred rather than aborting. Abort
+only when the footprint is still underivable after that.
+
 If ownership overlaps or a task depends on another task in the same batch,
 do not parallelize. Tell the user to use `mpi-continue` instead.
 
@@ -87,8 +91,12 @@ according to the lifecycle rules.
 ## Board batch source
 
 Use this when the user asks to run the ready cards, dispatch ready cards, or
-work the board, instead of naming a plan batch. It requires
-`.agents/mpi-kanban/board.json`; there is no legacy Markdown board equivalent.
+work the board, instead of naming a plan batch, and when `mpi-continue` hands
+over a set from its `## Autonomous dispatch` evaluation without being asked. A
+handed-over set arrives already conflict-checked; re-run the validator and the
+selection here anyway, because that evaluation is read-only and the board may
+have moved. It requires `.agents/mpi-kanban/board.json`; there is no legacy
+Markdown board equivalent.
 
 First, run the board validator:
 
@@ -114,23 +122,34 @@ A card is selectable only when all of these hold:
   from every fresh active write claim in `state/index.json`.
 
 Ownership derives from the card's `files.json` when that file exists and lists
-files, otherwise from `Ownership:` lines in its `plan.md`. A card with neither
-is not selectable. Never infer ownership from card text, title, or a diff.
+files, otherwise from `Ownership:` lines in its `plan.md`, otherwise by
+inference: grep the repo for the paths, globs and modules the plan names and
+take the resolved set. Accept both `files.json` shapes - a bare `[]` list and
+the `{"schema": ..., "files": [...]}` object.
+
+Confirm every footprint against the repo before selecting, whichever source it
+came from; a declared path that no longer exists is stale, not ownership.
+Report each selected card's footprint with the source it came from, marking the
+inferred ones. Never infer silently, and never infer from card text, title, or
+a diff - only from paths a plan actually names. A card whose footprint resolves
+to nothing is not selectable; an empty footprint cannot be proven disjoint.
 
 Report the whole selection before spawning any worker. Every card the board
 offered appears in it, with a reason when excluded:
 
 ```text
-Board batch: 2 selected, 3 excluded.
+Board batch: 3 selected, 4 excluded.
 
 Selected:
-- MPI-31 - owns src/api/** (files.json)
+- MPI-31 - owns src/api/** (files.json, 12 files)
 - MPI-34 - owns docs/install.md (plan.md Ownership:)
+- MPI-37 - owns tests/e2e/** (inferred by grep, 4 files)
 
 Excluded:
 - MPI-30 - maturity is `research`, not `planned`
 - MPI-33 - no plan.md; needs planning first
 - MPI-35 - ownership overlaps MPI-31 on src/api/routes.ts
+- MPI-38 - plan names no files; footprint not derivable
 ```
 
 Never drop a card silently.
@@ -144,6 +163,9 @@ derived ownership is the ownership, and its plan's `**Verify:**` or
 `## Verification` content is the verify instruction. Call `beginImplementation`
 from `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` for each selected card before
 its worker edits anything, so no card is implemented while still in `todo`.
+That recipe writes the card's ownership into `files.json`; give it the
+footprint this selection already resolved, so the next session inherits it
+instead of deriving it again.
 
 ## Briefing workers
 
@@ -151,6 +173,13 @@ For each task:
 
 1. Resolve its `Briefings:` list or bundle through `mpi-brief-rule` when
    configured.
+1b. Pick the worker type. When `.claude/agents/<name>.md` exists for the task's
+   bundle or archetype name, spawn with `subagent_type: "<name>"` and skip the
+   briefing text that definition already carries. Otherwise spawn a general
+   worker and pass the resolved briefing text inline. Never spawn a worker with
+   `isolation: "worktree"`: a worktree branches from the default branch, not
+   this session's HEAD, and MPI commits only at close-out, so the worker would
+   not see the uncommitted work it is meant to build on.
 2. Spawn one worker with:
    - task text,
    - ownership,
@@ -225,8 +254,13 @@ finish:
 
 ## Hard rules
 
-- Never parallelize a normal phase or compact plan.
-- Never infer ownership when the plan omitted it.
+- Parallelize whenever the footprints are provably disjoint and each unit is
+  independently verifiable, whatever produced the plan. A normal phase and a
+  compact plan both qualify; what disqualifies work is an overlapping or
+  underivable footprint, not the shape of the plan it came from.
+- Infer ownership by grepping the paths the plan names when it declares none,
+  and report every inferred footprint as inferred. Never infer silently, and
+  never infer from card text, title, or a diff.
 - Never dispatch a board batch without a passing `validate_board.py` run, and
   never select a card that has no `plan.md`.
 - Card-write preflight is mandatory before any `column`, `maturity`, or

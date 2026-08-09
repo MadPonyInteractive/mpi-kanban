@@ -100,6 +100,15 @@ Report findings in these categories:
   incoherent with their column. Treat values such as `Validated`, `spec`,
   `active`, `done`, `implementing`, and `implementation` as repair findings,
   not as new states.
+- **Card sprawl:** only when the board holds 8 or more `todo` cards. Cluster
+  them by shared file footprint first - `files.json` when it lists files,
+  otherwise the paths the card's `plan.md` or description names - and by theme
+  second. Report every cluster of three or more as a proposed umbrella: a
+  large-plan card whose `plan.md` carries the phases and `## Parallel Batch`
+  sections, with the clustered cards as its batch tasks. There is no `parent`
+  field and none may be added. Also report `todo` cards whose `files.json` is
+  empty, as unownable-and-undispatchable rather than as damage; ownership is
+  written at the next `todo -> doing`, never backfilled retroactively.
 - **State:** missing or invalid interop mode, stale source-of-truth claims,
   coordination state pointing at old board paths, `source_of_truth: file`
   misread as Markdown instead of JSON/file-backed board state, `active_tasks`
@@ -108,6 +117,17 @@ Report findings in these categories:
   `needs_integration`. Also `state/files/` records: a wrong `schema`, neither or
   both of `path`/`paths`, an unknown claim status, or a leading BOM. Nothing
   validated that folder before, and every one of those shapes was found live.
+- **Behaviour rules:** `<rules_dir>/behaviour.md` missing entirely, or missing
+  sections the pack's
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/behaviour-rules.md` now
+  ships. This file is generic agent conduct, so a section the pack added
+  reaches every project through refresh. Propose the missing sections; never
+  overwrite text the project changed on purpose.
+- **Worker archetypes:** bundles or rules declared in
+  `.agents/mpi-kanban.local.md` with no matching `.claude/agents/<name>.md`.
+  Propose one stub per declared name from
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/worker-agent.md`. Propose
+  only from declarations, never from directory structure.
 - **Agent entrypoints:** `AGENTS.md` / `CLAUDE.md` pointers missing or stale.
 - **Sub-agent briefing config:** `.agents/mpi-kanban.local.md` missing
   entirely, a `rules_dir` that no longer exists, configured rule files that
@@ -217,7 +237,10 @@ After approval, in order:
    When `board.json` exists, approved cleanup should either move
    `.agents/mpi-kanban/kanban.md` under `.agents/mpi-kanban/legacy/` or replace
    it with a tombstone that says `SUPERSEDED - DO NOT EDIT` and points to
-   `board.json`.
+   `board.json`. Create approved umbrella cards one at a time with `createTask`
+   and write their phases and `## Parallel Batch` sections into the new card's
+   `plan.md`; leave the clustered cards on the board unless the user says to
+   close them.
 6. Apply approved interop state changes. Do not switch source of truth silently.
    If `board.json` exists, repair `state/index.json` `board` pointers that
    still point to `kanban.md`.
@@ -226,7 +249,11 @@ After approval, in order:
    in `done`, remove them from `active_tasks` only when their status is
    resolved (`verified`, `completed`, or `closed`); leave unresolved
    `needs_review`, `needs_verification`, or `needs_integration` records active.
-8. Apply approved rule file creations or edits per file.
+8. Apply approved rule file creations or edits per file. This includes
+   `<rules_dir>/behaviour.md` and approved `.claude/agents/<name>.md` worker
+   stubs: create from the pack templates, add only the approved missing
+   sections to a file that already exists, and never overwrite an existing
+   agent definition.
 9. Apply approved memory pointer edits. Ask before removing or modifying existing
    memory entries.
 10. Apply approved boot-doc pointer edits. Preserve existing content; prefer

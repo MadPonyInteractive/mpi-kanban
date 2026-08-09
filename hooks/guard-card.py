@@ -66,7 +66,10 @@ def decide(rel_path, doing_cards, state):
     if NEW_CARD.match(rel_path):
         first = state.get("card_created")
         if first and first not in rel_path:
-            return SECOND_CARD.format(first=first, path=rel_path), None
+            if state.get("second_card_prompted") == rel_path:
+                return None, None
+            return (SECOND_CARD.format(first=first, path=rel_path),
+                    {"second_card_prompted": rel_path})
         if not first:
             card_id = rel_path.split("/")[3]
             return None, {"card_created": card_id}
@@ -117,7 +120,16 @@ def _selftest():
     # 4. first card of the session is recorded, second is blocked
     reason, update = decide(card, [], {})
     assert reason is None and update == {"card_created": "MPI-9"}
-    reason, _ = decide(".agents/mpi-kanban/tasks/MPI-10/task.json", [], {"card_created": "MPI-9"})
+    second = ".agents/mpi-kanban/tasks/MPI-10/task.json"
+    reason, update = decide(second, [], {"card_created": "MPI-9"})
+    assert reason and "already created card MPI-9" in reason
+    assert update == {"second_card_prompted": second}
+
+    # 4b. the message promises the write can be repeated, so the retry passes
+    assert decide(second, [], {"card_created": "MPI-9",
+                               "second_card_prompted": second}) == (None, None)
+    reason, _ = decide(".agents/mpi-kanban/tasks/MPI-11/task.json", [],
+                       {"card_created": "MPI-9", "second_card_prompted": second})
     assert reason and "already created card MPI-9" in reason
 
     # 5. rewriting the same card is not a second card
