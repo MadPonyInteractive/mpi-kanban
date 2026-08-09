@@ -14,9 +14,7 @@ or load visible task cards. For the schema, read `_schema.md` first.
    migrate from legacy Markdown, or surface a setup notice.
 
 If both `board.json` and `kanban.md` exist, use `board.json` as canonical.
-Do not write to `kanban.md` as a live board. Treat `source_of_truth: "file"` as
-the local JSON/file-backed board when `board.json` exists; it is not permission
-to use the old Markdown board.
+Never write to `kanban.md` as a live board; it is a migration input only.
 
 ---
 
@@ -47,6 +45,12 @@ or an approved migration.
 4. If any existing task ID has a numeric suffix greater than or equal to
    `next_id`, set `next_id` to one more than the largest suffix before
    allocating.
+
+The returned ID is a candidate, not a reservation. `next_id` is not a lock,
+so two agents can be handed the same ID. The caller claims it by creating
+`tasks/<id>/` with `os.mkdir` and writing `task.json` with mode `'x'` - see
+`createTask` in `mutate.md`. Do not treat an ID as owned until that mkdir
+succeeds.
 
 Never accept a user-supplied task ID for a new task.
 

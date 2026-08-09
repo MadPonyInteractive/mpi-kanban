@@ -33,7 +33,6 @@ before the user approves the refresh proposal.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/index-schema.md` - index fields.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/validate.md` - JSON board validation checks.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/migrate.md` - legacy board migration proposals.
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/interop-ops/modes.md` - source-of-truth mode state.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md` - sub-agent briefing config shape and
   `scaffoldConfig()`.
 
@@ -45,7 +44,6 @@ At least one initialized MPI artifact should exist:
 - `.agents/mpi-kanban/project-knowledge-index.md`
 - `.agents/mpi-kanban/board.json`
 - `.agents/mpi-kanban/state/index.json`
-- `.agents/mpi-kanban/state/interop.json`
 
 If none exist, stop with:
 
@@ -62,13 +60,12 @@ refresh.
 ### 1. Load current MPI state
 
 Read the profile and knowledge index when present. Read board/state files only
-enough to validate shape and source-of-truth mode:
+enough to validate shape:
 
 - `.agents/mpi-kanban/project-profile.md`
 - `.agents/mpi-kanban/project-knowledge-index.md`
 - `.agents/mpi-kanban/board.json`
 - `.agents/mpi-kanban/state/index.json`
-- `.agents/mpi-kanban/state/interop.json`
 - legacy `.agents/mpi-kanban/kanban.md` and `.claude/mpi-kanban/kanban.md`
 - startup/boot docs that may route agents to board state: `START-HERE.md`,
   `AGENTS.md`, `CLAUDE.md`, `README.md`, project memory indexes, and obvious
@@ -109,9 +106,9 @@ Report findings in these categories:
   field and none may be added. Also report `todo` cards whose `files.json` is
   empty, as unownable-and-undispatchable rather than as damage; ownership is
   written at the next `todo -> doing`, never backfilled retroactively.
-- **State:** missing or invalid interop mode, stale source-of-truth claims,
-  coordination state pointing at old board paths, `source_of_truth: file`
-  misread as Markdown instead of JSON/file-backed board state, `active_tasks`
+- **State:** an orphaned `.agents/mpi-kanban/state/interop.json` left by a
+  pre-1.0 pack - offer to delete it, since nothing reads it any more -
+  coordination state pointing at old board paths, `active_tasks`
   entries that are missing, closed, or tied to `done` JSON task cards without
   unresolved statuses such as `needs_review`, `needs_verification`, or
   `needs_integration`. Also `state/files/` records: a wrong `schema`, neither or
@@ -241,8 +238,7 @@ After approval, in order:
    and write their phases and `## Parallel Batch` sections into the new card's
    `plan.md`; leave the clustered cards on the board unless the user says to
    close them.
-6. Apply approved interop state changes. Do not switch source of truth silently.
-   If `board.json` exists, repair `state/index.json` `board` pointers that
+6. If `board.json` exists, repair `state/index.json` `board` pointers that
    still point to `kanban.md`.
 7. Apply approved coordination-state repairs. Remove missing or `closed`
    records from active index arrays. For coordination tasks tied to JSON cards
@@ -296,9 +292,6 @@ Refresh applied.
 - Never overwrite user-customized profile/index sections without showing the
   proposed change and getting approval.
 - Never maintain `board.json` and `kanban.md` as competing live boards.
-- Never treat `source_of_truth: file` as permission to read or write
-  `kanban.md` when `board.json` exists.
-- Never switch Nimbalyst/file source-of-truth mode silently.
 - Never reinstall or update the pack. Report the stale install, give the user
   the install command, stop.
 

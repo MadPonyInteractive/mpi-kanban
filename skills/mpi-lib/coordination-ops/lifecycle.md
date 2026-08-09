@@ -115,9 +115,8 @@ owner session path.
    task-board item when it clearly represents the same work.
 2. Otherwise generate a UUID and create `tasks/<uuid>.json` with status
    `in_progress`.
-3. For JSON-board projects, set `task_card` to the visible `MPI-*` task ID and
-   keep any task-workspace paths as pointers only. For unmigrated legacy
-   projects, set `kanban_entry` to the entry title.
+3. Set `task_card` to the visible `MPI-*` task ID and keep any task-workspace
+   paths as pointers only.
 4. Set `owner_session`, `plan`, and `allowed_actions`.
 5. Add the task path to `active_tasks`.
 6. Link the task path from the session record.

@@ -695,7 +695,6 @@ Validation must check:
 
 - `npx skills add MadPonyInteractive/mpi-kanban --all -y -g` installs the pack.
 - `npx skills add MadPonyInteractive/mpi-kanban -l` lists all 15 skills.
-- Claude, Codex, and Kilo can invoke one workflow skill after npx install.
 - Agents can answer "what is MPI-5?" through `mpi-continue`'s bounded
   read-only mode, which reads only the active board entry and direct linked
   task files.

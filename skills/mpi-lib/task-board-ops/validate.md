@@ -53,8 +53,6 @@ Run these checks against `.agents/mpi-kanban/board.json` when it exists:
   `schema: "mpi-kanban/file-claim/v1"`, sets exactly one of `path` (string) or
   `paths` (list of strings), carries a known claim status, and is written
   without a UTF-8 BOM.
-- If `.agents/mpi-kanban/state/interop.json` has `source_of_truth: "file"`,
-  treat that as the JSON board and task workspaces, not `kanban.md`.
 - If `.agents/mpi-kanban/kanban.md` still exists, it is either under
   `.agents/mpi-kanban/legacy/` or has a top-of-file tombstone containing
   `SUPERSEDED` or `DO NOT EDIT`.

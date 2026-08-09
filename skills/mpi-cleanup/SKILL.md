@@ -26,9 +26,6 @@ Lib pointers:
   `listTasks`.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/validate.md` - validation checks before
   proposing repairs or archive actions.
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/find.md` - legacy compatibility lookup only when
-  `board.json` is absent.
-
 Scan:
 
 - `.agents/mpi-kanban/board.json`
@@ -58,12 +55,8 @@ Classify artifacts:
   validation represented in `validation.md`.
 - **Attention-required task:** task card with `attention.state === "required"`;
   keep and surface before archive/delete proposals.
-- **Legacy active:** referenced by a PLANNING, IMPLEMENTING, or VALIDATING
-  kanban entry when no JSON board exists.
-- **Legacy completed:** referenced by a COMPLETED kanban entry when no JSON
-  board exists.
 - **Orphaned:** not referenced by any JSON board column, task workspace,
-  coordination record, legacy kanban entry, or handoff.
+  coordination record, or handoff.
 - **Superseded handoff:** older handoff for the same active plan when a newer
   handoff exists.
 - **Stale:** older than the chosen threshold and not active.

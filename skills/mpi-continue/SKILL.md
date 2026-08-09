@@ -89,11 +89,11 @@ Use this mode when the user asks to inspect one card/task rather than continue
 implementation.
 
 1. Check for `.agents/mpi-kanban/board.json`.
-2. If present, use the JSON board path. Ignore `.agents/mpi-kanban/kanban.md`
-   except to mention that it is legacy/tombstoned if relevant.
-3. If `board.json` is absent, check for legacy `.agents/mpi-kanban/kanban.md`
-   and `.claude/mpi-kanban/kanban.md`.
-4. If no board exists, stop and tell the user to run `mpi-init`.
+2. If present, use it. Ignore `.agents/mpi-kanban/kanban.md` except to mention
+   that it is legacy/tombstoned if relevant.
+3. If `board.json` is absent, stop and tell the user to run `mpi-init`. A
+   legacy `.agents/mpi-kanban/kanban.md` is a migration input, not a board to
+   read work from.
 
 For JSON boards, resolve `MPI-*` IDs directly from `board.json`. For title
 lookups, load only the visible `task.json` files listed by `board.json` and
@@ -102,11 +102,7 @@ matching IDs and ask the user to choose one. If no match exists, report that
 the task was not found on the active JSON board. Do not search sibling repos or
 legacy boards to "confirm" unless the user explicitly asks.
 
-For legacy boards, use `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/find.md` and read only the
-matching entry block. Legacy boards do not have `MPI-*` IDs unless the
-title/body explicitly contains one.
-
-For JSON tasks, stay inside `.agents/mpi-kanban/tasks/<id>/` and read direct
+Stay inside `.agents/mpi-kanban/tasks/<id>/` and read direct
 links only:
 
 1. Required: `task.json`.
@@ -123,8 +119,8 @@ links only:
 Report:
 
 ```text
-<ID or legacy title> - <title>
-Column: <todo | doing | done | legacy column>
+<ID> - <title>
+Column: <todo | doing | done>
 Status: <status/maturity/attention summary when available>
 
 Summary:
@@ -138,8 +134,7 @@ Next useful action:
 ```
 
 After reporting, stop. Do not mutate board, task, state, memory, docs, or plan
-files. `source_of_truth: "file"` means the JSON board and task workspaces when
-`board.json` exists; it does not mean `kanban.md`.
+files.
 
 ## Direct card update mode
 
@@ -152,15 +147,10 @@ board state without asking to implement code.
    `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` before writing anything. Do not
    derive allowed `column`, `maturity`, or `status` values from existing
    cards.
-2. Read `.agents/mpi-kanban/state/interop.json` when present. If
-   `source_of_truth` is `nimbalyst`, do not mutate the JSON board; report the
-   Nimbalyst state change the user should make or run `mpi-nimbalyst-sync` for
-   a snapshot boundary.
-3. Locate exactly one JSON task by `MPI-*` ID or unambiguous title. If
+2. Locate exactly one JSON task by `MPI-*` ID or unambiguous title. If
    `board.json` is absent, stop and report that direct card-state updates
-   require the JSON task board; legacy Markdown updates are handled only by the
-   legacy compatibility paths in workflow close-out.
-4. Map the user's requested state through the card contract:
+   require the JSON task board.
+3. Map the user's requested state through the card contract:
    - `todo`, `to do`, `backlog`, `planned`, `reopen` -> `moveTask(id, "todo",
      actor, reason)` and coherent `maturity: "planned"` unless it is a raw
      idea.
@@ -180,10 +170,10 @@ board state without asking to implement code.
      evidence is missing, the check failed, or the card's verification
      genuinely needs human eyes that have not seen it yet - and say which of
      those it is.
-5. Append/verify the required events through `mutate.md` recipes. Meaningful
+4. Append/verify the required events through `mutate.md` recipes. Meaningful
    card updates append to both `.agents/mpi-kanban/tasks/<id>/events.jsonl`
    and `.agents/mpi-kanban/events.jsonl`.
-6. Report the resulting `column`, `maturity`, `status`, and linked task file
+5. Report the resulting `column`, `maturity`, `status`, and linked task file
    touched, then stop. Do not inspect unrelated tasks or sibling repositories.
 
 ## Pre-conditions
@@ -211,9 +201,6 @@ Which MPI plan or handoff should I continue from? Please paste the path.
 
 Lib pointers, read only when needed:
 
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/find.md` - `findEntry`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/mutate.md` - `moveEntry`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/steps.md` - `addSteps`, `markStep`
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` - JSON board and task-card schema
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`, `loadTask`, `findTask`
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `moveTask`, `writeTask`,
@@ -223,7 +210,6 @@ Lib pointers, read only when needed:
   active plan
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md` - session/task/file claim lifecycle
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md` - state vocabulary
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/interop-ops/modes.md` - source-of-truth mode gate
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/indexing.md` - context-budget rules
 
 1. Read the handoff if present. If it is a legacy `docs/handoffs/` pointer to a
@@ -242,7 +228,7 @@ Lib pointers, read only when needed:
    coordination state is relevant, then read `state/index.json` as the active
    coordination facade. For a complete handoff route, use the index only for
    blockers and current pointers: `active_file_claims`, `pending_file_states`,
-   `open_messages`, `active_handoffs`, `active_sessions`, and interop mode.
+   `open_messages`, `active_handoffs`, and `active_sessions`.
    Treat stale unrelated `active_tasks` records as cleanup findings, not as a
    reason to scan every task before the Continue Brief.
 4. At this continue startup boundary, read any `open_messages` records pointed
@@ -252,37 +238,22 @@ Lib pointers, read only when needed:
    acknowledge, reply, or ask the user before editing when a message changes
    the next action. This is an async boundary check only; do not promise live
    interruption, remote delivery, broadcast, or a background broker.
-5. Read `.agents/mpi-kanban/state/interop.json` when present. If it is missing,
-   assume `file` mode. Include the mode in the Continue Brief. If
-   `source_of_truth` is `nimbalyst`, do not move JSON task cards, mutate
-   linked task workspace state, move legacy kanban entries, add steps, or
-   update board state. Defer live work-state changes to Nimbalyst
-   tracker/session instructions, or ask the user to run `mpi-nimbalyst-sync`
-   for an explicit snapshot boundary.
-6. Register or renew an `implementer` session and create or attach a task
-   coordination record for the active JSON task card and plan. Legacy kanban
-   title may be used only for unmigrated projects.
-7. Read the active plan.
-8. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` and locate the active task by
+5. Register or renew an `implementer` session and create or attach a task
+   coordination record for the active JSON task card and plan.
+6. Read the active plan.
+7. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` and locate the active task by
    handoff task ID first when available, otherwise by direct task ID, linked
-   plan path, or required attention in `doing`. If `board.json` is missing, use
-   legacy `kanban-ops/find.md` compatibility to locate a kanban entry whose
-   body contains `Plan file: <planPath>`.
-9. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/plan-ops/derive.md` before presenting the Continue
+   plan path, or required attention in `doing`.
+8. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/plan-ops/derive.md` before presenting the Continue
    Brief so the expected checklist shape is known.
-10. In `file` mode, when implementation starts or resumes, use
+9. When implementation starts or resumes, use
    `beginImplementation(id, actor, planPath, sessionTitle)` from
    `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. It must move `todo -> doing`
    when needed, set `maturity: "in-progress"`, set `status: "active"`, set
    active session context, derive checklist items from the active plan, and
    append events together. Do not leave a `doing` card with
-   `maturity: "planned"` or `maturity: "implementing"`. If using a legacy
-   Markdown board, move PLANNING to IMPLEMENTING and add stable steps:
-   - Compact plan: one step, `Implementation`.
-   - Large/adaptive plan: phase-level steps when phases exist; otherwise use
-     lifecycle steps: `Orient current state`, `Implement active work`,
-     `Verify behavior`, `Preserve knowledge`, `Close session`.
-11. Inspect current workspace state with small commands (`git status`,
+   `maturity: "planned"` or `maturity: "implementing"`.
+10. Inspect current workspace state with small commands (`git status`,
    targeted file reads/searches). Do not run large diffs unless needed.
 
 ## Orient and detect drift
@@ -356,9 +327,9 @@ case where the user says it out loud.
 Evaluate this on every start, before the Continue Brief. Do not wait to be
 asked - the user never types "dispatch", and the work still splits.
 
-Skip the evaluation entirely when `board.json` is absent, when the interop mode
-is `nimbalyst`, or when fewer than two cards are ready. It is read-only and
-costs a few reads; it does not need permission.
+Skip the evaluation entirely when `board.json` is absent or fewer than two
+cards are ready. It is read-only and costs a few reads; it does not need
+permission.
 
 1. **Collect the ready cards.** A card is ready when it is in `todo` with
    `maturity: "planned"`, has a `plan.md`, and carries no
@@ -432,7 +403,6 @@ Before implementation, output a brief and stop:
 
 **Source:** <plan path and handoff path if any>
 **Project mode:** <profile mode, or "no profile">
-**Interop mode:** <file | nimbalyst | absent>
 **Current state:** <1-3 bullets>
 **Conventions in play:** <1-3 bullets from matched topic block, or "none">
 **Plan drift:** <none or summary of plan edits made/proposed>
@@ -544,26 +514,20 @@ in path B. (Path C does not reach here until the failure is resolved.)
    - Update `## Current State`.
    - Keep `## Remaining Work` accurate.
    - Keep `## Completed` for plan-level work already finished; this is
-     separate from the JSON board `done` column or any legacy kanban
-     `COMPLETED` column.
+     separate from the JSON board `done` column.
 3. Complete or release file claims using the lifecycle operation:
    `complete`, `needs_review`, `needs_verification`, `needs_integration`,
    `verified`, or `released` as appropriate.
 4. Update the task record to the appropriate status. Remember that released
    file ownership is not commit ownership; preserve pending-change provenance
    until review/integration/session close resolves it.
-5. In `file` mode, update the JSON task workspace instead of embedding
-   implementation state in `task.json`: mark the relevant item in
-   `checklist.md`, add validation notes to `validation.md`, call `writeTask`
-   for concise status/badge changes, and append `checklist.updated` or
-   `validation.updated` events when meaningful. Move the card to `done` only
-   after validation state is represented in the task workspace and the work is
-   verified — by the user for a `user-ux` card, or by passing self-verification
-   for an `auto` card. If using a legacy Markdown board, flip the relevant
-   kanban step when a lifecycle/phase boundary is complete and move
-   IMPLEMENTING to VALIDATING rather than directly to COMPLETED. In
-   `nimbalyst` mode, do not mutate JSON board files or `kanban.md`; tell the
-   user which Nimbalyst tracker/session state should be updated instead.
+5. Update the JSON task workspace instead of embedding implementation state in
+   `task.json`: mark the relevant item in `checklist.md`, add validation notes
+   to `validation.md`, call `writeTask` for concise status/badge changes, and
+   append `checklist.updated` or `validation.updated` events when meaningful.
+   Move the card to `done` only after validation state is represented in the
+   task workspace and the work is verified — by the user for a `user-ux` card,
+   or by passing self-verification for an `auto` card.
 6. If meaningful work remains, say:
 
 ```text

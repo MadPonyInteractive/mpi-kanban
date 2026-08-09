@@ -19,9 +19,6 @@ to back by hand; this runs what they ran.
 This skill is the LAST step in the brainstorm -> create-plan/create-large-plan
 -> continue -> end-session loop.
 
-Legacy Markdown kanban close-out is compatibility behavior only when no JSON
-board exists.
-
 Invocation: Use the installed Agent Skills invocation for this agent, or ask
 naturally.
 
@@ -41,12 +38,11 @@ output:
 
 ### 0. Scope gate, then coordination state
 
-Read these two small files FIRST (both under 3 KB):
+Read this small file FIRST (under 3 KB):
 
 - `.agents/mpi-kanban/state/index.json`
-- `.agents/mpi-kanban/state/interop.json`
 
-**Parse both as `utf-8-sig`.** A UTF-8 BOM is present in the wild - PowerShell
+**Parse it as `utf-8-sig`.** A UTF-8 BOM is present in the wild - PowerShell
 `>`, `Out-File`, and `Set-Content -Encoding utf8` all add one - and a plain
 `utf-8` `json.load` dies on it with `Unexpected UTF-8 BOM`.
 
@@ -63,10 +59,7 @@ coordinate. **Skip** these reads:
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/messages.md`
 
-and skip the open-messages boundary check below. If `interop.json` says
-`source_of_truth: "file"`, or the file is absent, also skip
-`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/interop-ops/modes.md` and treat the mode
-as `file`.
+and skip the open-messages boundary check below.
 
 `active_handoffs` is deliberately NOT part of the condition. It is a *resume*
 signal, not a coordination-reference signal: a handoff left open means the last
@@ -99,11 +92,6 @@ When the gate did NOT clear:
   off before committing. If another fresh active session owns claimed files
   that are part of the current task, do not commit those changes; ask the user
   or assign an integrator.
-
-In `nimbalyst` mode, Nimbalyst trackers/sessions are canonical: do not move
-JSON task cards or legacy MPI board entries during close-out. Commit/session
-cleanup may proceed, but board snapshots require an explicit
-`mpi-nimbalyst-sync` boundary.
 
 ### 1. Survey what changed
 
@@ -339,20 +327,10 @@ Lib pointers, read each only when its recipe is needed:
   `writeTask`, `ensureLinkedFiles`, `appendEvent`, `setAttention`
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/validate.md` - checks
   when board state is inconsistent
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/find.md` - legacy
-  `findKanban`, `findEntry`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/steps.md` - legacy
-  `allStepsDone`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/kanban-ops/mutate.md` - legacy
-  `moveEntry`
 
 `validation.md` is the gate between implementation and completion. Keep
 implementation checklists, validation notes, and handoffs in linked task
 workspace files, not in `task.json`.
-
-If interop mode is `nimbalyst`, skip this whole section and report:
-`Interop mode is nimbalyst - skipping task-board close-out; use
-mpi-nimbalyst-sync for a board snapshot.`
 
 1. Call `findBoard()`.
 2. Identify the active plan: the plan file most recently touched this session,
@@ -402,11 +380,6 @@ mpi-nimbalyst-sync for a board snapshot.`
    `setAttention(id, "required", reason, actor)`, and say so in the report.
 7. If the task is already in `done`, do not move it again. Update only concise
    summary fields or attention state when needed.
-8. If `board.json` is missing, fall back to legacy kanban compatibility: locate
-   the PLANNING, IMPLEMENTING, VALIDATING, or COMPLETED entry tied to the
-   active plan. All done IMPLEMENTING steps move to VALIDATING. A VALIDATING
-   entry moves to COMPLETED on the same evidence rule.
-
 Then close or complete the active coordination session and task per
 `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md`. Remove
 closed records from active index arrays; preserve pending records that still
@@ -445,9 +418,8 @@ context:
 `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md`: call
 `findBoard()`, then locate the task by ID, linked plan path, or required
 attention in `doing`. Set `task_card` to its ID, title, column, and workspace
-path with links. If no JSON board exists, use legacy `findKanban()` and set
-`kanban_entry` to the matching IMPLEMENTING/VALIDATING title. When a JSON card
-exists, `kanban_entry` is `null`.
+path with links. If no JSON board exists, say so in the handoff and leave
+`task_card` null.
 
 **4. Write the handoff** at `.agents/mpi-kanban/state/handoffs/<uuid>.json`,
 creating the directory if missing. Generate `<uuid>` with
@@ -489,7 +461,6 @@ the same value for the filename and the JSON `id`.
       "handoffs": "<relative or project path, or null>"
     }
   },
-  "kanban_entry": "<legacy active IMPLEMENTING or VALIDATING title, or null>",
   "allowed_actions": ["<actions the next agent may take, e.g. read, continue, verify>"],
   "knowledge_preservation": {
     "completed": ["<docs/rules/memory/plan preservation done before handoff>"],
@@ -513,7 +484,7 @@ the same value for the filename and the JSON `id`.
   },
   "rules_active": ["<rule file that must be read>", "<rule file 2>"],
   "recent_events": [{ "at": "<ISO-8601 timestamp>", "event": "handoff_created" }],
-  "resume_prompt": "<single paragraph the user can paste into a new session. Second person, present tense. Names the handoff file path and task ID, or the legacy kanban entry title when no task ID exists.>"
+  "resume_prompt": "<single paragraph the user can paste into a new session. Second person, present tense. Names the handoff file path and the task ID.>"
 }
 ```
 
@@ -579,8 +550,7 @@ Then one `git status` confirming a clean tree, or naming what was deferred.
   `status` write: read
   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` and
   `mutate.md`. Do not derive legal values from existing cards.
-- Never treat task-card badges, attention, or legacy kanban tags as
-  coordination authority; reread `.agents/mpi-kanban/state/`.
+- Never treat task-card badges or attention as coordination authority; reread `.agents/mpi-kanban/state/`.
 - A card moves to `done` on represented validation state plus verification.
   Agent evidence counts. When only a human judgement will do, ASK in this
   session - never park it silently in `validating`.

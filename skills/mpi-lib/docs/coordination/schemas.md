@@ -39,39 +39,13 @@ carry pending-change provenance, such as `complete`, `needs_review`,
 `open_messages` lists unresolved message records with status `open`,
 `acknowledged`, or `replied`.
 
-Use `.agents/mpi-kanban/kanban.md` here only for unmigrated legacy projects.
-
-## `state/interop.json`
-
-```json
-{
-  "schema": "mpi-kanban/interop/v1",
-  "updated_at": "2026-05-27T12:00:00Z",
-  "source_of_truth": "file",
-  "last_detected_environment": {
-    "kind": "generic",
-    "detected_at": "2026-05-27T12:00:00Z",
-    "signals": []
-  },
-  "last_sync_at": null,
-  "last_export_at": null,
-  "id_mappings": []
-}
-```
-
-`source_of_truth` is `file` or `nimbalyst`. `file` is the default when this file
-is absent. In `nimbalyst` mode, Nimbalyst trackers/sessions are canonical and
-the JSON task board is imported or exported only on explicit sync boundaries.
-`id_mappings` links MPI entries to Nimbalyst tracker IDs without adding card
-metadata fields.
-
 ## `state/sessions/<uuid>.json`
 
 ```json
 {
   "schema": "mpi-kanban/session/v1",
   "id": "018f6e8a-7b9f-4f0b-85f3-6a11f6de2b1a",
-  "agent": "codex",
+  "agent": "claude",
   "role": "implementer",
   "status": "active",
   "claude_session_id": "cf6200bf-9db8-41ca-9260-f38bdd986d44",
@@ -163,7 +137,7 @@ folder.
   "updated_at": "2026-05-31T12:00:00Z",
   "from": {
     "session": ".agents/mpi-kanban/state/sessions/018f6e8a-7b9f-4f0b-85f3-6a11f6de2b1a.json",
-    "agent": "codex",
+    "agent": "claude",
     "role": "implementer"
   },
   "to": {
@@ -225,7 +199,6 @@ daemon-backed queue.
   "id": "8b39a23b-bca6-4dd2-b1ab-64d90677d22e",
   "title": "Implement shared coordination contract",
   "status": "in_progress",
-  "kanban_entry": "Design shared agent coordination layer",
   "plan": "docs/plans/2026-05-17-shared-agent-coordination-phase-1.md",
   "owner_session": ".agents/mpi-kanban/state/sessions/018f6e8a-7b9f-4f0b-85f3-6a11f6de2b1a.json",
   "file_claims": [
@@ -252,7 +225,6 @@ daemon-backed queue.
   "to_role": "implementer",
   "status": "open",
   "plan": "docs/plans/2026-05-17-shared-agent-coordination-phase-1.md",
-  "kanban_entry": "Design shared agent coordination layer",
   "summary": "Phase 1 docs are drafted; validation remains.",
   "next_action": "Run validator and targeted wording checks.",
   "allowed_actions": ["read", "verify", "continue"],

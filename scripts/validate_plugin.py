@@ -80,6 +80,13 @@ REMOVED_PATHS = (
     "docs/kilocode-marketplace-submission.md",
     "templates/kilo.jsonc",
     "update_live.py",
+    "skills/mpi-nimbalyst-sync",
+    "skills/mpi-lib/interop-ops",
+    "skills/mpi-lib/templates/interop.json",
+    "skills/mpi-lib/kanban-ops",
+    "skills/mpi-lib/templates/kanban.md",
+    "skills/mpi-init/templates/kanban.md",
+    "docs/nimbalyst-interop.md",
 )
 
 errors: list[str] = []
@@ -169,21 +176,17 @@ def validate_mpi_lib_present() -> None:
     required = (
         "coordination-ops/lifecycle.md",
         "coordination-ops/statuses.md",
-        "interop-ops/modes.md",
         "task-board-ops/_schema.md",
         "task-board-ops/read.md",
         "task-board-ops/mutate.md",
         "task-board-ops/migrate.md",
         "task-board-ops/validate.md",
-        "kanban-ops/find.md",
         "project-knowledge/indexing.md",
         "scripts/validate_board.py",
         "scripts/new_uuid.py",
         "docs/coordination/README.md",
         "templates/board.json",
-        "templates/interop.json",
         "templates/task.json",
-        "templates/kanban.md",
         "templates/project-profile.md",
         "templates/project-knowledge-index.md",
         "templates/rule.md",
@@ -235,34 +238,6 @@ def validate_pack_version() -> None:
         path = ROOT / rel
         if not path.exists() or needle not in path.read_text(encoding="utf-8"):
             fail(f"{rel}: missing `{needle}`; stale-install detection is not wired up")
-
-
-def validate_kanban_templates() -> None:
-    expected = [
-        "## BACKLOG",
-        "## PLANNING",
-        "## IMPLEMENTING",
-        "## VALIDATING",
-        "## COMPLETED",
-    ]
-    template_paths = [
-        ROOT / "skills" / "mpi-lib" / "templates" / "kanban.md",
-        ROOT / "skills" / "mpi-init" / "templates" / "kanban.md",
-    ]
-    for path in template_paths:
-        if not path.exists():
-            fail(f"missing kanban template: {path.relative_to(ROOT)}")
-            continue
-        headings = [
-            line.strip()
-            for line in path.read_text(encoding="utf-8").splitlines()
-            if line.startswith("## ")
-        ]
-        if headings != expected:
-            fail(
-                f"{path.relative_to(ROOT)} must use columns in order: "
-                + " -> ".join(expected)
-            )
 
 
 def load_json(path: Path, label: str) -> object | None:
@@ -436,33 +411,6 @@ def validate_coordination_messages() -> None:
                 fail(f"{label} has terminal status {status!r} but remains in open_messages")
 
 
-def validate_interop_state_file(path: Path, label: str) -> None:
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if data.get("schema") != "mpi-kanban/interop/v1":
-        fail(f"{label} must use schema mpi-kanban/interop/v1")
-    if data.get("source_of_truth") not in {"file", "nimbalyst"}:
-        fail(f"{label} source_of_truth must be file or nimbalyst")
-    detected = data.get("last_detected_environment")
-    if not isinstance(detected, dict):
-        fail(f"{label} last_detected_environment must be an object")
-    elif detected.get("kind") not in {"generic", "nimbalyst", "unknown"}:
-        fail(f"{label} last_detected_environment.kind must be generic, nimbalyst, or unknown")
-    if not isinstance(data.get("id_mappings"), list):
-        fail(f"{label} id_mappings must be a list")
-
-
-def validate_interop_state() -> None:
-    template = ROOT / "skills" / "mpi-lib" / "templates" / "interop.json"
-    if not template.exists():
-        fail("missing skills/mpi-lib/templates/interop.json")
-    else:
-        validate_interop_state_file(template, "templates/interop.json")
-
-    local_state = ROOT / ".agents" / "mpi-kanban" / "state" / "interop.json"
-    if local_state.exists():
-        validate_interop_state_file(local_state, ".agents/mpi-kanban/state/interop.json")
-
-
 def validate_no_stale_runtime_refs() -> None:
     patterns = (
         "<mpi-lib" + "-root>",
@@ -507,6 +455,17 @@ def validate_coordination_wiring() -> None:
     refresh = skills / "mpi-project-refresh" / "SKILL.md"
     if refresh.exists() and "mpi-kanban.local.md" not in refresh.read_text(encoding="utf-8"):
         fail("mpi-project-refresh/SKILL.md must report a missing mpi-kanban.local.md")
+
+
+def validate_lib_references() -> None:
+    """A skill pointing at a deleted mpi-lib file sends the agent to a dead read."""
+    pattern = re.compile(re.escape(PLUGIN_LIB) + r"/([A-Za-z0-9_./-]+)")
+    for path in (ROOT / "skills").rglob("*.md"):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for match in pattern.finditer(text):
+            rel = match.group(1).rstrip(".,;:)`")
+            if not (ROOT / "skills" / "mpi-lib" / rel).exists():
+                fail(f"{path.relative_to(ROOT)}: references missing mpi-lib/{rel}")
 
 
 def validate_plugin_manifest(skill_names: set[str]) -> None:
@@ -609,15 +568,14 @@ def main() -> int:
     skill_names = validate_skills()
     validate_mpi_lib_present()
     validate_pack_version()
-    validate_kanban_templates()
     validate_task_board_templates()
     validate_maturity_contract_docs()
     validate_task_board_tree()
     validate_boot_docs()
     validate_coordination_messages()
-    validate_interop_state()
     validate_no_stale_runtime_refs()
     validate_coordination_wiring()
+    validate_lib_references()
     validate_plugin_manifest(skill_names)
     validate_plugin_hooks()
     validate_removed_surfaces()

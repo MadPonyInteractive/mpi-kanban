@@ -41,11 +41,8 @@ The plugin never reinstalls itself.
   status vocabulary.
 - `docs/coordination/` - coordination state layout, schemas, roles, UUID
   helper, and handoff migration references.
-- `interop-ops/` - source-of-truth mode and Nimbalyst interop state guidance.
 - `task-board-ops/` - JSON task board schema, read/mutation, migration, and
   validation/repair contracts.
-- `kanban-ops/` - legacy Markdown board schema, lookup, mutation, archive, and
-  errors for compatibility and migration.
 - `plan-ops/` - plan shape, reading, derivation, and mutation guidance.
 - `project-intent/` - project mode contracts.
 - `project-knowledge/` - project profile and knowledge-index contracts.
@@ -53,9 +50,7 @@ The plugin never reinstalls itself.
   `python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/validate_board.py <project-root>`. Exits 0 when
   the board is consistent, 1 with one line per violation.
 - `templates/board.json` - JSON board bootstrap template.
-- `templates/interop.json` - default source-of-truth mode template.
 - `templates/task.json` - task-card bootstrap template.
 - `templates/project-profile.md` - project profile bootstrap template.
 - `templates/project-knowledge-index.md` - project knowledge index template.
-- `templates/kanban.md` - legacy Markdown board template.
 

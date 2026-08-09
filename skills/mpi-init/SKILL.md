@@ -34,7 +34,6 @@ Read only the references needed for the path being executed:
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`, `ensureBoard`.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `createTask`.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/migrate.md` - legacy Markdown board migration.
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/interop-ops/modes.md` - source-of-truth mode state.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-intent/modes.md` - mode contracts and defaults.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/profile-schema.md` - profile shape.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/index-schema.md` - index shape.
@@ -95,7 +94,6 @@ Inspect these paths, without deep-loading the entire repo:
 - `.agents/mpi-kanban/tasks/`
 - `.agents/mpi-kanban/project-profile.md`
 - `.agents/mpi-kanban/project-knowledge-index.md`
-- `.agents/mpi-kanban/state/interop.json`
 - `.agents/mpi-kanban/kanban.md`
 - `.claude/mpi-kanban/kanban.md`
 - `.claude/mpi-kanban/archived*.md`
@@ -106,7 +104,7 @@ Classify the project:
 - **fresh:** no MPI files exist.
 - **legacy:** Markdown board or old `.claude/mpi-kanban/` files exist.
 - **partial:** some MPI files exist but board/profile/index/state are missing.
-- **initialized:** JSON board, profile, index, and interop mode are present.
+- **initialized:** JSON board, profile, and index are present.
 
 If the project is already initialized and the user did not provide a backlog
 file, say it is already initialized and suggest `mpi-project-refresh` for
@@ -167,15 +165,11 @@ The proposal must include:
    - create profile/index;
    - update missing profile/index pointers;
    - leave existing profile/index unchanged.
-5. Interop action:
-   - create default `state/interop.json` in `file` mode;
-   - preserve existing source-of-truth mode;
-   - surface a Nimbalyst conflict for explicit user direction.
-6. Agent entrypoint changes, if any, limited to short pointer additions.
-7. Boot-doc cleanup for `START-HERE.md`, `AGENTS.md`, `CLAUDE.md`,
+5. Agent entrypoint changes, if any, limited to short pointer additions.
+6. Boot-doc cleanup for `START-HERE.md`, `AGENTS.md`, `CLAUDE.md`,
    `README.md`, project memory indexes, and similar startup docs that still
    point active task continuation at `kanban.md`.
-8. Rule or memory changes, if any, with per-file approval requirements.
+7. Rule or memory changes, if any, with per-file approval requirements.
 9. Sub-agent briefing config action: create `.agents/mpi-kanban.local.md`
    when missing, listing the `rules_dir` that will be scanned and the rule
    files that carry a `## Sub-Agent Briefing` heading. Without this file
@@ -224,12 +218,7 @@ After approval, apply only approved changes:
    - if the old path remains, replace it only after approval with a tombstone
      that says `SUPERSEDED - DO NOT EDIT` and points to `board.json`;
    - never delete legacy directories without explicit approval.
-3. Create `.agents/mpi-kanban/state/interop.json` from
-   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/interop.json` when missing. Default
-   `source_of_truth` is `file`.
-   In file mode, `file` means the JSON board and task workspaces, not
-   `kanban.md`.
-4. Create or update `.agents/mpi-kanban/project-profile.md` from
+3. Create or update `.agents/mpi-kanban/project-profile.md` from
    `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/templates/project-profile.md`. Set `pack_version` to the
    `version` field in `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json`; that is what
    `mpi-project-refresh` later compares an install against.
@@ -293,7 +282,6 @@ MPI initialized.
 - Board: <created | migrated | unchanged>. [board.json](.agents/mpi-kanban/board.json)
 - Profile: <created | updated | unchanged>.
 - Knowledge index: <created | updated | unchanged>.
-- Interop mode: <file | nimbalyst>.
 - Imported tasks: <count or "none">.
 Next: use `mpi-brainstorm`, `mpi-create-plan`, or `mpi-continue`.
 ```

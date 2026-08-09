@@ -137,18 +137,6 @@ Lib pointers, read only when needed:
   `loadTask`, `findTask`.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `createTask`, `writeTask`,
   `ensureLinkedFiles`, `attachPlan`.
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/interop-ops/modes.md` - source-of-truth mode gate.
-
-Before mutating `board.json`, read `.agents/mpi-kanban/state/interop.json`
-when it exists. If `source_of_truth` is `nimbalyst`, do not move or create MPI
-board tasks. Report:
-
-```text
-Interop mode is nimbalyst, so Nimbalyst trackers/sessions are canonical. I drafted the plan content, but I will not update .agents/mpi-kanban/board.json or task files. Update the Nimbalyst tracker/session, or run mpi-nimbalyst-sync for an explicit snapshot boundary.
-```
-
-If the file is missing or `source_of_truth` is `file`, continue with the
-normal JSON task-board update below.
 
 If `mpi-brainstorm` passed a task ID, call `loadTask(<id>)`. If it passed only
 a title, call `findTask` by exact title and handle duplicates by asking the
@@ -200,10 +188,8 @@ Next: say "continue this plan" to start, or "create a handoff" if you want a fre
 - Do not add implementation checklist steps yet; `mpi-continue` derives
   lifecycle/phase checklists when implementation starts.
 - Do not create parallel batches without explicit ownership for every task.
-- New planning work uses `.agents/mpi-kanban/board.json` plus
-  `.agents/mpi-kanban/tasks/<id>/plan.md`. Legacy `kanban.md` may be read only
-  for explicit migration or compatibility and must not be updated as the live
-  board once `board.json` exists.
+- Planning work uses `.agents/mpi-kanban/board.json` plus
+  `.agents/mpi-kanban/tasks/<id>/plan.md`.
 - Keep plan and research content in task workspace files, not in `task.json`.
 
 ## Related invocations

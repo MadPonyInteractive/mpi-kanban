@@ -79,7 +79,7 @@ Steps:
    - **Description:** 1-2 short lines summarizing the approved design direction.
    - **Column:** `todo`.
    - **Maturity:** `idea`.
-   - **Actor:** current agent name, such as `codex` or `claude`.
+   - **Actor:** current agent name, such as `claude`.
 
 3. Before creation, call `findTask(e => e.title === <title>)`. If it already
    returns a duplicate, ask the user for a distinguishing suffix and retry with

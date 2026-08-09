@@ -89,7 +89,7 @@ research outside the card JSON.
     "reason": "Needs user decision before validation.",
     "updated_at": "2026-05-30T12:00:00Z"
   },
-  "activeSessionTitle": "Codex implementation session",
+  "activeSessionTitle": "Implementation session",
   "created_at": "2026-05-30T12:00:00Z",
   "updated_at": "2026-05-30T12:30:00Z",
   "links": {
@@ -147,9 +147,6 @@ Column and maturity must stay coherent:
 - `doing` cards use `in-progress` or `validating`.
 - `done` cards use `complete` or `rejected`.
 
-Nimbalyst `implementing` maps to MPI `in-progress`; it is not a valid
-task-card maturity value.
-
 Do not invent process-specific maturity values. Labels such as `active`,
 `accepted`, `done`, `implementing`, `implementation`, `validated`,
 `Validated`, `validation`, `spec`, `scoped`, `designed`, and `review` are not
@@ -167,7 +164,7 @@ the async message transport and do not require a live daemon, broker, remote
 service, or real-time delivery.
 
 ```json
-{"schema":"mpi-kanban/event/v1","id":"MPI-42","type":"task.moved","at":"2026-05-30T12:30:00Z","actor":"codex","from":"todo","to":"doing","summary":"Moved into active implementation."}
+{"schema":"mpi-kanban/event/v1","id":"MPI-42","type":"task.moved","at":"2026-05-30T12:30:00Z","actor":"claude","from":"todo","to":"doing","summary":"Moved into active implementation."}
 ```
 
 Initial event types:

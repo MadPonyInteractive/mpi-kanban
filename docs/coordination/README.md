@@ -1,6 +1,6 @@
 # Shared Agent Coordination Contract
 
-Phase 1 defines the shared coordination contract for Claude and Codex agents.
+This document defines the shared coordination contract for agents.
 Phase 2 adds shared lifecycle procedures for sessions, tasks, file claims,
 handoffs, stale claims, and cleanup behavior.
 

@@ -47,7 +47,7 @@ Lifecycle ordering is mandatory:
 Reject these common mistakes. They are NOT maturity values:
 
 - `active`, `accepted`, `done` -> these are `status` values, not maturity.
-- `implementing`, `implementation` -> Nimbalyst phrasing; the MPI value is
+- `implementing`, `implementation` -> tracker phrasing; the MPI value is
   `in-progress`.
 - `validated`, `Validated`, `validation` -> validation state is represented by
   `maturity: "validating"` while the card is in `doing`, then
@@ -89,7 +89,7 @@ Required input:
   "maturity": "idea",
   "status": "active",
   "position": "top",
-  "actor": "codex"
+  "actor": "claude"
 }
 ```
 
@@ -99,17 +99,32 @@ Required input:
 Recipe:
 
 1. Read `read.md` and call `ensureBoard()`.
-2. Allocate an ID with `allocateTaskId(board)`.
-3. Create `.agents/mpi-kanban/tasks/<id>/`.
-4. Write `task.json` using `templates/task.json` as the field baseline.
-5. Set `id`, `title`, `description`, `column`, `maturity`, `status`,
+2. Claim the ID atomically. `board.next_id` is a hint, not a lock: another
+   agent can read the same value in the same second.
+   - Get a candidate `<id>` from `allocateTaskId(board)`.
+   - Create the folder with `os.mkdir(".agents/mpi-kanban/tasks/<id>")`. That
+     mkdir **is** the lock - exactly one agent wins it, and every other agent
+     raises `FileExistsError`. Never `os.makedirs(..., exist_ok=True)` here; it
+     hands the same ID to both agents.
+   - On `FileExistsError`, re-read `board.json` and retry with
+     `max(board.next_id, <failed suffix> + 1)`. Allow at least 10 attempts:
+     every loser retries at the same next free ID, so a herd of N creators
+     clears one ID per round and the cap has to exceed N. Dispatch caps
+     workers at 4. After the attempts run out, stop and report the contention.
+     Do not pick an ID by hand.
+3. Write `task.json` with mode `'x'`, using `templates/task.json` as the field
+   baseline. Never mode `'w'`: it silently overwrites the card another agent
+   just created, and the loser only finds out if they happened to commit. A
+   `FileExistsError` here means the folder was not yours - go back to step 2.
+4. Set `id`, `title`, `description`, `column`, `maturity`, `status`,
    timestamps, and links. Use relative links only.
    Reject the input if `maturity` is not one of the fixed enum values above or
    does not match `column`; normalize before writing rather than writing a red
    invalid card.
-6. Add the ID to the target column array in `board.json`: prepend for
-   `position: "top"` and append for `position: "bottom"`.
-7. Append `task.created` to the global event log and task event log.
+5. Add the ID to the target column array in `board.json`: re-read the board
+   first, then prepend for `position: "top"` and append for
+   `position: "bottom"`. Never write back a board you read before step 2.
+6. Append `task.created` to the global event log and task event log.
 
 New ideas default to `todo`.
 
@@ -176,8 +191,8 @@ If `patch.maturity` is present, validate it before writing:
   `blocked`, `deferred`, `in-progress`, `validating`, `complete`, or
   `rejected`.
 - It must match the task's current `column`.
-- It must not be copied from `status`, legacy Markdown columns, Nimbalyst
-  phases, tracker states, or freeform process labels.
+- It must not be copied from `status`, tracker states, or freeform process
+  labels.
 
 If the caller asks for `maturity: "Validated"`, `maturity: "spec"`, or any
 other non-enum value, stop and map it to the coherent MPI value or ask for
@@ -281,8 +296,7 @@ than moved straight to `done`.
    "handoffs": "handoffs/" } }, actor)`.
 11. Append `checklist.updated` when checklist items are created or changed.
 
-Do not set `maturity: "implementing"`; that is a Nimbalyst phase and maps to
-MPI `in-progress`.
+Do not set `maturity: "implementing"`; the MPI value is `in-progress`.
 
 ---
 

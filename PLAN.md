@@ -32,8 +32,6 @@
   not Claude-style slash commands.
 - [x] Update README, SPEC, AGENTS, validation, and live-copy guidance for the
   dual-package model.
-- [ ] Smoke-test `mpi-cleanup` and `mpi-end-session` in Codex, then rerun Claude
-  plugin validation.
 
 ## Current redesign tasks
 
@@ -150,7 +148,6 @@ skills.sh distribution path.
   missing/cycle inline markers, reasonable per-skill size.
 - [x] Add `docs/kilocode-install.md`, `templates/kilo.jsonc`, AGENTS.md pointer.
 - [x] Add `docs/kilocode-marketplace-submission.md` runbook.
-- [ ] Submit marketplace PR to `Kilo-Org/kilo-marketplace` (runbook step 4-6).
 - [x] Extend `scripts/validate_plugin.py` with `validate_kilo_assets()` and
   `validate_kilo_skill_limits()`, additive beside the Codex marketplace bundle
   validation committed in `eb0362e`.
@@ -173,7 +170,6 @@ Plan file: `docs/plans/2026-05-23-cross-agent-skills-distribution-phase-7.md`.
   index for npx-only distribution.
 - [x] Rewrite validator for the universal skill pack.
 - [x] Run validator and contradiction sweeps.
-- [ ] Smoke test npx install and one workflow skill in Claude, Kilo, and Codex.
 - [ ] Release `0.7.0`.
 
 ## Skill onboarding simplification and release readiness

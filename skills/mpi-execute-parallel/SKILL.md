@@ -56,8 +56,7 @@ Register or renew an `orchestrator` session for the main agent and create or
 attach the batch coordination task record. If `.agents/mpi-kanban/board.json`
 exists, locate the active task card by task ID, plan link, or `doing` task with
 `attention.required`; ensure `checklist.md`, `validation.md`, and
-`handoffs/` links exist when needed. If `board.json` is absent, legacy
-`kanban.md` references are compatibility context only.
+`handoffs/` links exist when needed.
 
 At this parallel execution boundary, read any `open_messages` records pointed
 to by `state/index.json` when they target the active batch, task, declared
