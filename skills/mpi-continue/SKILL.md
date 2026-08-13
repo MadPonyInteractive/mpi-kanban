@@ -11,12 +11,11 @@ Continue active work intelligently. This skill replaces rigid "execute next"
 behavior: it reads the active JSON task card, plan, latest handoff, and current
 workspace state, then proposes the next best action based on reality. Legacy
 Markdown kanban entries are compatibility inputs only when `board.json` is
-absent or the project has not been migrated.
+absent or unmigrated.
 
-It also owns the read-only board-entry lookup path. When the user asks "what is
-MPI-5?", "show MPI-5", "open MPI-5", "read MPI-5", "what is this card?", or
-"look at the <title> card", run the read-only mode below instead of starting
-implementation.
+It also owns the read-only board-entry lookup path: "what is MPI-5?", "show
+MPI-5", "open MPI-5", "read MPI-5", "what is this card?", "look at the <title>
+card" -> run the read-only mode below instead of starting implementation.
 
 It also owns bounded direct card-state updates when the user asks to move or
 set one JSON task card, for example "move MPI-42 to doing", "set MPI-42 to
@@ -65,23 +64,23 @@ These are not maturity values: `active`, `accepted`, `done`, `implementing`,
 
 ## Discovered work
 
-Work you find while implementing the active card belongs to the active card.
-That is the default and it needs no approval.
+Work found while implementing the active card belongs to the active card. That
+is the default and needs no approval.
 
-- Same system, same files, or needed to make the active card's verification
-  pass -> fold it into the active card: append a `checklist.md` item, extend
-  `plan.md`, note it in `validation.md`. Do not create a card.
+- Same system, same files, or needed to make this card's verification pass ->
+  fold it in: append a `checklist.md` item, extend `plan.md`, note it in
+  `validation.md`. Do not create a card.
 - Genuinely separate work (different system, not needed for this card's
   verification) -> do not create a card silently. Collect it and report it at
   the end of the step under `Noticed, not actioned:` so the user decides.
 - Create a card only when the user explicitly asks for one in the current
-  request. Then use `createTask` from
-  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. Never hand-write a `task.json`.
+  request, through `createTask` in
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. Never
+  hand-write a `task.json`.
 
-Before proposing any new card, check the open `todo` and `doing` cards for one
-that already covers the same system, and extend that card instead. Several
-cards touching one system is the failure this rule exists to prevent; an
-umbrella card afterwards is a repair, not the goal.
+First check the open `todo` and `doing` cards for one already covering the same
+system and extend that instead. Several cards on one system is the failure this
+rule prevents; an umbrella afterwards is a repair, not the goal.
 
 ## Read-only board entry mode
 
@@ -287,8 +286,8 @@ If the plan is stale, edit the plan before implementation:
 
 A card whose `plan.md` carries phases and `## Parallel Batch` sections is an
 **umbrella card**: one card holding work that splits. There is no `parent`
-field and no umbrella flag - the plan's shape is what makes it one, and that is
-deliberate, because the board contract forbids new card fields.
+field and no umbrella flag - the plan's shape makes it one, deliberately,
+because the board contract forbids new card fields.
 
 When the active card's next eligible unit is a valid `## Parallel Batch` -
 disjoint `Ownership:`, a per-task `**Verify:**`, no intra-batch dependency, no
@@ -325,22 +324,20 @@ case where the user says it out loud.
 ## Autonomous dispatch
 
 Evaluate this on every start, before the Continue Brief. Do not wait to be
-asked - the user never types "dispatch", and the work still splits.
-
-Skip the evaluation entirely when `board.json` is absent or fewer than two
-cards are ready. It is read-only and costs a few reads; it does not need
-permission.
+asked - the user never types "dispatch", and the work still splits. It is
+read-only, costs a few reads, and needs no permission. Skip it entirely when
+`board.json` is absent or fewer than two cards are ready.
 
 1. **Collect the ready cards.** A card is ready when it is in `todo` with
    `maturity: "planned"`, has a `plan.md`, and carries no
    `attention.state: "required"`. The active card belongs to
    `## Parallel batch routing`, not here, unless its own next unit is not a
    batch and it is otherwise ready.
-2. **Grep each card's footprint.** Do not trust `files.json`. Most existing
-   cards were created before ownership was written at `todo -> doing`, so their
-   list is empty or stale. Read each card's `plan.md` and resolve every path,
-   glob and module it names against the repo with a bounded search.
-   `files.json` is a hint the grep confirms, never a substitute for it.
+2. **Grep each card's footprint.** Do not trust `files.json` - most cards
+   predate ownership being written at `todo -> doing`, so it is empty or stale.
+   Read each card's `plan.md` and resolve every path, glob and module it names
+   against the repo with a bounded search. `files.json` is a hint the grep
+   confirms, never a substitute for it.
 3. **Build the conflict graph.** Two cards conflict when their footprints share
    a file, when one footprint sits inside a directory the other owns, or when
    either intersects a fresh active write claim in `state/index.json`. A card
@@ -349,8 +346,9 @@ permission.
 4. **Select the largest mutually non-conflicting set, capped at 4 workers.** On
    a tie, prefer the smaller footprints - those are the ones the grep pinned
    down most precisely.
-5. **Report the whole evaluation before anything runs.** Every card the board
-   offered appears, and every exclusion carries its reason:
+5. **Report the whole evaluation before anything runs**, never dropping a card
+   silently: every card the board offered appears, every exclusion with its
+   reason.
 
 ```text
 Dispatch: 3 of 7 ready cards are disjoint. Running them in parallel.
@@ -359,7 +357,6 @@ Selected:
 - MPI-31 - src/api/** (grep: 12 files)
 - MPI-34 - docs/install.md (grep: 1 file)
 - MPI-37 - tests/e2e/** (grep: 4 files)
-
 Excluded:
 - MPI-30 - maturity is `research`, not `planned`
 - MPI-33 - no plan.md; needs planning first
@@ -367,23 +364,27 @@ Excluded:
 - MPI-38 - plan names no files; footprint not derivable
 ```
 
-   Never drop a card silently.
 6. **Hand the selected set to `mpi-execute-parallel`** through its
    `## Board batch source`, which re-runs the board validator and owns worker
-   spawning. Announce the split; do not ask permission. Each selected card
+   spawning. Announce the split; do not ask permission - each selected card
    carries a `plan.md`, and that plan is the approval that already happened.
-7. If fewer than two cards survive, say nothing and continue with the normal
-   single-card brief. "Nothing splits" is the common case and reporting it
-   every session is noise.
+7. Fewer than two cards survive -> say nothing, continue with the normal
+   single-card brief. "Nothing splits" is the common case; reporting it every
+   session is noise.
 
-This evaluation is **read-only**. It reads cards, plans, and claims and writes
-nothing - not the board, not `files.json`, not a claim. A dispatcher that
-cannot write cannot clobber a worker.
+This evaluation is **read-only**: cards, plans and claims in, nothing written -
+not the board, not `files.json`, not a claim. A dispatcher that cannot write
+cannot clobber a worker.
 
 When `agents/dispatcher.md` ships with the installed plugin, delegate steps 1-4
-to it with `subagent_type: "dispatcher"` and report its answer. It is the same
-method in a subagent that cannot write, and it keeps the card and plan reads
-out of this session's context. Do the evaluation inline when it is absent.
+to it with `subagent_type: "dispatcher"` - same method, in a subagent that
+cannot write, keeping the card and plan reads out of this session's context.
+**Running this skill authorizes that dispatch**, exactly as invoking
+`mpi-end-session` authorizes its commit; a standing "do not call agents unless
+the user asked" instruction is a default against *unprompted* dispatch, not a
+veto here. Say so rather than quietly deferring - that reflex is why this agent
+went months without running. Absent, or deliberately skipped: do the evaluation
+inline and say which.
 
 ### `isolation: "worktree"` is not the isolation mechanism here
 
@@ -583,9 +584,8 @@ handoff in about a minute.
   self-verification failed or could not run. For an `auto` card whose checks
   passed, do not stop for the user — report the passing result and continue.
 - Do not commit or push; that belongs to `mpi-handoff` or `mpi-end-session`.
-- Keep `## Current State` in the active plan current after every verified step.
-  `mpi-handoff` reads it instead of reconstructing the session, so a stale note
-  is paid for later at roughly ten minutes and a full context summarisation.
+- Keep the plan's `## Current State` fresh after every verified step -
+  `mpi-handoff` reads it rather than reconstructing; stale costs ten minutes.
 - Do not force stale plan tasks. Update the plan when reality has changed.
 - Do not spawn implementation workers here. When the next eligible unit is a
   valid `## Parallel Batch`, route it to `mpi-execute-parallel` without asking

@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.1.0] - 2026-08-13
+## [1.1.1] - 2026-08-13
+
+### Fixed
+
+- `mpi-continue`'s autonomous dispatch now authorizes its own agent, the same
+  way `mpi-end-session` § 7 does. 1.1.0 fixed only one of the two call sites
+  MPI-29 named, so `dispatcher` was still losing to a standing "do not call
+  agents unless the user asked" instruction while the claim auditor no longer
+  did. The skill also states which path it took when the agent is absent or
+  deliberately skipped, so a silent inline fallback stops looking like a
+  dispatch.
+- Absorbed into the existing line budget: `mpi-continue` is 601 lines, exactly
+  where it started, so its grandfathered ceiling did not move.
 
 A week of real use showed the v1.0 close-out merge was a mistake. Median
 session cost rose 56% (149.6k -> 233.3k tokens) and median session length rose
@@ -695,7 +707,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.10.0...v1.0.0
