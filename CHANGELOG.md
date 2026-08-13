@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-13
+
+A week of real use showed the v1.0 close-out merge was a mistake. Median
+session cost rose 56% (149.6k -> 233.3k tokens) and median session length rose
+50% (84 -> 126 minutes) after 1.0, and nearly half of all sessions started from
+a handoff. Every one of those switches was paying for a full close-out.
+
+### Added
+
+- `mpi-handoff` is back as its own skill, and this time it is cheap. It commits,
+  pushes per `push_policy`, writes the handoff JSON, prints the resume block,
+  and leaves the card in `doing`. Budget: under two minutes, ~20k tokens. It
+  runs no rule/doc pass, no knowledge healing, no memory pass, no board
+  validation, no consolidation sweep, no `validating` sweep, and spawns no
+  sub-agent - the skill says so explicitly, with the reason, so the passes do
+  not creep back in.
+- `validate_skill_sizes()` in `scripts/validate_plugin.py` enforces a 200-line
+  budget per `SKILL.md`. A skill body is loaded in full on every invocation, so
+  its length is a recurring token cost rather than a one-off. The five skills
+  already over the budget carry a grandfathered ceiling that may only shrink;
+  the check fails both on growth and on a ceiling left unlowered after a
+  shrink, so the ratchet cannot quietly slip.
+- `skills/mpi-lib/close-out/consolidation.md` holds the umbrella-clustering
+  sweep, which `mpi-end-session` now reads only when the board has 8+ `todo`
+  cards.
+- `mpi-umbrella` makes that sweep something you can ask for. Name the cards, or
+  point it at the board and let it propose the clusters. It was previously
+  reachable only as something close-out offered, gated at 8+ `todo` cards - so
+  "evaluate the cards and make an umbrella", a thing users actually say, matched
+  no skill in the pack at all.
+
+### Changed
+
+- The handoff body is read from the active plan's `## Current State`,
+  `## Plan Drift`, and `## Preservation Notes` instead of being reconstructed
+  from the session. Summarising a large context was the expensive half of a
+  handoff, and it produced a worse answer than notes written while the details
+  were fresh. When the notes are stale `mpi-handoff` still falls back to
+  reconstructing, and says so in the report rather than hiding it.
+- `mpi-continue` keeps `## Current State` handoff-ready after every verified
+  step: where the work stands, the next action, and any decision or gotcha not
+  obvious from the diff.
+- `mpi-end-session` is close-out only. The `resume` exit, the handoff JSON
+  template, and the two-exit framing are gone; it routes to `mpi-handoff` when
+  the work is not finished. 582 -> 396 lines.
+- `precompact-handoff` now offers `/mpi-handoff` before compaction drops the
+  context, and `session-start` names all three skills.
+
+### Fixed
+
+- The claim auditor now actually gets dispatched. `mpi-end-session` § 7 said
+  only "run it here too", which lost every time against a harness instruction
+  like "do not call agents unless the user requested it" - so in one repo it
+  ran twice in a month, and the two runs it did get caught a false claim about
+  a release that would have shipped. The step now states that invoking the
+  skill IS the request, mirroring the wording § 8 already uses for the commit,
+  and records that the auditor's findings are evidence to re-verify rather than
+  edits to apply.
+- A skipped close-out step is now visible. The four-bullet report gained a
+  `Did not run:` slot, because a silent skip read identically to a clean pass -
+  which is exactly how the auditor went unnoticed.
+
 ## [1.0.1] - 2026-08-09
 
 The first live install pass found that two of the three enforcement hooks were
@@ -633,7 +695,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.10.0...v1.0.0
 [0.10.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v0.9.0...v0.10.0

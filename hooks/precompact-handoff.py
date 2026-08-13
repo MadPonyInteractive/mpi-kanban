@@ -30,8 +30,8 @@ def nudge(trigger, doing, claim_count):
     if claim_count:
         parts.append("%d file claim%s open" % (claim_count, "" if claim_count == 1 else "s"))
     return ("%s is about to drop this session's context: %s.\n"
-            "Run `/mpi-end-session` first -- take the `resume` exit if this work "
-            "should survive it, or the `done` exit if it is finished."
+            "Run `/mpi-handoff` first if this work should survive it, or "
+            "`/mpi-end-session` if it is finished."
             % (when, " and ".join(parts)))
 
 
@@ -55,7 +55,7 @@ def _selftest():
     assert nudge("auto", [], 0) is None, "nothing live, nothing to say"
     auto = nudge("auto", ["MPI-28"], 2)
     assert "Auto-compaction" in auto and "MPI-28" in auto and "2 file claims" in auto
-    assert "/mpi-end-session" in auto and "resume" in auto
+    assert "/mpi-handoff" in auto and "/mpi-end-session" in auto
     assert "1 file claim open" in nudge("manual", [], 1)
     assert nudge("manual", ["MPI-1"], 0).startswith("Compaction")
     print("precompact-handoff selftest OK")

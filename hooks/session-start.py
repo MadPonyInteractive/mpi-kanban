@@ -58,7 +58,8 @@ def summarize(doing, claims, messages, handoffs):
         lines += _more(handoffs)
     if not lines:
         return None
-    lines.append("Resume with `/mpi-continue`; close with `/mpi-end-session`.")
+    lines.append("Resume with `/mpi-continue`; switch sessions with "
+                 "`/mpi-handoff`; close with `/mpi-end-session`.")
     return "Mpi-Kanban state:\n" + "\n".join(lines)
 
 

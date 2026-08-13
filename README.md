@@ -9,11 +9,11 @@ plan, continue, parallel execution, handoff, end session, cleanup) so a single
 session or a whole team of agents can pick up work, coordinate file ownership,
 and ship together.
 
-Twelve workflow skills: `mpi-init`, `mpi-project-refresh`, `mpi-brainstorm`,
+Fourteen workflow skills: `mpi-init`, `mpi-project-refresh`, `mpi-brainstorm`,
 `mpi-create-plan`, `mpi-create-large-plan`, `mpi-continue`,
-`mpi-execute-parallel`, `mpi-message`, `mpi-end-session`, `mpi-cleanup`,
-`mpi-archive`, `mpi-brief-rule` - plus the support skill `mpi-lib`, six
-enforcement hooks, and two read-only agents.
+`mpi-execute-parallel`, `mpi-message`, `mpi-umbrella`, `mpi-handoff`,
+`mpi-end-session`, `mpi-cleanup`, `mpi-archive`, `mpi-brief-rule` - plus the
+support skill `mpi-lib`, six enforcement hooks, and two read-only agents.
 
 ## Install
 
@@ -170,11 +170,15 @@ brainstorm -> create-plan/create-large-plan -> continue -> end-session -> cleanu
   and repo state; it claims files before editing.
 - `mpi-execute-parallel` executes parallel batches and dispatches the ready
   cards on the board.
-- `mpi-end-session` is close-out, with two exits. **Resume** writes a handoff
-  JSON under `.agents/mpi-kanban/state/handoffs/` for a fresh session;
-  **done** closes the task card. Both exits preserve knowledge, commit, and
-  resolve every card parked in `validating`. There is no separate
-  `mpi-handoff` skill - ask for a handoff and close-out takes the resume exit.
+- `mpi-umbrella` folds related board cards into one umbrella card. Ask it to
+  group named cards, or to review the board and propose the clusters.
+- `mpi-handoff` switches sessions. It commits, pushes, writes a handoff JSON
+  under `.agents/mpi-kanban/state/handoffs/`, and prints a paste-ready resume
+  block - typically under two minutes, because it reads the running notes
+  `mpi-continue` keeps in the plan instead of summarising the session.
+- `mpi-end-session` is close-out for finished work: rules, docs, memory,
+  knowledge healing, the `validating` sweep, commit, and closing the card. It
+  runs once per job, not once per session.
 - `mpi-cleanup` proposes conservative cleanup for old workflow artifacts.
 
 Board lifecycle is `To do -> Doing -> Done`. Planning, checklists, validation,
@@ -293,8 +297,7 @@ restating contracts hooks now enforce. See
 [docs/migrating-to-1.0.md](docs/migrating-to-1.0.md), or run
 `mpi-project-refresh` and let it propose each removal with its diff.
 
-**Removed skills.** `mpi-handoff` merged into `mpi-end-session`, whose
-**resume** exit writes the handoff. `mpi-nimbalyst-sync` is gone. The separate
+**Removed skills.** `mpi-nimbalyst-sync` is gone. The separate
 `mpi-project-setup` and `mpi-project-mode` skills no longer exist. Use `mpi-init` for onboarding/adoption and
 `mpi-project-refresh` for maintenance and mode changes. Update any saved
 commands or scripts that referenced the old skill names.

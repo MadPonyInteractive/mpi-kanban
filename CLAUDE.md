@@ -109,8 +109,27 @@ If SPEC and PLAN disagree, ask the user before choosing.
   `mpi-project-refresh`. Do not restore separate `mpi-project-setup` or
   `mpi-project-mode` skills unless the user explicitly reverses the lifecycle
   simplification decision.
-- Close-out is one skill with two exits. `mpi-handoff` was merged into
-  `mpi-end-session` in v1.0; do not split it back out.
+- Session switching and close-out are two skills, and the boundary is cost.
+  `mpi-handoff` commits, pushes, writes the handoff from the plan's running
+  notes, and stops. `mpi-end-session` runs the rule/doc, knowledge-healing,
+  memory, consolidation, `validating`, and claim-auditor passes once, when the
+  job is finished. v1.0 merged them into one skill with a `resume` exit; real
+  use showed that made every session switch pay for a close-out - median
+  session cost rose 56% and a handoff took about ten minutes - so v1.1 split
+  them again. Do not re-merge them, and do not add a knowledge pass, a card
+  move, or a sub-agent to `mpi-handoff`.
+- `mpi-continue` must keep the active plan's `## Current State` fresh after
+  every verified step. That note is what makes a cheap handoff possible; if it
+  goes stale, `mpi-handoff` falls back to summarising a full context and the
+  cost returns.
+- A SKILL.md body is loaded in full on every invocation, so its length is a
+  recurring token cost. The budget is 200 lines, enforced by
+  `validate_skill_sizes()` in `scripts/validate_plugin.py`. Skills already over
+  it when the budget landed carry a grandfathered ceiling that may only shrink;
+  the check fails on growth AND on an unlowered ceiling after a shrink. Move
+  detail behind a pointer in `skills/mpi-lib/` rather than raising a ceiling,
+  and prefer a new small skill over a big one - but keep a step inline when it
+  runs every time and an agent would skip the extra read.
 - Do not remove `mpi-message`, file claims, `state/sessions/`, heartbeats,
   `mpi-brief-rule`, or `config-ops.md`. MPI-25 decided keep on 2026-07-31 and
   MPI-26 shipped their repair in v0.10.0.

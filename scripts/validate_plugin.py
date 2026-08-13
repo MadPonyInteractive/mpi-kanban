@@ -25,6 +25,21 @@ TASK_REQUIRED_FIELDS = board_rules.TASK_REQUIRED_FIELDS
 KEBAB = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 NAME_MAX = 64
 DESCRIPTION_MAX = 1024
+
+# A SKILL.md body is loaded in full every time the skill triggers, so length is
+# a per-invocation token cost, not a one-off. 200 lines is the budget; anything
+# longer belongs behind a pointer in skills/mpi-lib/. The overrides below are
+# skills that were already over when the budget landed - they are a ratchet, so
+# each may shrink but never grow, and lowering an entry is the way to pay one
+# down. Do not add a new name here; split the skill instead.
+SKILL_LINE_BUDGET = 200
+SKILL_LINE_GRANDFATHERED = {
+    "mpi-continue": 601,
+    "mpi-end-session": 394,
+    "mpi-project-refresh": 335,
+    "mpi-init": 306,
+    "mpi-execute-parallel": 277,
+}
 INVALID_MATURITY_EXAMPLES = {
     "active",
     "accepted",
@@ -166,6 +181,35 @@ def validate_skills() -> set[str]:
             fail(f"{skill_dir.name}/SKILL.md: description must start with 'MPI workflow pack - '")
 
     return names
+
+
+def validate_skill_sizes() -> None:
+    """Skill bodies are a recurring token cost; hold the line on their length."""
+    for skill_dir in skill_dirs():
+        skill_md = skill_dir / "SKILL.md"
+        if not skill_md.exists():
+            continue
+        lines = len(skill_md.read_text(encoding="utf-8").splitlines())
+        name = skill_dir.name
+        if name in SKILL_LINE_GRANDFATHERED:
+            allowed = SKILL_LINE_GRANDFATHERED[name]
+            if lines > allowed:
+                fail(
+                    f"{name}/SKILL.md: {lines} lines exceeds its grandfathered "
+                    f"ceiling of {allowed}. Move detail behind a pointer in "
+                    "skills/mpi-lib/ rather than raising the ceiling."
+                )
+            elif lines < allowed:
+                fail(
+                    f"{name}/SKILL.md: {lines} lines is under its grandfathered "
+                    f"ceiling of {allowed}. Lower SKILL_LINE_GRANDFATHERED to "
+                    f"{lines} so the ratchet holds."
+                )
+        elif lines > SKILL_LINE_BUDGET:
+            fail(
+                f"{name}/SKILL.md: {lines} lines exceeds the {SKILL_LINE_BUDGET}-line "
+                "budget. Split it, or move reference detail into skills/mpi-lib/."
+            )
 
 
 def validate_mpi_lib_present() -> None:
@@ -567,6 +611,7 @@ def check_no_symlinks() -> None:
 
 def main() -> int:
     skill_names = validate_skills()
+    validate_skill_sizes()
     validate_mpi_lib_present()
     validate_pack_version()
     validate_task_board_templates()

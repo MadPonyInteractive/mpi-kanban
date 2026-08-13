@@ -509,12 +509,18 @@ These steps run when path A auto-verified, or after the user chooses Option 1
 in path B. (Path C does not reach here until the failure is resolved.)
 
 1. Remove temporary verification logs.
-2. Update the plan:
-   - Move or mark completed work under `## Completed`.
-   - Update `## Current State`.
+2. Update the plan. This is the session's running notes, and it is what
+   `mpi-handoff` reads instead of summarising a huge context later - a few
+   lines written now, while the details are fresh, replace ten minutes of
+   reconstruction at the switch. Keep it to a few lines; this is a note, not a
+   report.
+   - Move or mark completed work under `## Completed`. This is plan-level
+     progress, separate from the JSON board `done` column.
    - Keep `## Remaining Work` accurate.
-   - Keep `## Completed` for plan-level work already finished; this is
-     separate from the JSON board `done` column.
+   - Update `## Current State` so a fresh session with zero memory could pick
+     up from it: where the work stands, the single next action, and any
+     decision or gotcha found this step that is not obvious from the diff.
+   - Add to `## Plan Drift` when reality diverged from the plan.
 3. Complete or release file claims using the lifecycle operation:
    `complete`, `needs_review`, `needs_verification`, `needs_integration`,
    `verified`, or `released` as appropriate.
@@ -547,8 +553,8 @@ rather than accept the step. Do not run the "After verified work" steps. Stay in
 conversation, address the requested changes, and append once:
 
 ```text
-Context getting large? Run `mpi-end-session` and take the `resume` exit before
-starting a new session.
+Context getting large? Run `mpi-handoff` - it commits, pushes, and writes the
+handoff in about a minute.
 ```
 
 ## Hard rules
@@ -576,7 +582,10 @@ starting a new session.
   mandatory only when the card's `**Verify mode:**` is `user-ux`, or when
   self-verification failed or could not run. For an `auto` card whose checks
   passed, do not stop for the user — report the passing result and continue.
-- Do not commit or push; committing is `mpi-end-session`'s responsibility.
+- Do not commit or push; that belongs to `mpi-handoff` or `mpi-end-session`.
+- Keep `## Current State` in the active plan current after every verified step.
+  `mpi-handoff` reads it instead of reconstructing the session, so a stale note
+  is paid for later at roughly ten minutes and a full context summarisation.
 - Do not force stale plan tasks. Update the plan when reality has changed.
 - Do not spawn implementation workers here. When the next eligible unit is a
   valid `## Parallel Batch`, route it to `mpi-execute-parallel` without asking

@@ -23,7 +23,7 @@ rather do it by hand or want to know why.
 | `npx skills add ... --all -y -g`, 15 skill folders | `/plugin install mpi-kanban@mad-pony-interactive` |
 | Skills only. Rules asked; nothing enforced. | Six hooks that block, with a printed reason |
 | Four-path `mpi-lib` discovery probe per skill | `${CLAUDE_PLUGIN_ROOT}`, no probe |
-| `mpi-handoff` and `mpi-end-session` | One `mpi-end-session` with two exits, resume or done |
+| `mpi-handoff` and `mpi-end-session` | Both still exist, with the split moved: `mpi-handoff` commits, pushes, and writes the handoff; `mpi-end-session` is close-out only |
 | `mpi-nimbalyst-sync`, `state/interop.json` | Removed |
 | Markdown board operations (`kanban-ops/`) | Migration only, through `task-board-ops/migrate.md` |
 | Version stamp in `skills/mpi-lib/SKILL.md` | `version` in `.claude-plugin/plugin.json` |

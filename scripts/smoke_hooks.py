@@ -154,7 +154,7 @@ def main():
                                                       "hook_event_name": "PreCompact",
                                                       "trigger": "auto"})
         checks.append(("precompact-handoff offers a handoff",
-                       code == 0 and "mpi-end-session" in out and "Auto-compaction" in out))
+                       code == 0 and "mpi-handoff" in out and "Auto-compaction" in out))
 
         # an unadopted repo must be untouched by every hook
         with tempfile.TemporaryDirectory() as plain:

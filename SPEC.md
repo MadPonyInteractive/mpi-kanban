@@ -83,18 +83,26 @@ same trigger phrases and one of them carries the pre-1.0 contract. See
   and dispatch the ready cards on the board.
 - `mpi-message` - send, read, acknowledge, reply to, resolve, and explicitly
   route same-filesystem async coordination messages.
-- `mpi-end-session` - close out through one of two exits. Both sync
-  docs/rules/memory, commit and push per `push_policy`, run the claim auditor,
-  and resolve every card parked in `validating`. The **resume** exit writes a
-  handoff JSON for a fresh session; the **done** exit closes the task card.
+- `mpi-umbrella` - fold related board cards into one umbrella card, from a
+  named set or from a board review. Proposes clusters, creates one umbrella at
+  a time on approval, and never closes or moves the member cards.
+- `mpi-handoff` - switch sessions mid-job. Commits and pushes per
+  `push_policy`, writes a handoff JSON from the plan's running notes, prints a
+  resume block, and leaves the card in `doing`. Runs no knowledge pass and
+  spawns no sub-agent; budget is under two minutes.
+- `mpi-end-session` - close out finished work. Syncs docs/rules/memory, commits
+  and pushes per `push_policy`, runs the claim auditor, resolves every card
+  parked in `validating`, and closes the task card.
 - `mpi-cleanup` - propose conservative cleanup for stale workflow artifacts.
 - `mpi-archive` - archive completed board tasks.
 - `mpi-brief-rule` - return configured rule briefings or rule bundles.
 - `mpi-lib` - shared reference library support skill; not a user workflow.
 
-Twelve workflow skills plus `mpi-lib`. `mpi-write-plan` and `mpi-execute-next`
-were removed before 1.0. `mpi-handoff` merged into `mpi-end-session` in 1.0;
-`mpi-nimbalyst-sync` and `mpi-project-setup`/`mpi-project-mode` are removed.
+Fourteen workflow skills plus `mpi-lib`. `mpi-write-plan` and
+`mpi-execute-next` were removed before 1.0. `mpi-handoff` merged into
+`mpi-end-session` in 1.0 and split back out in 1.1, because the merge made
+every session switch pay for a close-out; `mpi-nimbalyst-sync` and
+`mpi-project-setup`/`mpi-project-mode` are removed.
 
 ### 3a. Hooks
 
@@ -657,7 +665,7 @@ workspace, handoff, rules, or memory files unless explicitly owned.
 
 ## 11. Handoff
 
-The **resume** exit of `mpi-end-session` writes:
+`mpi-handoff` writes:
 
 ```text
 .agents/mpi-kanban/state/handoffs/<uuid>.json
@@ -666,7 +674,7 @@ The **resume** exit of `mpi-end-session` writes:
 `docs/handoffs/` is legacy compatibility during migration. New canonical
 handoffs live in `.agents/mpi-kanban/state/handoffs/`.
 
-When a JSON task card is active, the resume exit also writes a lightweight
+When a JSON task card is active, `mpi-handoff` also writes a lightweight
 task-local pointer under `.agents/mpi-kanban/tasks/<id>/handoffs/` that
 references the canonical state handoff. The canonical handoff remains under
 `state/handoffs/`; task-local pointers are discovery aids for task lookup and

@@ -1,81 +1,60 @@
 ---
 name: mpi-end-session
-description: MPI workflow pack - Close out an MPI session through one of two exits, resume or done. Syncs rules/docs, heals project knowledge, commits and pushes touched files, resolves every validating card, and then either writes a handoff JSON for a fresh session or closes the task card. Use when the user says "end session", "wrap up", "commit and close", "we're done", "MPI end session", "$mpi-end-session", "/mpi-end-session", or asks for a handoff - "handoff", "create a handoff", "new session", "start fresh", "context is big", "$mpi-handoff" - and when a plan phase just completed and a new one starts.
+description: MPI workflow pack - Close out finished MPI work. Syncs rules and docs, heals project knowledge, writes memory, resolves every validating card, commits and pushes, and closes the JSON task card. Use when the user says "end session", "wrap up", "commit and close", "we're done", "close this out", "MPI end session", "$mpi-end-session", or "/mpi-end-session". This is the expensive, once-per-finished-job skill - when the work merely continues in a fresh session, use mpi-handoff instead.
 ---
 
 # mpi-end-session Skill
 
-One close-out, two exits:
+The work is finished. This preserves what the session learned into rules,
+docs, and memory, commits it, and closes the task card.
 
-- **resume** - the work continues in a fresh session. Writes a handoff JSON at
-  `.agents/mpi-kanban/state/handoffs/<uuid>.json` that `mpi-continue` loads.
-- **done** - the work is finished. Closes the JSON task card.
-
-Everything before the exit is shared: scope gate, rule/doc pass, knowledge
-healing, memory, board check, the `validating` sweep, the project extension
-point, commit, and push. The two exits used to be two skills the user ran back
-to back by hand; this runs what they ran.
-
-This skill is the LAST step in the brainstorm -> create-plan/create-large-plan
--> continue -> end-session loop.
+It is the LAST step in the brainstorm -> create-plan/create-large-plan ->
+continue -> end-session loop, and it is deliberately thorough - a knowledge
+pass that runs once per finished job is cheap, and the same pass run at every
+session switch is not.
 
 Invocation: Use the installed Agent Skills invocation for this agent, or ask
 naturally.
 
-## Pick the exit first
+## Wrong skill?
 
-Decide before running the process, and say which one in the first line of
-output:
+If the work is not finished - the user said "handoff", "new session", "start
+fresh", "context is big", or a plan phase just ended with more phases pending -
+stop and run `mpi-handoff` instead. It commits, pushes, and writes the handoff
+in about a minute, and skips every knowledge pass below because none of it can
+be concluded mid-job.
 
-- The user said "handoff", "new session", "start fresh", "context is big", or a
-  plan phase just ended with more phases pending -> **resume**.
-- The user said "done", "wrap up", "we're done", "end session", or the plan is
-  complete -> **done**.
-- Unclear -> ask in one line: `Resume later, or done?` Do not guess. The exits
-  differ in what survives the session.
+Genuinely unclear? Ask in one line: `Finished, or continuing in a new session?`
+Do not guess. The two differ by roughly ten minutes and everything that
+survives the session.
 
 ## Process
 
 ### 0. Scope gate, then coordination state
 
-Read this small file FIRST (under 3 KB):
+Read `.agents/mpi-kanban/state/index.json` FIRST (under 3 KB). **Parse it as
+`utf-8-sig`** - PowerShell `>`, `Out-File`, and `Set-Content -Encoding utf8`
+all add a BOM, and plain `utf-8` `json.load` dies on it with
+`Unexpected UTF-8 BOM`.
 
-- `.agents/mpi-kanban/state/index.json`
+A counter is CLEAR when it is `[]`, `0`, **or absent**. The shape varies by
+repo; measure it, never assume.
 
-**Parse it as `utf-8-sig`.** A UTF-8 BOM is present in the wild - PowerShell
-`>`, `Out-File`, and `Set-Content -Encoding utf8` all add one - and a plain
-`utf-8` `json.load` dies on it with `Unexpected UTF-8 BOM`.
+`active_sessions`, `active_tasks`, `active_file_claims`, `pending_file_states`
+and `open_messages` ALL clear -> nothing to coordinate. **Skip** the four
+coordination references (`docs/coordination/README.md`,
+`coordination-ops/lifecycle.md`, `statuses.md`, `messages.md`) and the
+open-messages check below. They are ~28 KB of multi-agent rules that a solo,
+file-mode close-out - which is most close-outs - cannot use. Report the skip in
+ONE line: `Coordination reads skipped: solo session, file mode.`
 
-Treat a counter as CLEAR when it is `[]`, `0`, **or absent**. The shape varies
-by repo: some write empty lists, some omit the field entirely. Measure it,
-never assume.
-
-If `active_sessions`, `active_tasks`, `active_file_claims`,
-`pending_file_states` and `open_messages` are ALL clear, there is nothing to
-coordinate. **Skip** these reads:
-
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/docs/coordination/README.md`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/messages.md`
-
-and skip the open-messages boundary check below.
-
-`active_handoffs` is deliberately NOT part of the condition. It is a *resume*
-signal, not a coordination-reference signal: a handoff left open means the last
-session ended mid-thread, which says nothing about whether a PEER is active.
-The five counters above already answer that. Still reread the handoff records.
+`active_handoffs` is deliberately NOT in the condition: an open handoff means
+the last session ended mid-thread, which says nothing about whether a PEER is
+active. Still reread the handoff records.
 
 **Never skippable, whatever the gate says:**
 `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md`,
 `read.md`, and `mutate.md` before any card write.
-
-Report the skip in ONE line, e.g.
-`Coordination reads skipped: solo session, file mode.`
-If ANY counter is non-clear, read all of the references above as written.
-
-Why: those references are ~28 KB of multi-agent coordination rules that are
-inapplicable to a solo, file-mode close-out - which is most close-outs.
 
 When the gate did NOT clear:
 
@@ -125,65 +104,55 @@ artifact that would have prevented the friction. Four kinds, one loop:
 
 Rules for the loop, all four kinds:
 
-- **Cap 1-2 proposals per session.** More than that is noise and gets ignored.
-- **Only from repetition that already happened** in this session or a recorded
-  earlier one. **Never propose from directory structure** - an empty
+- **Cap 1-2 proposals per session.** More is noise and gets ignored.
+- **Only from repetition that already happened** here or in a recorded earlier
+  session. **Never propose from directory structure** - an empty
   `.claude/agents/` directory is not evidence anyone needs an agent.
-- Propose; do not create. One line per proposal, wait for approval.
+- Propose; do not create. One line each, wait for approval.
 
-Cardinal rule: ask the user before modifying any architectural rule file.
-Creating one needs the same explicit approval. Surface a one-line proposal per
-file and wait for explicit approval per file.
-
-Edits must be concise: short bullets, no prose bloat, no new headings unless
-strictly required.
+Cardinal rule: creating or modifying any architectural rule file needs explicit
+per-file approval. Keep the edits concise - short bullets, no prose bloat, no
+new headings unless strictly required.
 
 ### 2b. Lightweight project knowledge refresh
 
 When `.agents/mpi-kanban/project-profile.md` or
-`.agents/mpi-kanban/project-knowledge-index.md` exists, check whether this
-session's changes affected architecture, conventions, important commands, or
-agent guidance. Refer to
-`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/updates.md` for the
+`project-knowledge-index.md` exists, check whether this session's changes
+affected architecture, conventions, important commands, or agent guidance;
+`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/updates.md` has the
 update shape.
 
-If architecture, commands, conventions, topic coverage, or AGENTS/CLAUDE
-pointers drifted, propose one concise edit per affected file with current vs.
-proposed content. Wait for per-file approval. If nothing has drifted, say so in
-one line. For broader drift, recommend `mpi-project-refresh`.
+Drifted -> propose one concise edit per affected file, current vs. proposed,
+and wait for per-file approval. Nothing drifted -> say so in one line. Broader
+drift -> recommend `mpi-project-refresh`.
 
 ### 3. Knowledge-healing pass (do NOT skip)
 
 The routing system (CLAUDE.md -> folder README -> subsystem doc) only stays
 trustworthy if every agent that hits a gap repairs it. Replay THIS session and
-answer honestly:
+answer honestly - did any of these happen?
 
-- **Dead or wrong pointer?** A doc/rule/memory/skill pointed at a file,
-  section, function, or flag that no longer exists - or at the wrong home.
-- **Routing gap?** The task matched no router row, or the routed doc lacked the
-  fact needed, forcing a codebase search or a wrong first attempt.
-- **Rule gap?** A mistake happened, or the user corrected the agent, that an
-  existing rule SHOULD have prevented but does not cover - or a rule misled.
-- **Skill/command friction?** A skill or playbook step failed, was ambiguous,
-  or needed improvisation to complete.
-- **Memory drift?** A memory entry contradicted reality or duplicated what docs
-  now hold.
+- **Dead or wrong pointer** - a doc/rule/memory/skill named a file, section,
+  function, or flag that no longer exists, or lives elsewhere.
+- **Routing gap** - the task matched no router row, or the routed doc lacked
+  the fact, forcing a codebase search or a wrong first attempt.
+- **Rule gap** - a mistake, or a user correction, that an existing rule should
+  have prevented but does not cover; or a rule that actively misled.
+- **Skill friction** - a skill or playbook step failed, was ambiguous, or
+  needed improvisation.
+- **Memory drift** - an entry contradicted reality or duplicated the docs.
 
-Heal at the source. Facts go to the ONE doc the project's map routes to, never
-a catch-all dump file:
+Heal at the source: the ONE doc the project's map routes to, never a catch-all
+dump file. Fix mechanical heals directly (dead pointers, broken links, stale
+references, memory corrections, MEMORY.md index drift). Substantive changes -
+new rule text, doc additions, router-row changes, skill edits - get a one-line
+proposal per file and wait for approval.
 
-- **Mechanical heals - fix directly, no approval needed:** dead pointers,
-  broken links, stale file/function references, memory-entry corrections,
-  MEMORY.md index drift.
-- **Substantive changes - one-line proposal per file, wait for approval:**
-  new or changed rule text, doc content additions, router-row changes, project
-  skill step edits.
-- **Never edit the pack itself.** Files under the installed plugin root are not
-  project files. Record the needed change as a memory note or a task card so an
-  issue can be filed on the pack.
+**Never edit the pack itself.** Files under the installed plugin root are not
+project files; record the change as a memory note or a card instead.
 
-No friction this session -> say "no knowledge gaps hit" in one line and move
-on. Never invent a gap to have something to heal.
+No friction this session -> say "no knowledge gaps hit" and move on. Never
+invent a gap to have something to heal.
 
 ### 4. Memory pass
 
@@ -212,76 +181,62 @@ python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/validate_board.py <project-r
 
 #### Consolidation sweep
 
-Run this only when the board holds **8 or more `todo` cards**. Below that, a
-backlog is not sprawl and the sweep is noise.
-
-Cluster the `todo` cards by shared file footprint first and by theme second.
-Use each card's `files.json` when it lists files, otherwise the paths its
-`plan.md` or description names. Two cards belong to the same cluster when they
-touch the same files or the same directory, or when they describe the same
-subsystem in different words. A cluster is worth proposing at three cards or
-more.
-
-Propose one umbrella per cluster, in one line each, and stop:
-
-```text
-11 todo cards cluster into 3 themes. Make umbrellas?
-- API surface (MPI-31, MPI-35, MPI-40, MPI-44) - all touch src/api/**
-- Install docs (MPI-33, MPI-34, MPI-41) - all touch docs/install.md and README.md
-- Board validator (MPI-37, MPI-38, MPI-45) - all touch scripts/validate_board.py
-```
-
-An umbrella is a large-plan card whose `plan.md` carries the phases and the
-`## Parallel Batch` sections; the clustered cards become its batch tasks. There
-is no `parent` field and none may be added - the board contract forbids new
-card fields.
-
-Create nothing without approval, one umbrella at a time, through
-`createTask` in `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`.
-Never close, merge, or delete the clustered cards as part of this: they stay
-until their work lands in the umbrella's plan, and the user says which of the
-two the board should keep.
+Count the `todo` cards. **8 or more** - follow
+`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/close-out/consolidation.md`, or offer
+`mpi-umbrella` as its own pass. Fewer - skip silently, that is not sprawl.
 
 ### 6. `validating` is not a parking space
 
-Every card this session touched must land in exactly one of two states. There
-is no third option, and silence is not one of them.
+Every card this session touched lands in exactly one of two states. There is no
+third, and silence is not one of them.
 
-**1. Evidence exists -> move it to `done`. Do not ask.**
-Agent verification counts and is sufficient: passing tests, a live probe, a
-real log line, an offline harness run, a diff that shows the change. Do not
-hold a proven card for a rubber stamp.
+**1. Evidence exists -> move it to `done`. Do not ask.** Agent verification is
+sufficient: passing tests, a live probe, a real log line, a harness run, a diff
+showing the change. Do not hold a proven card for a rubber stamp.
 
-**2. A human's eyes or ears are genuinely required -> ASK, in this session,
-before it ends.**
-Only a judgement no test can make qualifies: does this LOOK right, does it
-SOUND right, is this copy good, is this the product call. Name the card and the
-ONE thing needed, in one line. If the user answers, act on it. If the session
-ends without an answer, say so plainly in the report - an unanswered ask is
-still visible, a silent park is not.
+**2. A human's eyes or ears are genuinely required -> ASK, in this session.**
+Only a judgement no test can make qualifies: does this LOOK right, SOUND right,
+is this copy good, is this the product call. Name the card and the ONE thing
+needed, in one line. Session ends unanswered -> say so plainly in the report;
+an unanswered ask is visible, a silent park is not.
 
 **List every `validating` card before finishing**, with its evidence and its
-outcome: moved, or the one question. A session that ends with cards still
-parked and no question asked has not finished.
+outcome: moved, or the one question. A session ending with cards parked and no
+question asked has not finished.
 
 This exists because a real board reached 19 cards in `doing`, 16 of them
 `validating`; twelve closed in one pass the moment the user was actually asked.
 Every one had its evidence recorded already.
 
-### 7. Project extension point
+### 7. Project extension point, then the claim auditor
 
 If `.agents/mpi-kanban/close-out.md` exists, run its steps HERE - after the
 shared passes, **before** the commit, so anything it proposes lands in the same
-commit.
+commit. That file holds project-specific close-out steps: release awareness,
+changelog checks, version-registry drift, dependency-set checks. Treat them as
+pointers producing one-line proposals, same approval discipline as the rest of
+close-out, unless the file says otherwise.
 
-That file holds project-specific close-out steps: release awareness, changelog
-checks, version-registry drift, dependency-set checks. They belong to the
-project, not to the pack. Treat its steps as pointers producing one-line
-proposals, same approval discipline as the rest of close-out, unless the file
-says otherwise.
+Then dispatch `agents/claim-auditor.md` when it ships with the installed
+plugin: read-only, output capped at 40 lines, verdicts sorted FALSE first.
 
-If `agents/claim-auditor.md` ships with the installed plugin, run it here too:
-read-only, output capped at 40 lines, verdicts sorted FALSE first.
+**Running this skill IS the user's request for that dispatch**, exactly as it
+is for the commit in section 8. A standing "do not call agents unless the user
+asked" instruction is a default against *unprompted* dispatch; naming this
+skill is the ask, so that default does not veto this step. Say so out loud
+rather than quietly deferring - faced with a standing rule and a soft "run it
+here", the reflex is to obey the standing rule, and the auditor then never runs
+at all. It exists because unaudited claims reach public changelogs.
+
+Skip it only when the session produced no factual claim to audit - a card move,
+a scratch script, a gitignored config edit. **A skip must be stated in the
+report with its reason.** A silent skip is indistinguishable from a clean
+audit, which is how this went unnoticed for weeks.
+
+Its findings are evidence, not verdicts. It reports `file:line` for each one;
+re-verify against the file before editing any copy. It has produced a
+confidently wrong finding whose "fix" would have put a false claim into a
+public changelog.
 
 If neither exists, say nothing and continue.
 
@@ -290,7 +245,7 @@ If neither exists, say nothing and continue.
 Running this skill IS the user's explicit request to commit this session's
 touched files. Commit without asking again, even if a general "commit only when
 the user asks" instruction is otherwise in effect - invoking this skill is that
-ask. Both exits commit. Do not report "did not commit".
+ask. Do not report "did not commit".
 
 - Stage files by name; never use `git add -A` or `git add .`.
 - The session running close-out, or an explicit integrator, owns the final
@@ -302,35 +257,25 @@ ask. Both exits commit. Do not report "did not commit".
 
 ### 9. Push
 
-Read `push_policy` from `.agents/mpi-kanban/project-profile.md` frontmatter.
-Absent -> `auto`.
+Read `push_policy` from `.agents/mpi-kanban/project-profile.md` frontmatter;
+absent -> `auto`. `auto` pushes, `ask` asks in one line then pushes on
+approval, `never` leaves the branch unpushed and says so.
 
-| `push_policy` | Behavior |
-|---|---|
-| `auto` | Push. This is the default. |
-| `ask` | Ask in one line, then push on approval. |
-| `never` | Do not push. Say the branch is unpushed. |
+Rejected push: `git fetch`, `git merge --ff-only`, retry ONCE. Still failing -
+report the rejection and stop. Do not force, and **never auto-rebase a shared
+tree**. Worker sub-agents never commit and never push, whatever the policy
+says.
 
-On a rejected push: `git fetch`, then `git merge --ff-only`, then retry ONCE.
-If that fails, report the rejection and stop - do not force, and **never
-auto-rebase a shared tree**.
+### 10. Close out the task card
 
-Worker sub-agents never commit and never push, whatever the policy says.
-
-### 10A. Exit `done` - close out the task card
-
-Lib pointers, read each only when its recipe is needed:
-
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`,
-  `findTask`, `loadTask`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `moveTask`,
-  `writeTask`, `ensureLinkedFiles`, `appendEvent`, `setAttention`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/validate.md` - checks
-  when board state is inconsistent
+Lib pointers under `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/`, read
+each only when its recipe is needed: `read.md` (`findBoard`, `findTask`,
+`loadTask`), `mutate.md` (`moveTask`, `writeTask`, `ensureLinkedFiles`,
+`appendEvent`, `setAttention`), `validate.md` (inconsistent board state).
 
 `validation.md` is the gate between implementation and completion. Keep
-implementation checklists, validation notes, and handoffs in linked task
-workspace files, not in `task.json`.
+checklists, validation notes, and handoffs in linked task workspace files, not
+in `task.json`.
 
 1. Call `findBoard()`.
 2. Identify the active plan: the plan file most recently touched this session,
@@ -385,155 +330,26 @@ Then close or complete the active coordination session and task per
 closed records from active index arrays; preserve pending records that still
 need cleanup, review, verification, or integration.
 
-### 10B. Exit `resume` - write the handoff
-
-The card stays where it is. Do not close it, and do not move it out of `doing`.
-
-**1. Gather state from the conversation.** Not from git - the commit in step 8
-already recorded what changed on disk; the handoff records what is in your
-head and nowhere else:
-
-- What was the user originally trying to accomplish?
-- What is complete vs. pending?
-- The very next action the fresh session should take.
-- Key decisions, constraints, and gotchas discovered this session.
-- Which plan file is active.
-
-**2. Preservation pass.** Capture knowledge while this session still has
-context:
-
-- Update the active plan's `## Current State`, `## Plan Drift`, and
-  `## Preservation Notes` if stale.
-- Mark the outgoing session `handoff_ready`; mark unfinished file claims
-  `complete`, `needs_integration`, or `needs_review`; keep pending-change
-  provenance visible in `pending_file_states`.
-- Preserve unresolved message context: acknowledge, reply, resolve, or
-  supersede only when this session can do so accurately; otherwise list the
-  message paths and needed follow-up under `knowledge_preservation.pending`,
-  `context.constraints`, or `files_to_read_first`.
-- Long-form context belongs in the task workspace under
-  `.agents/mpi-kanban/tasks/<id>/`, not in `task.json`.
-
-**3. Look up the active task card** with
-`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md`: call
-`findBoard()`, then locate the task by ID, linked plan path, or required
-attention in `doing`. Set `task_card` to its ID, title, column, and workspace
-path with links. If no JSON board exists, say so in the handoff and leave
-`task_card` null.
-
-**4. Write the handoff** at `.agents/mpi-kanban/state/handoffs/<uuid>.json`,
-creating the directory if missing. Generate `<uuid>` with
-`python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/new_uuid.py`, or
-`python -c "import uuid; print(uuid.uuid4())"` if that script is missing. Use
-the same value for the filename and the JSON `id`.
-
-```json
-{
-  "schema": "mpi-kanban/handoff/v1",
-  "id": "<uuid>",
-  "generated_at": "<ISO-8601 timestamp>",
-  "from_session": "<state/sessions path, or null>",
-  "to_role": "orchestrator | planner | implementer | reviewer | verifier | integrator | docs",
-  "status": "open",
-  "session": {
-    "name": "<best description of the session>",
-    "branch": "<current branch>"
-  },
-  "goal": {
-    "original": "<what the user set out to do, verbatim or close paraphrase>",
-    "status": "in_progress | blocked | complete",
-    "summary": "<1-3 sentence summary of where things stand>"
-  },
-  "plan": {
-    "file": "<path to active plan file, or null>",
-    "completed": ["<done item 1>", "<done item 2>"],
-    "pending": ["<next item 1>", "<next item 2>"]
-  },
-  "task_card": {
-    "id": "<MPI-* id, or null>",
-    "title": "<task title, or null>",
-    "column": "<todo | doing | done, or null>",
-    "workspace": "<.agents/mpi-kanban/tasks/<id>/, or null>",
-    "links": {
-      "plan": "<relative or project path, or null>",
-      "checklist": "<relative or project path, or null>",
-      "validation": "<relative or project path, or null>",
-      "handoffs": "<relative or project path, or null>"
-    }
-  },
-  "allowed_actions": ["<actions the next agent may take, e.g. read, continue, verify>"],
-  "knowledge_preservation": {
-    "completed": ["<docs/rules/memory/plan preservation done before handoff>"],
-    "pending": ["<preservation item the next session must handle>"]
-  },
-  "next_action": {
-    "description": "<exact instruction for the fresh session>",
-    "command": "<optional skill or command to run first, e.g. mpi-continue>"
-  },
-  "context": {
-    "key_decisions": ["<decision 1 and why>", "<decision 2 and why>"],
-    "constraints": ["<constraint or gotcha 1>", "<constraint or gotcha 2>"],
-    "files_modified": ["<path1>", "<path2>"],
-    "files_to_read_first": ["<path1>", "<path2>"]
-  },
-  "project_knowledge": {
-    "profile": "<.agents/mpi-kanban/project-profile.md if present, else null>",
-    "knowledge_index": "<.agents/mpi-kanban/project-knowledge-index.md if present, else null>",
-    "mode": "<profile mode if present, else null>",
-    "relevant_topics": ["<topic block names the fresh session should load first>"]
-  },
-  "rules_active": ["<rule file that must be read>", "<rule file 2>"],
-  "recent_events": [{ "at": "<ISO-8601 timestamp>", "event": "handoff_created" }],
-  "resume_prompt": "<single paragraph the user can paste into a new session. Second person, present tense. Names the handoff file path and the task ID.>"
-}
-```
-
-When `task_card.id` is present, also write a pointer at
-`.agents/mpi-kanban/tasks/<id>/handoffs/<uuid>.json`:
-
-```json
-{
-  "schema": "mpi-kanban/task-handoff-pointer/v1",
-  "canonical_handoff": ".agents/mpi-kanban/state/handoffs/<uuid>.json"
-}
-```
-
-Do not duplicate the handoff body into the task workspace. Add the handoff to
-`state/index.json` `active_handoffs` and update `index.updated_at`. Mark any
-handoff this one supersedes as resolved.
-
-**5. Print the resume block.** Mandatory, every time, and never dump the full
-JSON:
-
-```text
-Handoff saved: .agents/mpi-kanban/state/handoffs/<uuid>.json
-Active task: "<MPI-* title>"   (or "none")
-
-To resume in a new session, paste this:
----
-Read .agents/mpi-kanban/state/handoffs/<uuid>.json and use mpi-continue to continue from where we left off.
-The next action is: <next_action.description>
----
-```
-
 ### 11. Final report - four bullets, no more
 
-Everything else goes in the card, the plan, or the handoff. This is what the
-user reads.
+Everything else goes in the card or the plan. This is what the user reads.
 
 ```markdown
 **CHANGED:** <what landed, one line; commit subject + file count; pushed or not>
 **VERIFIED:** <the command or check that proved it, and its result>
 **STILL OPEN:** <cards left in doing, unanswered validation questions, deferred items, or "nothing">
-**NEXT AGENT NEEDS:** <the one thing a fresh session must know, or the handoff path>
+**NEXT AGENT NEEDS:** <the one thing a fresh session must know, or "nothing">
 ```
 
 Two additions are allowed below the four bullets, and only these:
 
+- `Did not run:` - any close-out step skipped, with its reason. The claim
+  auditor and the coordination reads are the usual two. Omit when nothing was
+  skipped. A four-bullet report with no slot for this is why a skipped step
+  reads as a passed one.
 - `Noticed, not actioned:` - separate work found this session that was
-  deliberately not turned into cards, one line each. Omit the heading when
-  empty. Do not create cards for these; the user decides.
-- The resume block from 10B, when the exit was `resume`.
+  deliberately not turned into cards, one line each. Omit when empty. Do not
+  create cards for these; the user decides.
 
 Then one `git status` confirming a clean tree, or naming what was deferred.
 
@@ -542,23 +358,22 @@ Then one `git status` confirming a clean tree, or naming what was deferred.
 - Never use `git add -A` or `git add .`.
 - Never modify a rule file in `.agents/rules/` without explicit user approval.
 - Never auto-overwrite or delete a memory entry; ask first.
-- Committing is in scope and authorized by invoking this skill, on BOTH exits.
-- Pushing follows `push_policy`, default `auto`. Never force-push, and never
-  auto-rebase a shared tree.
-- Never commit over another fresh active writer's claim.
+- The commit and the claim auditor's dispatch are both authorized by invoking
+  this skill; neither needs a second ask.
+- Pushing follows `push_policy`, default `auto`. Never force-push, never
+  auto-rebase a shared tree, never commit over another fresh writer's claim.
 - Card-write preflight is mandatory before any `column`, `maturity`, or
   `status` write: read
   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` and
   `mutate.md`. Do not derive legal values from existing cards.
-- Never treat task-card badges or attention as coordination authority; reread `.agents/mpi-kanban/state/`.
+- Never treat task-card badges or attention as coordination authority; reread
+  `.agents/mpi-kanban/state/`.
 - A card moves to `done` on represented validation state plus verification.
   Agent evidence counts. When only a human judgement will do, ASK in this
   session - never park it silently in `validating`.
-- On the `resume` exit, `resume_prompt` MUST be self-contained; the fresh
-  session has zero memory. The copy/paste block is mandatory.
-- New canonical handoffs MUST be written under
-  `.agents/mpi-kanban/state/handoffs/`. `docs/handoffs/` is legacy
-  compatibility, not canonical state.
+- Never write a handoff here. If the work turns out to be unfinished, stop and
+  route to `mpi-handoff` - a close-out that also hands off is the expensive
+  path this split exists to remove.
 - The consolidation sweep proposes umbrellas; it never creates one without
   approval and never closes, merges, or deletes the clustered cards.
 - Never edit files under the installed plugin root. Record pack changes as a
@@ -566,7 +381,6 @@ Then one `git status` confirming a clean tree, or naming what was deferred.
 
 ## Success criteria
 
-- The exit was named in the first line of output.
 - All session-touched files committed, or explicitly deferred with a reason;
   pushed per `push_policy`.
 - Rules/docs reflect any architectural change, with per-file approval.
@@ -574,9 +388,7 @@ Then one `git status` confirming a clean tree, or naming what was deferred.
 - Memory entries written for non-obvious learnings; `MEMORY.md` index current.
 - Every touched card is `done` on evidence, or has an asked question on record.
   No card parked in `validating` in silence.
-- On `resume`: a handoff JSON exists, is indexed, and its resume block was
-  printed.
-- The report is four bullets.
-- `git status` clean, or remaining items explained.
+- The claim auditor ran, or the report says why it did not.
+- The report is four bullets; `git status` clean, or remaining items explained.
 - Suggest `mpi-cleanup` when old plans, handoffs, closed coordination state, or
   archived task workspaces are likely stale. Do not run cleanup automatically.
