@@ -18,8 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   did. The skill also states which path it took when the agent is absent or
   deliberately skipped, so a silent inline fallback stops looking like a
   dispatch.
-- Absorbed into the existing line budget: `mpi-continue` is 601 lines, exactly
-  where it started, so its grandfathered ceiling did not move.
+- Absorbed into the existing line budget: the dispatcher fix cost 5 lines and
+  paid for them by compressing prose in the same sections, so `mpi-continue`
+  ends at 601 lines - the same count 1.1.0 shipped - and its grandfathered
+  ceiling did not move. (Across both releases it went 592 -> 601; the growth is
+  1.1.0's running-notes rule, and 601 is where the budget's ceiling was set.)
 
 A week of real use showed the v1.0 close-out merge was a mistake. Median
 session cost rose 56% (149.6k -> 233.3k tokens) and median session length rose
@@ -63,7 +66,7 @@ a handoff. Every one of those switches was paying for a full close-out.
   obvious from the diff.
 - `mpi-end-session` is close-out only. The `resume` exit, the handoff JSON
   template, and the two-exit framing are gone; it routes to `mpi-handoff` when
-  the work is not finished. 582 -> 396 lines.
+  the work is not finished. 582 -> 394 lines.
 - `precompact-handoff` now offers `/mpi-handoff` before compaction drops the
   context, and `session-start` names all three skills.
 
