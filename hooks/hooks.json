@@ -11,6 +11,17 @@
         ]
       }
     ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/hooks/session-end.py\"",
+            "statusMessage": "Closing the Mpi-Kanban session record..."
+          }
+        ]
+      }
+    ],
     "PreCompact": [
       {
         "hooks": [

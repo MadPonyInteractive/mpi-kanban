@@ -46,7 +46,10 @@ Related references:
 ## Index Rules
 
 - `active_sessions` points at sessions with `active`, `idle`, or
-  `handoff_ready` status.
+  `handoff_ready` status. Keep it current for readers, but do not treat it as
+  the population: `guard-claim` counts live peers by listing
+  `state/sessions/`, because two Claude windows renewing one index file race
+  and a lost entry there would silently switch the guard off.
 - `active_tasks` points at tasks that are not `closed`.
 - `active_file_claims` points only at file records with status `claimed`.
 - `pending_file_states` points at file records with `complete`,
@@ -79,11 +82,14 @@ resolve, and explicit peer routing live in `coordination-ops/messages.md`.
 Inputs: `agent`, `role`, optional `task`, optional display `name`.
 
 1. Read `state/index.json`.
-2. Reuse the current session record when the session path is already known.
-   Otherwise generate a UUID with `python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/new_uuid.py`.
-   If that script is missing, use `python -c "import uuid; print(uuid.uuid4())"`.
-   Never skip session registration because the helper could not be found.
-3. Write or update `sessions/<uuid>.json`:
+2. The `SessionStart` hook has already written `sessions/<claude-session-id>.json`
+   for this session, and `guard-claim` renews its heartbeat on every write.
+   ENRICH that record - do not mint a second one under a fresh UUID, or the
+   session ends up with two records and half its history in each. Only when
+   that file is absent (an old plugin, a hook that could not run) generate a
+   UUID with `python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/new_uuid.py`,
+   falling back to `python -c "import uuid; print(uuid.uuid4())"`.
+3. Write or update that record:
    - `schema`: `mpi-kanban/session/v1`
    - `status`: `active`
    - `heartbeat_at`: current ISO-8601 timestamp

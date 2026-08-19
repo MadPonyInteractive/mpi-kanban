@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- File claims had gone inert. `guard-claim` only ever blocked a CONTESTED
+  path, so once sessions stopped registering themselves there was nothing to
+  contest and the guard fired at nothing - a project ran eight days of daily
+  work with an empty `state/files/`, an empty `state/sessions/`, and no signal
+  that the coordination layer was off.
+- Session registration moved out of skill prose and into the hooks.
+  `session-start.py` writes `state/sessions/<claude-session-id>.json`, and
+  `guard-claim.py` renews the heartbeat on any guarded write (at most once
+  every 15 minutes). An agent can no longer skip it, and `mpi-continue` now
+  enriches that record instead of minting a second one.
+- `guard-claim` gained a second rule: while another session is live, a write to
+  a path this session holds no claim on is blocked. Alone in the workspace it
+  costs nothing and stays silent, so the common single-agent session pays no
+  coordination tax - the guard turns itself on exactly when two agents are
+  writing at once. Writes under `.agents/` and outside the workspace are exempt,
+  or claiming (itself a write) could never happen.
+- New `SessionEnd` hook. Nothing in the pack had ever written `status: closed`
+  on a session record - it was a step in prose - so a window closed with the X
+  button left an `active` record behind, and the unclaimed-write rule then
+  charged every later session in that repo for the full heartbeat window while
+  it was genuinely alone. `session-end.py` closes the record; the peer window
+  is also now 30 minutes, twice the renewal interval, so a hard kill that
+  outruns the hook costs the next session half an hour rather than two. Claim
+  expiry stays at 120 minutes - a claim should survive a pause.
+
+### Known limitations
+
+- `guard-claim` does not bind between sub-agents dispatched from one session.
+  They share the parent's `session_id` in the hook payload, so rule 1 reads a
+  sibling's claim as "my own claim" and rule 2 counts zero peers. That shared id
+  was established 2026-08-19 by a PEER agent's probe and not independently re-verified here. Both rules do
+  bind between separate Claude sessions. Parallel-batch isolation therefore
+  rests on the plan's disjoint ownership alone, and the docs that said
+  otherwise have been corrected. Closing this needs a payload field that
+  distinguishes a worker from its parent.
+
 ### Added
 
 - Cross-repo GPU leases. `skills/mpi-lib/scripts/gpu_lease.py run -- <command>`

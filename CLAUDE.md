@@ -102,9 +102,17 @@ If SPEC and PLAN disagree, ask the user before choosing.
 - `isolation: "worktree"` is not the isolation mechanism for dispatch. A
   worktree branches from the default branch, not the parent's HEAD, and MPI
   commits only at close-out, so a worktree worker cannot see the session's
-  uncommitted work. Disjoint ownership plus file claims plus `guard-claim` is
-  the mechanism. This is recorded at the spawn site in `mpi-execute-parallel`
-  and in `mpi-continue`; expect a future session to try to "fix" it.
+  uncommitted work. Disjoint ownership declared in the plan is the mechanism.
+  `guard-claim` is NOT part of it between same-parent workers: sub-agents share
+  the parent's `session_id` in the hook payload (established 2026-08-19 by a PEER agent's probe and not independently re-verified here - a worker's tool call read
+  AND mutated the parent's own `state/hooks/` record; MPI-33 carries the
+  re-verification as an open checklist box),
+  so both guard rules read a sibling's claim as this session's own and allow
+  the write. The guard binds between separate Claude sessions, not between
+  workers of one. Do not write down that it protects workers from each other
+  again unless a payload field distinguishes a worker from its parent. This is
+  recorded at the spawn site in `mpi-execute-parallel` and in `mpi-continue`;
+  expect a future session to try to "fix" it.
 - Project onboarding uses `mpi-init`; project maintenance and mode changes use
   `mpi-project-refresh`. Do not restore separate `mpi-project-setup` or
   `mpi-project-mode` skills unless the user explicitly reverses the lifecycle
@@ -133,6 +141,18 @@ If SPEC and PLAN disagree, ask the user before choosing.
 - Do not remove `mpi-message`, file claims, `state/sessions/`, heartbeats,
   `mpi-brief-rule`, or `config-ops.md`. MPI-25 decided keep on 2026-07-31 and
   MPI-26 shipped their repair in v0.10.0.
+- Session registration is the hooks' job, not the agent's: `session-start.py`
+  writes `state/sessions/<claude-session-id>.json` and `guard-claim.py` renews
+  it. Asking a skill to do it failed in production - the heaviest user of the
+  pack ran eight days with zero session records and zero claims and nothing
+  noticed, because the only enforcement was a guard that fires on a CONTESTED
+  path and an empty `state/files/` has none. Do not move registration back into
+  prose.
+- `guard-claim`'s unclaimed-write rule binds only while another session is
+  live. Do not "fix" it into an always-on requirement: a solo session has
+  nobody to collide with, and a coordination cost charged to every session is
+  the exact v1.0 mistake that made a handoff cost a close-out. Cheap when
+  alone, strict when not, is the design.
 - `mpi-continue` carries the `column` and `maturity` enums inline in its
   `## Card contract` section and defaults discovered work into the active card
   in its `## Discovered work` section. Both deliberately duplicate `mpi-lib`.

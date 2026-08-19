@@ -61,6 +61,27 @@ def edit_payload(root, path, session="me"):
             "tool_name": "Edit", "tool_input": {"file_path": os.path.join(root, path)}}
 
 
+def sessions_dir(root):
+    return pathlib.Path(root, ".agents", "mpi-kanban", "state", "sessions")
+
+
+def age_every_peer(root, keep, minutes):
+    """Backdate every session but `keep`, leaving them `active` as a kill would.
+
+    Every guard-claim call registers its own session, so by this point the
+    project holds more than one peer record; ageing a single file proves
+    nothing.
+    """
+    beat = (datetime.datetime.now(datetime.timezone.utc)
+            - datetime.timedelta(minutes=minutes)).isoformat()
+    for record_path in sessions_dir(root).glob("*.json"):
+        record = json.loads(record_path.read_text(encoding="utf-8-sig"))
+        if record.get("claude_session_id") == keep:
+            continue
+        record["heartbeat_at"] = beat
+        record_path.write_text(json.dumps(record), encoding="utf-8")
+
+
 def bash_payload(root, command, session="me"):
     return {"session_id": session, "cwd": root, "hook_event_name": "PreToolUse",
             "tool_name": "Bash", "tool_input": {"command": command}}
@@ -84,8 +105,9 @@ def main():
         checks.append(("guard-claim blocks a live peer's subtree claim",
                        code == 2 and "claimed for write" in err))
 
-        code, _ = run("guard-claim.py", edit_payload(root, "src/ui/main.py"))
-        checks.append(("guard-claim allows an unclaimed file", code == 0))
+        code, err = run("guard-claim.py", edit_payload(root, "src/ui/main.py"))
+        checks.append(("guard-claim blocks an unclaimed file while a peer is live",
+                       code == 2 and "not claimed" in err))
 
         code, _ = run("guard-claim.py", edit_payload(root, "src/api/routes.py", "peer-session"))
         checks.append(("guard-claim allows the owner's own write", code == 0))
@@ -104,6 +126,33 @@ def main():
         code, _ = run("guard-claim.py",
                       bash_payload(root, "grep -n 'x > y' src/api/routes.py"))
         checks.append(("guard-claim allows a read of a claimed file", code == 0))
+
+        # Rule 2 has to leave the coordination records themselves writable, or
+        # claiming -- itself a write -- could never happen.
+        code, _ = run("guard-claim.py",
+                      edit_payload(root, ".agents/mpi-kanban/state/files/new.json"))
+        checks.append(("guard-claim allows an unclaimed write under .agents/", code == 0))
+
+        checks.append(("guard-claim registers this session on a guarded write",
+                       (sessions_dir(root) / "me.json").exists()))
+
+        # A session killed before SessionEnd runs leaves an `active` record
+        # behind. Rule 2 must stop counting it well before its claim expires,
+        # or one dead window charges every later solo session for two hours.
+        age_every_peer(root, "me", 45)
+
+        code, _ = run("guard-claim.py", edit_payload(root, "src/ui/main.py"))
+        checks.append(("guard-claim stops counting a peer that went quiet", code == 0))
+
+        code, err = run("guard-claim.py", edit_payload(root, "src/api/routes.py"))
+        checks.append(("guard-claim still honours that peer's claim",
+                       code == 2 and "claimed for write" in err))
+
+        # Alone in the workspace there is nobody to collide with, so rule 2
+        # costs a solo session nothing. This is what keeps the guard affordable.
+        age_every_peer(root, "me", 60 * 24)
+        code, _ = run("guard-claim.py", edit_payload(root, "src/ui/main.py"))
+        checks.append(("guard-claim allows an unclaimed file once alone", code == 0))
 
         code, err = run("guard-card.py", edit_payload(root, "src/ui/main.py"))
         checks.append(("guard-card blocks a code edit with no card",
@@ -171,6 +220,16 @@ def main():
         checks.append(("session-start reports an open claim",
                        code == 0 and "src/api/" in out and "additionalContext" in out))
 
+        checks.append(("session-start registers the session it was handed",
+                       (sessions_dir(root) / "me.json").exists()))
+
+        code, out = run_out("session-end.py", {"session_id": "me", "cwd": root,
+                                               "hook_event_name": "SessionEnd",
+                                               "reason": "clear"})
+        record = json.loads((sessions_dir(root) / "me.json").read_text(encoding="utf-8-sig"))
+        checks.append(("session-end closes the record it was handed",
+                       code == 0 and not out and record["status"] == "closed"))
+
         code, out = run_out("precompact-handoff.py", {"session_id": "me", "cwd": root,
                                                       "hook_event_name": "PreCompact",
                                                       "trigger": "auto"})
@@ -183,6 +242,8 @@ def main():
             checks.append(("guard-card is a no-op without a board", code == 0))
             code, _ = run("guard-claim.py", edit_payload(plain, "src/app.py"))
             checks.append(("guard-claim is a no-op without a board", code == 0))
+            checks.append(("guard-claim registers nothing without a board",
+                           not sessions_dir(plain).exists()))
             code, _ = run("guard-shell.py", bash_payload(plain, "cat <<EOF\nx\nEOF"))
             checks.append(("guard-shell is a no-op without a board", code == 0))
             code, _ = run("guard-gpu.py", bash_payload(plain, "python train.py"))
@@ -191,6 +252,10 @@ def main():
                                                      "hook_event_name": "SessionStart",
                                                      "source": "startup"})
             checks.append(("session-start is silent without a board", code == 0 and not out))
+            code, out = run_out("session-end.py", {"session_id": "me", "cwd": plain,
+                                                   "hook_event_name": "SessionEnd",
+                                                   "reason": "clear"})
+            checks.append(("session-end is a no-op without a board", code == 0 and not out))
             code, out = run_out("precompact-handoff.py", {"session_id": "me", "cwd": plain,
                                                           "hook_event_name": "PreCompact",
                                                           "trigger": "auto"})

@@ -392,8 +392,8 @@ Do not run these workers in git worktrees, and do not "fix" this in a later
 session. A worktree branches from the **default branch, not the parent
 session's HEAD**, and MPI commits only at close-out - so a worktree worker
 cannot see the session's uncommitted work, and will re-implement or contradict
-it. Isolation here is disjoint ownership plus file claims plus the `guard-claim`
-hook, all of which operate on the one working tree.
+it. Isolation here is the disjoint ownership you declare: workers share one
+session id, so `guard-claim` cannot catch two of them writing one file.
 
 ## Gate 1 - Continue brief
 

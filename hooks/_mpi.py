@@ -4,6 +4,7 @@ Every guard is a no-op in a project that has no `.agents/mpi-kanban/board.json`:
 the plugin is installed globally, so a hook that fires in an unadopted repo is a
 bug, not enforcement.
 """
+import datetime
 import json
 import os
 import shlex
@@ -11,6 +12,7 @@ import sys
 
 BOARD = ".agents/mpi-kanban/board.json"
 STATE = ".agents/mpi-kanban/state"
+SESSIONS = STATE + "/sessions"
 HOOK_STATE = STATE + "/hooks"
 
 
@@ -147,18 +149,102 @@ def written_paths(data):
     return []
 
 
+def parse_stamp(value):
+    """An ISO-8601 stamp as an aware datetime, or None when it is unusable."""
+    if not isinstance(value, str):
+        return None
+    try:
+        stamp = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return stamp if stamp.tzinfo else stamp.replace(tzinfo=datetime.timezone.utc)
+
+
+def live_session(record, timeout_minutes, now):
+    """Is this session record still running?"""
+    if not isinstance(record, dict) or record.get("status") != "active":
+        return False
+    beat = parse_stamp(record.get("heartbeat_at"))
+    if beat is None:
+        return False
+    return (now - beat) <= datetime.timedelta(minutes=timeout_minutes)
+
+
+def ensure_session(root, session_id, now, renew_after_minutes=15):
+    """Create or renew this Claude session's coordination record.
+
+    Registration used to be prose in `mpi-continue`, so it stopped happening:
+    the project that uses the pack hardest went eight days with zero session
+    records and zero file claims, and nothing noticed. A hook cannot forget.
+
+    The record is named by the Claude session id, so there is one per session
+    however many times this runs, and no index write to race another process.
+    """
+    if not session_id:
+        return None
+    rel = "%s/%s.json" % (SESSIONS, session_id)
+    path = os.path.join(root, rel)
+    record = read_json(path)
+    if not isinstance(record, dict):
+        record = {"schema": "mpi-kanban/session/v1", "id": session_id,
+                  "role": "implementer", "claude_session_id": session_id,
+                  "started_at": _stamp(now),
+                  "allowed_actions": ["read", "edit", "verify", "implement"]}
+    elif live_session(record, renew_after_minutes, now):
+        return rel  # ponytail: a beat this fresh does not need rewriting
+    record["status"] = "active"
+    record["heartbeat_at"] = _stamp(now)
+    write_json(path, record)
+    return rel
+
+
+def live_peers(root, session_id, timeout_minutes, now):
+    """Paths of OTHER sessions currently writing in this workspace.
+
+    Read from the directory, not from `index.json`: two Claude windows renewing
+    the same index would race, and the directory is the same few files either
+    way.
+    """
+    found = []
+    directory = os.path.join(root, SESSIONS)
+    try:
+        names = sorted(os.listdir(directory))
+    except OSError:
+        return found
+    for name in names:
+        if not name.endswith(".json"):
+            continue
+        record = read_json(os.path.join(directory, name))
+        if not isinstance(record, dict):
+            continue
+        if record.get("claude_session_id") == session_id:
+            continue
+        if live_session(record, timeout_minutes, now):
+            found.append(SESSIONS + "/" + name)
+    return found
+
+
 def session_state(root, session_id):
     """Per-Claude-session guard state. Keyed by the hook payload's session_id."""
     path = os.path.join(root, HOOK_STATE, f"{session_id}.json")
     return path, (read_json(path) or {})
 
 
-def write_session_state(path, state):
+def write_json(path, obj):
+    """Atomic write, so a reader never sees a half-written record."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as handle:
-        json.dump(state, handle, indent=2)
+        json.dump(obj, handle, indent=2)
     os.replace(tmp, path)
+
+
+def write_session_state(path, state):
+    write_json(path, state)
+
+
+def _stamp(moment):
+    return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def deny(reason):
@@ -229,6 +315,15 @@ def _selftest():
     assert written_paths({"cwd": root,
                           "tool_input": {"file_path": os.path.join(root, "src", "a.py")}}) \
         == ["src/a.py"]
+
+    now = datetime.datetime(2026, 8, 19, 12, 0, tzinfo=datetime.timezone.utc)
+    assert live_session({"status": "active", "heartbeat_at": "2026-08-19T11:30:00Z"}, 120, now)
+    assert not live_session({"status": "closed", "heartbeat_at": "2026-08-19T11:59:00Z"}, 120, now)
+    assert not live_session({"status": "active", "heartbeat_at": "2026-08-19T02:00:00Z"}, 120, now)
+    assert not live_session({"status": "active"}, 120, now), "no beat is not alive"
+    assert parse_stamp("2026-08-19T11:30:00Z") == parse_stamp("2026-08-19T11:30:00+00:00")
+    assert parse_stamp("not a date") is None
+    assert ensure_session(root, None, now) is None, "no session id, no record"
     print("_mpi selftest OK")
 
 

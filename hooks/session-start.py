@@ -6,11 +6,18 @@ command first. `mpi-continue` carries 2% of usage, so for the other 98% the
 coordination layer was invisible -- which is how a live project ran for six
 weeks with file claims on disk binding nothing.
 
-Read-only and never blocks. It prints nothing at all when the repo has no board
-or has nothing outstanding, so a quiet project stays quiet.
+It also registers this session's coordination record, because asking the agent
+to do it meant it stopped happening -- eight days of a live project with no
+session records and no file claims, unnoticed. That record is what lets
+`guard-claim` tell a solo session (nothing to coordinate) from two agents
+writing at once (everything to coordinate).
+
+Never blocks. It prints nothing at all when the repo has no board or has
+nothing outstanding, so a quiet project stays quiet.
 
 Run self-check:  python session-start.py --selftest
 """
+import datetime
 import json
 import os
 import sys
@@ -94,6 +101,8 @@ def main():
     root = _mpi.project_root(data)
     if not _mpi.adopted(root):
         sys.exit(0)
+    _mpi.ensure_session(root, data.get("session_id"),
+                        datetime.datetime.now(datetime.timezone.utc))
     context = summarize(*collect(root))
     if context:
         json.dump({"hookSpecificOutput": {"hookEventName": "SessionStart",

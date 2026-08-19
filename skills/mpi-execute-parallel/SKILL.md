@@ -178,7 +178,7 @@ For each task:
    worker and pass the resolved briefing text inline. Never spawn a worker with
    `isolation: "worktree"`: a worktree branches from the default branch, not
    this session's HEAD, and MPI commits only at close-out, so the worker would
-   not see the uncommitted work it is meant to build on.
+   not see it. Workers share one session id, so `guard-claim` cannot help.
 2. Spawn one worker with:
    - task text,
    - ownership,
