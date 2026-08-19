@@ -198,6 +198,7 @@ prints the reason - none of them fail silently.
 | `guard-card` | `Edit`, `Write`, `Bash` | Editing code with no card in `doing`, and creating a second card in one session. The block message carries the card contract inline and names the file, so ownership is seeded from the real first touch. An approved second card passes on retry. |
 | `guard-claim` | `Edit`, `Write`, `Bash` | Writing a path another live session has claimed. Reads both `path` and `paths` claim shapes. |
 | `guard-shell` | `Bash` | Heredocs and multi-line escaped strings. Use a script file or a single-quoted `python -c`. |
+| `guard-gpu` | `Bash` | A GPU command not routed through `gpu_lease.py`. Off until the project sets `gpu_command_patterns`. |
 | `session-start` | session start | Nothing - reports open claims, unresolved messages, active handoffs, and `doing` cards, so coordination no longer depends on typing a command. |
 | `precompact-handoff` | before compaction | Nothing - offers a handoff before context is auto-compacted. |
 
@@ -279,11 +280,53 @@ share the same `state/` directory and will both see a claim, but neither can
 stop the other's process. Prefer one session dispatching workers over N
 windows editing the same repo.
 
+### GPU leases
+
+A GPU is the exception to the paragraph above, and it needs one: agents in
+different repos running sweeps on the same card corrupt each other's results
+silently. Claims cannot cover it - they live in one repo's `state/`, key on
+paths, and bind on writes, and two agents in two repos share no file at all.
+
+So the GPU lease is machine-global, and its lock is the kernel's:
+
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/gpu_lease.py" run -- python sweep.py
+python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/gpu_lease.py" status
+```
+
+`run` takes a free device under an OS exclusive lock held for the lifetime of
+the command, sets `CUDA_VISIBLE_DEVICES` for the child, and waits when every
+device is busy. Run it as a background Bash call and the waiting costs no
+tokens. This is a real lock across sessions, repos, and windows - unlike a file
+claim, because the kernel is enforcing it rather than a cooperating agent.
+
+There is no release step. The lock drops when the command exits, including on
+crash or kill, so there is no heartbeat to tune and no stale lease to reclaim.
+
+Devices come from `nvidia-smi`. An onboard Intel or AMD adapter never becomes a
+slot, so no agent is handed a GPU too weak to run on, and a machine with no
+NVIDIA device runs the command unleased. More GPUs simply means more slots.
+
+Enforcement is opt-in per project - see `gpu_command_patterns` below.
+
 ## Per-Project Config
 
 For rule briefings and worker bundles, create `.agents/mpi-kanban.local.md`
 using the template at
 `skills/mpi-brief-rule/templates/mpi-kanban.local.md`.
+
+The same file turns on GPU lease enforcement. It stays off until you list the
+commands that need a device:
+
+```yaml
+gpu_command_patterns:
+  - python .*(train|sweep|generate)
+  - pytest .*-m gpu
+```
+
+Each entry is a regex matched against the raw Bash command. Keep them narrow -
+a pattern that catches your whole test suite blocks work that never touches the
+GPU. Leave the list empty in projects with no GPU contention.
 
 ## Migration
 

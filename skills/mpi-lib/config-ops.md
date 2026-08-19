@@ -38,6 +38,9 @@ bundles:
     rules: [components, events]
 critical_snapshot_file: AGENTS.md
 critical_snapshot_anchor: critical-rules-snapshot
+gpu_command_patterns:
+  - python .*(train|sweep|generate)
+  - pytest .*-m gpu
 ---
 
 # Mpi-Kanban project notes
@@ -52,6 +55,7 @@ critical_snapshot_anchor: critical-rules-snapshot
 | `bundles` | Optional list of `{name, rules}` entries. `rules` is an ordered list of configured rule names to return together for sub-agent dispatch. |
 | `critical_snapshot_file` | File holding the universal "Critical Rules Snapshot" all sub-agents must receive. |
 | `critical_snapshot_anchor` | Heading id within `critical_snapshot_file` where the snapshot lives. |
+| `gpu_command_patterns` | Optional list of regexes matched against a raw Bash command. A match that is not routed through `gpu_lease.py` is blocked by `guard-gpu`. Absent or empty means the GPU lease is not enforced in this project - it is opt-in, because blocking every `pytest` in every adopted repo on the chance it touches a GPU costs more than the collision it prevents. See `coordination-ops/lifecycle.md` § Lease A GPU. |
 
 ---
 

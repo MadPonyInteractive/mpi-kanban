@@ -167,6 +167,47 @@ Then:
 4. Preserve provenance fields such as owner session, task path, file path,
    outcome, and recent events.
 
+## Operation: Lease A GPU
+
+Inputs: the command that needs the device.
+
+A file claim cannot cover a GPU. Claims live in one repo's `state/`, key on
+paths, and bind on writes; two agents in two different repos running sweeps on
+the same card write no shared file at all. The GPU lease is therefore machine-
+global and outside `state/`:
+
+```text
+~/.mpi-kanban/gpu/<index>.lock
+```
+
+Never edit those files. Go through the script, which holds an OS exclusive lock
+for the lifetime of one command:
+
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/gpu_lease.py" run -- <command>
+python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/gpu_lease.py" status
+```
+
+1. Wrap every command that touches the GPU, even when `status` says free. Free
+   at the moment you check is not free when the command reaches the device.
+2. Run it as a BACKGROUND Bash call. `run` blocks until a device frees up, so
+   in the foreground it burns the tool timeout, and in the background the wait
+   costs no tokens and the harness wakes you when it exits.
+3. `run` sets `CUDA_VISIBLE_DEVICES` for the child, which sees its device as
+   `0` whichever slot it got. Do not set that variable yourself.
+4. Exit 75 means the wait expired and the command never ran. Re-run with a
+   longer `--timeout`, or ask the holder to finish - `status` names the repo,
+   pid, and command.
+5. There is no release step and no heartbeat. The kernel drops the lock when
+   the command exits, including on crash or kill.
+
+Slots come from `nvidia-smi`, so an onboard Intel or AMD adapter never gets one.
+A machine with no NVIDIA device runs the command unleased rather than blocking.
+
+`guard-gpu` binds this, but only in a project whose `.agents/mpi-kanban.local.md`
+sets `gpu_command_patterns`. Unconfigured, nothing is enforced and step 1 is on
+you.
+
 ## Operation: Complete Task
 
 Inputs: task path, outcome.

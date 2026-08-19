@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Cross-repo GPU leases. `skills/mpi-lib/scripts/gpu_lease.py run -- <command>`
+  takes a free NVIDIA device, sets `CUDA_VISIBLE_DEVICES` for the child, and
+  waits when every device is busy; `status` names the holder of each. Agents in
+  different repos were running sweeps on the same card at the same time and
+  quietly corrupting each other's results, which file claims cannot prevent -
+  they live in one repo's `state/`, key on paths, and bind on writes, and two
+  agents in two repos share no file at all.
+- The lease is machine-global (`~/.mpi-kanban/gpu/`) and its lock is an OS
+  exclusive lock held for the lifetime of the wrapped command. That is the
+  design, not an implementation detail: the kernel drops the lock when the
+  holder exits, including on crash or kill, so there is no heartbeat to tune, no
+  TTL, and no stale-lease reclaim path. It is also a real lock across sessions,
+  repos, and windows, which a file claim can never be.
+- `guard-gpu` (`PreToolUse`/`Bash`) blocks a GPU command that is not routed
+  through the lease. Opt-in per project via `gpu_command_patterns` in
+  `.agents/mpi-kanban.local.md`: the plugin is installed globally, and blocking
+  every `pytest` in every adopted repo on the chance it touches a GPU would cost
+  more than the collisions it prevents. It never checks whether a device is free
+  first, because free at check time is not free at run time.
+- `mpi-project-refresh` reports a project whose agents run GPU work with no
+  `gpu_command_patterns` set, so the opt-in does not have to be remembered per
+  repo. Updating the plugin already ships the lease and the guard everywhere;
+  only the enforcement line is per-project. Absorbed into the existing line
+  budget: the new drift category cost 3 lines and paid for them by compressing
+  the pack-install and 1.0-migration bullets, so the skill ends at 335 lines and
+  its grandfathered ceiling did not move.
+- Multi-GPU is the same loop over more slots. Devices come from `nvidia-smi`, so
+  an onboard Intel or AMD adapter never becomes a slot and no agent can be
+  handed a GPU too weak to run the work; a machine with no NVIDIA device runs
+  the command unleased rather than blocking. A nested `run` inside an existing
+  lease passes through instead of deadlocking on its own parent's lock.
+
 ## [1.1.1] - 2026-08-13
 
 ### Fixed

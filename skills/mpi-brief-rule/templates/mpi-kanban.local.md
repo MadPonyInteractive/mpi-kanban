@@ -24,6 +24,15 @@ critical_snapshot_file: AGENTS.md
 
 # Heading id within critical_snapshot_file where the snapshot lives.
 critical_snapshot_anchor: critical-rules-snapshot
+
+# Regexes for commands that need a GPU. A match not routed through gpu_lease.py
+# is blocked by guard-gpu. Leave empty unless agents in this project contend for
+# a GPU -- enforcement is opt-in, and a pattern that is too broad blocks work.
+gpu_command_patterns: []
+# Example:
+# gpu_command_patterns:
+#   - python .*(train|sweep|generate)
+#   - pytest .*-m gpu
 ---
 
 # Mpi-Kanban project notes

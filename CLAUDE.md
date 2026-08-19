@@ -145,6 +145,17 @@ If SPEC and PLAN disagree, ask the user before choosing.
   and `validate_maturity_contract_docs()` in that same file checks the inline
   copies in `mpi-continue` and `mpi-execute-parallel` against it at release
   time. Do not remove that check believing the duplication is unguarded prose.
+- The GPU lease is deliberately NOT a coordination record. It lives at
+  `~/.mpi-kanban/gpu/<index>.lock`, outside every repo, and it is held by an OS
+  exclusive lock for the lifetime of one command. Both halves are load-bearing:
+  machine-global is the only scope that reaches two agents in two different
+  repos, and the OS lock is what removes the heartbeat, the TTL, and the
+  stale-reclaim path a `state/` record would need, because the kernel releases
+  it on crash and kill. Do not move the lease into `state/`, do not give it a
+  heartbeat or an `index.json` entry, and do not decide liveness by reading
+  `<index>.owner.json` - that file is display only and a killed holder leaves it
+  behind. `guard-gpu` stays opt-in per project; enabling it by default would
+  block every `pytest` in every adopted repo the plugin is installed into.
 - A contract stated only in prose will drift. Put a check behind it in
   `scripts/validate_plugin.py` or `skills/mpi-lib/scripts/validate_board.py`.
 

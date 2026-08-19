@@ -134,6 +134,9 @@ Report findings in these categories:
   resolves. A missing config is a finding, not a silent default: it makes
   `mpi-brief-rule` stop for every rule name, so every sub-agent dispatched
   from this project runs with no briefing.
+- **GPU lease:** agents here run GPU work but `.agents/mpi-kanban.local.md` has
+  no `gpu_command_patterns`, so `guard-gpu` enforces nothing and two agents can
+  sweep one device at once. See `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/config-ops.md`.
 - **Legacy skills pack:** check `ls -d ~/.claude/skills/mpi-*
   ~/.agents/skills/mpi-* 2>/dev/null` for the 15 pre-1.0 pack names
   (`mpi-archive`, `mpi-brainstorm`, `mpi-brief-rule`, `mpi-cleanup`,
@@ -170,10 +173,9 @@ Report findings in these categories:
     symlink trap, or an `npx skills` install command. All are now
     `${CLAUDE_PLUGIN_ROOT}` and the plugin install. The migration doc lists the
     exact strings to grep for.
-  - Local workarounds for a pack bug fixed in 1.0, such as a hand-rolled
-    `python -c "import uuid"` line standing in for the shipped
-    `new_uuid.py`, or a project card tracking "delete the workaround half
-    once the pack ships it".
+  - Local workarounds for a pack bug fixed in 1.0: a hand-rolled
+    `python -c "import uuid"` standing in for the shipped `new_uuid.py`, or a
+    card tracking "delete the workaround once the pack ships it".
 
   Propose; never sweep. This is deletion inside a repo holding live work and
   possibly concurrent sessions, so nothing is removed without the user seeing
@@ -182,14 +184,12 @@ Report findings in these categories:
   `pack_version` in the profile frontmatter. Compare the numbers component by
   component, never as strings: `0.9.0` is older than `0.10.0` but sorts after
   it, so a string comparison reports the stale install as current. Cases:
-  - installed is **older** than `pack_version` - stale install. Report it
-    first, above every other finding, and say plainly that the rest of this
-    report was produced by an old auditor and may be missing checks that exist
-    in the recorded release. Tell the user to reinstall with
-    `/plugin update mpi-kanban@mad-pony-interactive` and re-run the
-    refresh. Never reinstall automatically.
-  - `pack_version` **missing** - the profile predates the stamp. Propose
-    adding it, no warning.
+  - installed is **older** than `pack_version` - stale install. Report first,
+    above every other finding: this report came from an old auditor and may be
+    missing checks the recorded release has. Tell the user to reinstall with
+    `/plugin update mpi-kanban@mad-pony-interactive` and re-run. Never
+    reinstall automatically.
+  - `pack_version` **missing** - profile predates the stamp. Propose adding it.
   - installed is **newer**, or equal - normal. Record the installed version.
 
   This detects a downgrade or a second machine with an old install. It cannot

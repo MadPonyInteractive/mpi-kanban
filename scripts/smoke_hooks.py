@@ -144,6 +144,27 @@ def main():
         code, _ = run("guard-shell.py", bash_payload(root, "git log --oneline -5"))
         checks.append(("guard-shell allows a single-line command", code == 0))
 
+        # The GPU lease is opt-in, so the unconfigured project comes first.
+        code, _ = run("guard-gpu.py", bash_payload(root, "python train.py --steps 10"))
+        checks.append(("guard-gpu is off until the project configures patterns", code == 0))
+
+        pathlib.Path(root, ".agents", "mpi-kanban.local.md").write_text(
+            "---\ngpu_command_patterns:\n  - python .*train\n---\n", encoding="utf-8")
+
+        code, err = run("guard-gpu.py", bash_payload(root, "python train.py --steps 10"))
+        checks.append(("guard-gpu blocks an unleased GPU command",
+                       code == 2 and "without holding a lease" in err))
+
+        code, _ = run("guard-gpu.py", bash_payload(
+            root, 'python "/p/skills/mpi-lib/scripts/gpu_lease.py" run -- python train.py'))
+        checks.append(("guard-gpu allows the leased form", code == 0))
+
+        code, _ = run("guard-gpu.py", bash_payload(root, "python -m pytest -q"))
+        checks.append(("guard-gpu allows a command no pattern matches", code == 0))
+
+        code, _ = run("guard-gpu.py", edit_payload(root, "train.py"))
+        checks.append(("guard-gpu ignores a file edit", code == 0))
+
         code, out = run_out("session-start.py", {"session_id": "me", "cwd": root,
                                                  "hook_event_name": "SessionStart",
                                                  "source": "startup"})
@@ -164,6 +185,8 @@ def main():
             checks.append(("guard-claim is a no-op without a board", code == 0))
             code, _ = run("guard-shell.py", bash_payload(plain, "cat <<EOF\nx\nEOF"))
             checks.append(("guard-shell is a no-op without a board", code == 0))
+            code, _ = run("guard-gpu.py", bash_payload(plain, "python train.py"))
+            checks.append(("guard-gpu is a no-op without a board", code == 0))
             code, out = run_out("session-start.py", {"session_id": "me", "cwd": plain,
                                                      "hook_event_name": "SessionStart",
                                                      "source": "startup"})

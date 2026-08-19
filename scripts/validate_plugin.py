@@ -597,6 +597,32 @@ def validate_plugin_hooks() -> None:
                 fail(f"{skill.parent.name}: references missing {rel}")
 
 
+def validate_hook_wiring() -> None:
+    """Every hook on disk must be registered in hooks.json and smoked.
+
+    A hook file that exists but is not registered enforces nothing while looking
+    installed from every angle. This closes the cheap half of that gap. It
+    cannot close the other half: which tool calls actually REACH a hook is its
+    matcher, and only a live session against the installed plugin proves that -
+    `smoke_hooks.py` builds the payload itself, so 1.0.0 shipped two guards
+    bypassable by every shell write with the smoke green throughout.
+    """
+    hooks_dir = ROOT / "hooks"
+    if not hooks_dir.exists():
+        return
+    registered = (hooks_dir / "hooks.json").read_text(encoding="utf-8")
+    smoke_file = ROOT / "scripts" / "smoke_hooks.py"
+    smoke = smoke_file.read_text(encoding="utf-8") if smoke_file.exists() else ""
+    for hook in sorted(hooks_dir.glob("*.py")):
+        if hook.name.startswith("_"):
+            continue  # shared helpers are not hooks
+        if hook.name not in registered:
+            fail(f"hooks/{hook.name}: not registered in hooks/hooks.json, so it "
+                 "enforces nothing")
+        if hook.name not in smoke:
+            fail(f"hooks/{hook.name}: no case in scripts/smoke_hooks.py")
+
+
 def validate_removed_surfaces() -> None:
     for rel in REMOVED_PATHS:
         if (ROOT / rel).exists():
@@ -624,6 +650,7 @@ def main() -> int:
     validate_lib_references()
     validate_plugin_manifest(skill_names)
     validate_plugin_hooks()
+    validate_hook_wiring()
     validate_removed_surfaces()
     check_no_symlinks()
 

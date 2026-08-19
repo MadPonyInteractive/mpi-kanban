@@ -106,7 +106,7 @@ every session switch pay for a close-out; `mpi-nimbalyst-sync` and
 
 ### 3a. Hooks
 
-Six hooks ship in `hooks/`, registered by `hooks/hooks.json`. Each one exits 0
+Seven hooks ship in `hooks/`, registered by `hooks/hooks.json`. Each one exits 0
 immediately when the project has no `.agents/mpi-kanban/board.json`, and each
 fails closed with a printed reason rather than silently.
 
@@ -129,6 +129,12 @@ fails closed with a printed reason rather than silently.
   not a shell parser.
 - `guard-shell` (`PreToolUse`/Bash) - refuse heredocs and multi-line escaped
   strings; require a script file or a single-quoted `python -c`.
+- `guard-gpu` (`PreToolUse`/Bash) - refuse a GPU command that is not routed
+  through `skills/mpi-lib/scripts/gpu_lease.py`. Opt-in: it does nothing until
+  the project's `.agents/mpi-kanban.local.md` sets `gpu_command_patterns`, since
+  the plugin is installed globally and most adopted repos have no GPU contention
+  to arbitrate. It does not check whether a device is free, because free at
+  check time is not free at run time.
 - `session-start` (`SessionStart`) - report open claims, unresolved messages,
   active handoffs, and `doing` cards.
 - `precompact-handoff` (`PreCompact`) - offer a handoff before auto-compaction.
@@ -553,6 +559,37 @@ source-of-truth mode.
 `state/interop.json` was the mode file for the removed Nimbalyst integration.
 Skills must not read it, write it, or branch on it. `mpi-project-refresh`
 reports an orphaned copy left by an older install and offers to delete it.
+
+### 6.4 GPU Leases
+
+A GPU is the one contended resource coordination state cannot arbitrate. File
+claims live in one repo's `state/`, key on paths, and bind on writes; two agents
+in two different repos running sweeps on the same card write no shared file at
+all. So the GPU lease is machine-global and deliberately outside `state/`:
+
+```text
+~/.mpi-kanban/gpu/<index>.lock          the lock, one per NVIDIA device
+~/.mpi-kanban/gpu/<index>.owner.json    display only, never liveness
+```
+
+`skills/mpi-lib/scripts/gpu_lease.py run -- <command>` takes the first free
+device with an OS exclusive lock (`msvcrt.locking` on Windows, `fcntl.flock`
+elsewhere), sets `CUDA_VISIBLE_DEVICES` for the child, waits when every device
+is busy, and returns 75 if the wait expires without running the command.
+`status` lists each device as free or names its holder.
+
+The OS lock is the whole design. It is what removes the heartbeat, the TTL, and
+the stale-lease reclaim path that `state/` records need: the kernel drops the
+lock when the holder exits, including on crash, Ctrl-C, and `TaskStop`. A lease
+record with its own heartbeat would reintroduce every failure mode this avoids.
+Liveness is therefore decided by trying the lock, never by reading the owner
+file, which a killed holder leaves behind.
+
+Devices come from `nvidia-smi`, so an onboard Intel or AMD adapter never becomes
+a slot and no agent can be handed a device too weak to run on. A machine with no
+NVIDIA device runs the command unleased rather than blocking work. Multi-GPU is
+the same loop over more slots; a nested `run` inside an existing lease passes
+through rather than deadlocking on its own parent's lock.
 
 ## 7. Project Knowledge
 
