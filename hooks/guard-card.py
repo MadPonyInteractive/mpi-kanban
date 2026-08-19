@@ -63,6 +63,11 @@ def decide(rel_path, doing_cards, state):
     """
     if rel_path is None:
         return None, None
+    # A path outside the project root is not project work and no card could
+    # ever own it -- a scratchpad script, a file in a sibling repo. Same test
+    # guard-claim's rule 2 uses, for the same reason.
+    if _mpi.outside_workspace(rel_path):
+        return None, None
     if NEW_CARD.match(rel_path):
         first = state.get("card_created")
         if first and first not in rel_path:
@@ -135,6 +140,11 @@ def _selftest():
 
     # 5. rewriting the same card is not a second card
     assert decide(card, [], {"card_created": "MPI-9"}) == (None, None)
+
+    # 6. a write outside the project root can never be owned by a card
+    for outside in ("C:/Users/x/AppData/Local/Temp/claude/probe.py",
+                    "/tmp/probe.py", "../sibling/app.py"):
+        assert decide(outside, [], {}) == (None, None), outside
 
     print("guard-card selftest OK")
 

@@ -60,6 +60,19 @@ def _relative(target, root):
     return None if rel.startswith("../") or rel == ".." else rel
 
 
+def outside_workspace(candidate):
+    """Is this path outside the project root?
+
+    `written_paths` deliberately reports the absolute path for an Edit outside
+    the root, so both guards need one shared way to spot one. Spelled out
+    rather than `os.path.isabs`, which stopped calling `/etc/x` absolute on
+    Windows in Python 3.13.
+    """
+    candidate = (candidate or "").replace(os.sep, "/")
+    return (not candidate or candidate.startswith("../")
+            or candidate.startswith("/") or candidate[1:2] == ":")
+
+
 def bash_targets(command):
     """Raw paths a shell command writes to.
 

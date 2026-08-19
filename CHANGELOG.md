@@ -7,8 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-19
+
 ### Fixed
 
+- `guard-card` no longer demands a task card for a write outside the project
+  root. Saving a throwaway script to the session scratchpad returned the whole
+  card contract, which reads as a broken plugin rather than as enforcement -
+  the file is not project work and no card could ever own it. The test
+  `guard-claim` already used for the same case is now shared as
+  `_mpi.outside_workspace()` and both guards call it.
 - File claims had gone inert. `guard-claim` only ever blocked a CONTESTED
   path, so once sessions stopped registering themselves there was nothing to
   contest and the guard fired at nothing - a project ran eight days of daily
@@ -782,7 +790,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.0...v1.0.1

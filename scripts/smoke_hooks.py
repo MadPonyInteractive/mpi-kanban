@@ -183,6 +183,16 @@ def main():
                       bash_payload(root, "python -m pytest -q", "shell-read"))
         checks.append(("guard-card allows a command that writes nothing", code == 0))
 
+        # A scratchpad script is not project work and no card could own it. Fresh
+        # session, so the once-per-session flag cannot be what lets it through.
+        outside = os.path.join(os.path.dirname(root), "scratchpad", "probe.py")
+        code, _ = run("guard-card.py", edit_payload(root, outside, "outside"))
+        checks.append(("guard-card allows a write outside the project root", code == 0))
+
+        code, err = run("guard-card.py", edit_payload(root, "src/ui/main.py", "outside"))
+        checks.append(("guard-card still blocks inside that same session",
+                       code == 2 and "maturity" in err))
+
         code, err = run("guard-shell.py", bash_payload(root, "cat <<'EOF'\nhello\nEOF"))
         checks.append(("guard-shell blocks a heredoc", code == 2 and "heredoc" in err))
 

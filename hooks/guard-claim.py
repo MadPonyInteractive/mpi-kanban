@@ -130,14 +130,9 @@ def blocking_claim(candidate, claims, my_session_id, timeout_minutes, now):
 
 def guarded(candidate):
     """Is this a path rule 2 should ask for a claim on?"""
-    candidate = (candidate or "").replace(os.sep, "/")
-    # Spelled out rather than `os.path.isabs`, which stopped calling `/etc/x`
-    # absolute on Windows in Python 3.13.
-    outside = (not candidate or candidate.startswith("../")
-               or candidate.startswith("/") or candidate[1:2] == ":")
-    if outside:
+    if _mpi.outside_workspace(candidate):
         return False
-    return not candidate.startswith(".agents/")
+    return not candidate.replace(os.sep, "/").startswith(".agents/")
 
 
 def owns_claim(candidate, claims, my_session_id):
