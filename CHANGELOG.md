@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-26
+
+### Added
+
+- A read-only board server, so the board is visible in a harness with no
+  webview: `python skills/mpi-lib/scripts/board_server.py <project-root>` serves
+  every registered project at one pinned address, viewable in the Claude Code
+  browser pane and an ordinary browser at the same time. Stdlib only, no build
+  step, no dependency. It never writes to a board - moving a card stays
+  `mpi-continue`'s job, which also keeps `guard-card` in the loop.
+- One server holds every project, one tab each, rather than one server per repo
+  on a port you have to remember. The registry is `~/.mpi-kanban/boards.json`,
+  machine-global for the reason the GPU lease is: a record that spans repos
+  cannot live inside one. Like the lease it is not a coordination record - no
+  heartbeat, no `index.json` entry, no claim. Running the command from a second
+  project registers it into the running server and exits; `--forget` drops one
+  registered by mistake, since only a DELETED project drops itself and a
+  boardless one is kept on purpose so its tab can say to run `/mpi-init`.
+- `scripts/smoke_board_server.py` covers the assembly, both failure modes that
+  would otherwise be invisible (a card whose `task.json` is missing becomes a
+  stub rather than vanishing from its column; a project with no board reports
+  itself instead of 500ing), the `/api/task/` path guard, and a second launch
+  joining a live server.
+- `session-start` now names the board server in its context block, so a session
+  in any adopted project can open the board without being told where the script
+  lives. One line rather than a skill, whose description would load every
+  session whether or not anyone wanted to look at a board.
+- `validate_plugin.py` now checks the board page carries a colour for all ten
+  maturity values. A missing one renders as the invalid red, which reads as a bad
+  card rather than a stale copy of the enum, so only a check catches it.
+
+### Fixed
+
+- The board server binds before asking who holds a port, rather than probing
+  first. A closed loopback port does not always refuse - on Windows it can drop,
+  and the connect times out - which made the probe report a free port as taken.
+  The server also disables `allow_reuse_address` on Windows, where the
+  `HTTPServer` default does not mean "reuse a dead socket" but "silently hijack
+  a port that is already serving", turning a second project's launch into a
+  process that steals the port and then blocks forever.
+
 ## [1.2.0] - 2026-08-19
 
 ### Fixed
@@ -790,7 +831,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.0.1...v1.1.0

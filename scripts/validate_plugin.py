@@ -375,6 +375,21 @@ def validate_maturity_contract_docs() -> None:
                 + ", ".join(repr(value) for value in missing)
             )
 
+    # The board page paints one colour per maturity. A value missing from its map
+    # is not a broken page -- it renders as the invalid red, which reads as a bad
+    # card rather than a stale copy of the enum. Only a check catches that.
+    page = ROOT / "skills" / "mpi-lib" / "scripts" / "board.html"
+    if not page.exists():
+        fail(f"missing maturity contract doc: {page.relative_to(ROOT)}")
+    else:
+        text = page.read_text(encoding="utf-8", errors="ignore")
+        missing = [value for value in enum_values if f'"{value}":' not in text]
+        if missing:
+            fail(
+                f"{page.relative_to(ROOT)} has no colour for maturity "
+                + ", ".join(repr(value) for value in missing)
+            )
+
 
 def validate_task_board_tree() -> None:
     for message in board_rules.validate_board(ROOT):

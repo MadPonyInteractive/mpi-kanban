@@ -230,6 +230,9 @@ def main():
         checks.append(("session-start reports an open claim",
                        code == 0 and "src/api/" in out and "additionalContext" in out))
 
+        checks.append(("session-start says how to open the board",
+                       "board_server.py" in out))
+
         checks.append(("session-start registers the session it was handed",
                        (sessions_dir(root) / "me.json").exists()))
 

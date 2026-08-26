@@ -67,6 +67,12 @@ def summarize(doing, claims, messages, handoffs):
         return None
     lines.append("Resume with `/mpi-continue`; switch sessions with "
                  "`/mpi-handoff`; close with `/mpi-end-session`.")
+    # The one line that lets any session in any adopted repo open the board
+    # without being told the path. Cheaper than a skill, whose description would
+    # load every session whether or not anyone wanted to look at a board.
+    lines.append("Board in a browser: run "
+                 "`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/board_server.py` "
+                 "in the background, then open the URL it prints.")
     return "Mpi-Kanban state:\n" + "\n".join(lines)
 
 

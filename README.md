@@ -154,6 +154,34 @@ folders, and board-level and task-level event logs. Exit 0 means the board
 is consistent; exit 1 prints one line per violation. `mpi-end-session` runs
 this check automatically before committing.
 
+## Board In A Browser
+
+The companion VS Code extension is one way to see a board. The other is a small
+read-only server, for a harness with no webview:
+
+```text
+python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/board_server.py" <project-root>
+```
+
+`<project-root>` defaults to the current directory. Open the printed URL -
+`http://localhost:7337` - in the Claude Code browser pane, in Chrome, or in
+both at once.
+
+Run the same command from a second project and it registers that one into the
+server already running rather than fighting for the port, so one address holds
+every board and each gets a tab. The port is pinned and never auto-picked: the
+address is a bookmark. Pass `--port` to move it, `--forget` to drop a project
+registered by mistake.
+
+Start it once from a terminal and leave it up - it outlives sessions, which is
+the point when several projects share it. The page polls every two seconds, so a
+card moved by `mpi-continue` appears without a reload, in every browser watching.
+
+The registry of projects lives at `~/.mpi-kanban/boards.json`, machine-global
+for the same reason a GPU lease is: a record spanning repos cannot live in one.
+It is a list of paths and nothing else - the server never writes to a board, and
+moving a card stays `mpi-continue`'s job.
+
 ## Workflow
 
 The normal loop is:
