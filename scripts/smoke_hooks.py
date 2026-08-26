@@ -265,6 +265,24 @@ def main():
                                                      "hook_event_name": "SessionStart",
                                                      "source": "startup"})
             checks.append(("session-start is silent without a board", code == 0 and not out))
+
+        # Adopted but QUIET: a board and nothing in flight. 1.3.0 emitted nothing
+        # here, which hid the board pointer in the one repo with no other way to
+        # find it - and the busy-project case above stayed green throughout.
+        with tempfile.TemporaryDirectory() as quiet:
+            board = pathlib.Path(quiet, ".agents", "mpi-kanban")
+            board.mkdir(parents=True)
+            (board / "board.json").write_text(
+                json.dumps({"schema": "mpi-kanban/board/v1", "next_id": 1,
+                            "columns": {"todo": [], "doing": [], "done": []}}),
+                encoding="utf-8")
+            code, out = run_out("session-start.py", {"session_id": "q", "cwd": quiet,
+                                                     "hook_event_name": "SessionStart",
+                                                     "source": "startup"})
+            checks.append(("session-start offers the board in a quiet project",
+                           code == 0 and "board_server.py" in out))
+            checks.append(("a quiet project is not told to resume anything",
+                           "/mpi-continue" not in out))
             code, out = run_out("session-end.py", {"session_id": "me", "cwd": plain,
                                                    "hook_event_name": "SessionEnd",
                                                    "reason": "clear"})

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-08-26
+
+### Fixed
+
+- `session-start` really does name the board server now. 1.3.0 appended that
+  line after `summarize()`'s early `return None` for an empty board state, so a
+  quiet adopted project - no `doing` cards, no claims, no messages, no handoffs
+  - emitted nothing and never showed it. That is exactly the fresh repo with no
+  other way to learn the server exists, which was the point of the line. It now
+  sits outside that gate; a project with no board is still silent, from
+  `main()`, so the never-fire-without-a-board constraint is untouched, and a
+  quiet project is no longer told to resume work it does not have.
+- The hook smoke gained the two cases that would have caught it: a quiet
+  adopted project is offered the board, and is not told to resume anything. The
+  existing session-start case stayed green through the defect because its
+  fixture always had state to report - the same shape as the matcher blind spot
+  behind the 1.0.0 guard bug. Verified by running v1.3.0's own `summarize()`
+  against a quiet project: it returns `None`.
+
 ## [1.3.0] - 2026-08-26
 
 ### Added
@@ -831,7 +850,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.1...HEAD
+[1.3.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.0...v1.1.1

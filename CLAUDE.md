@@ -176,6 +176,27 @@ If SPEC and PLAN disagree, ask the user before choosing.
   `<index>.owner.json` - that file is display only and a killed holder leaves it
   behind. `guard-gpu` stays opt-in per project; enabling it by default would
   block every `pytest` in every adopted repo the plugin is installed into.
+- The board server (`skills/mpi-lib/scripts/board_server.py`) is READ-ONLY and
+  stays that way. It never writes a board, a card, or a claim; the only thing
+  it writes anywhere is the registry of project paths. Moving a card is
+  `mpi-continue`'s job, and that is not a style preference: a write from a
+  browser races whatever session is live and bypasses `guard-card` entirely,
+  since a hook can only intercept an agent's tool call. Adding drag-to-move or
+  checklist ticks means first answering how the write coordinates - not just
+  wiring up a POST.
+- Its registry lives at `~/.mpi-kanban/boards.json`, machine-global for the
+  same reason the GPU lease is: one server shows several repos, and a record
+  that spans repos cannot live inside one of them. Like the lease it is NOT a
+  coordination record - no heartbeat, no TTL, no `index.json` entry, no claim -
+  and it must not become one. It is a list of paths.
+- `Server.allow_reuse_address` must stay `False` on Windows. The `HTTPServer`
+  default is `True`, which there does not mean "reuse a dead socket" but "let a
+  second bind silently hijack a port that is already serving" - which turned a
+  second project's launch, the entire point of one shared server, into a
+  process that stole the port and blocked forever. For the same family of
+  reason, bind before probing: a closed loopback port does not always refuse,
+  and on this developer's box it drops, so a probe-first check reports a free
+  port as taken. `scripts/smoke_board_server.py` covers both.
 - A contract stated only in prose will drift. Put a check behind it in
   `scripts/validate_plugin.py` or `skills/mpi-lib/scripts/validate_board.py`.
 

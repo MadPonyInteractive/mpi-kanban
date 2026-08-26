@@ -63,13 +63,19 @@ def summarize(doing, claims, messages, handoffs):
         for rel in handoffs[:MAX_ROWS]:
             lines.append("  %s" % rel)
         lines += _more(handoffs)
-    if not lines:
-        return None
-    lines.append("Resume with `/mpi-continue`; switch sessions with "
-                 "`/mpi-handoff`; close with `/mpi-end-session`.")
+    if lines:
+        lines.append("Resume with `/mpi-continue`; switch sessions with "
+                     "`/mpi-handoff`; close with `/mpi-end-session`.")
     # The one line that lets any session in any adopted repo open the board
     # without being told the path. Cheaper than a skill, whose description would
     # load every session whether or not anyone wanted to look at a board.
+    #
+    # It sits OUTSIDE the `if lines:` on purpose. `main()` has already
+    # established the project is adopted, and this is a capability pointer, not
+    # state - 1.3.0 appended it after an early `return None` for an empty board
+    # state, which made it invisible in exactly the quiet, fresh repo that has
+    # no other way to learn the server exists. A hook with no board still
+    # returns nothing, from `main()`; that constraint is untouched.
     lines.append("Board in a browser: run "
                  "`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/board_server.py` "
                  "in the background, then open the URL it prints.")
@@ -117,7 +123,14 @@ def main():
 
 
 def _selftest():
-    assert summarize([], [], [], []) is None, "a quiet project must stay silent"
+    # A quiet ADOPTED project still gets the board pointer, and nothing else.
+    # It used to return None here, which hid the pointer in the one repo with no
+    # other way to find it. An UNADOPTED project is still silent - `main()`
+    # exits before reaching this function.
+    quiet = summarize([], [], [], [])
+    assert quiet is not None, "a quiet adopted project must still offer the board"
+    assert "board_server.py" in quiet
+    assert "/mpi-continue" not in quiet, "nothing to resume, so do not say resume"
 
     out = summarize([{"id": "MPI-28", "title": "Rebuild", "maturity": "in-progress"}],
                     [(["hooks/", "scripts/x.py"], "state/sessions/abc.json")],
