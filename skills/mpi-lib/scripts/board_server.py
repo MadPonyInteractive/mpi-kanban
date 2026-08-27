@@ -121,6 +121,38 @@ def names(roots: list[Path]) -> dict[str, Path]:
     return table
 
 
+def branch(root: Path) -> str | None:
+    """The checked-out branch, read straight out of `.git/HEAD`. None if not a repo.
+
+    A label, not a filter. `.agents/` is gitignored in an adopted project, so the
+    board belongs to the WORKING TREE and switching branches does not change a
+    single card - the label is there to say which checkout the agent writing
+    these cards is standing in. Per-branch boards would need a card field, and
+    the board contract is fixed.
+
+    No subprocess: `git rev-parse` on every 2-second poll of every registered
+    repo is a lot of process spawns for one line of text.
+    """
+    git = root / ".git"
+    if git.is_file():  # a linked worktree or a submodule: `.git` names the real dir
+        try:
+            pointer = git.read_text(encoding="utf-8").strip()
+        except OSError:
+            return None
+        if not pointer.startswith("gitdir:"):
+            return None
+        git = Path(pointer.split(":", 1)[1].strip())
+        if not git.is_absolute():
+            git = root / git
+    try:
+        head = (git / "HEAD").read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if head.startswith("ref: refs/heads/"):
+        return head[len("ref: refs/heads/"):] or None
+    return head[:7] or None  # detached: the short sha is the honest answer
+
+
 # --- reading a board --------------------------------------------------------
 
 def resolve_link(folder: Path, links: object, key: str) -> Path | None:
@@ -176,11 +208,13 @@ def load_board(root: Path, name: str) -> dict:
     board_file = root.joinpath(*BOARD_DIR, "board.json")
     board = read_json(board_file)
     if not isinstance(board, dict):
-        return {"repo": name, "root": str(root), "ok": False, "columns": [],
+        return {"repo": name, "root": str(root), "branch": branch(root), "ok": False,
+                "columns": [],
                 "error": f"No board at {board_file} - run /mpi-init in that project"}
     columns = board.get("columns") if isinstance(board.get("columns"), dict) else {}
     return {
-        "repo": name, "root": str(root), "ok": True, "generated_at": now(),
+        "repo": name, "root": str(root), "branch": branch(root),
+        "ok": True, "generated_at": now(),
         "columns": [
             {"id": column_id, "title": title,
              "tasks": [load_task(root, task_id, column_id)
@@ -196,7 +230,7 @@ def list_boards() -> list[dict]:
     for name, root in names(read_registry()).items():
         board_file = root.joinpath(*BOARD_DIR, "board.json")
         ok = board_file.is_file()
-        boards.append({"name": name, "root": str(root), "ok": ok,
+        boards.append({"name": name, "root": str(root), "branch": branch(root), "ok": ok,
                        "error": None if ok else "No board here - run /mpi-init"})
     return boards
 

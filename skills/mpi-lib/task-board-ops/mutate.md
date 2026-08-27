@@ -79,52 +79,36 @@ brief, plan note, or validation note if it matters.
 
 ## `createTask(input)`
 
-Required input:
+One command. Never assemble a card out of separate writes:
 
-```json
-{
-  "title": "Short task title",
-  "description": "Optional card summary.",
-  "column": "todo",
-  "maturity": "idea",
-  "status": "active",
-  "position": "top",
-  "actor": "claude"
-}
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py" create --title "Short task title" --description "Optional card summary." --column todo --maturity idea --root <project-root>
 ```
 
-`status` defaults to `active` when omitted. `position` is optional and may be
-`top` or `bottom`; use `bottom` when importing an ordered source list.
+It claims the id with an atomic `mkdir`, writes `task.json` with mode `'x'` from
+`templates/task.json`, inserts the id into the `board.json` column, bumps
+`next_id`, appends `task.created` to both event logs, takes its timestamps from
+the clock, and runs `validate_board()` before it exits. If any step fails the
+task folder is removed, so a create lands whole or leaves nothing.
 
-Recipe:
+Options: `--maturity` defaults to the column's default (`todo` -> `planned`,
+`doing` -> `in-progress`, `done` -> `complete`) and is rejected when it does not
+match the column. `--status` defaults to `active`. `--position` defaults to
+`top`; use `bottom` when importing an ordered source list. A card created
+straight into `doing` or `done` gets that column's required linked file seeded.
 
-1. Read `read.md` and call `ensureBoard()`.
-2. Claim the ID atomically. `board.next_id` is a hint, not a lock: another
-   agent can read the same value in the same second.
-   - Get a candidate `<id>` from `allocateTaskId(board)`.
-   - Create the folder with `os.mkdir(".agents/mpi-kanban/tasks/<id>")`. That
-     mkdir **is** the lock - exactly one agent wins it, and every other agent
-     raises `FileExistsError`. Never `os.makedirs(..., exist_ok=True)` here; it
-     hands the same ID to both agents.
-   - On `FileExistsError`, re-read `board.json` and retry with
-     `max(board.next_id, <failed suffix> + 1)`. Allow at least 10 attempts:
-     every loser retries at the same next free ID, so a herd of N creators
-     clears one ID per round and the cap has to exceed N. Dispatch caps
-     workers at 4. After the attempts run out, stop and report the contention.
-     Do not pick an ID by hand.
-3. Write `task.json` with mode `'x'`, using `templates/task.json` as the field
-   baseline. Never mode `'w'`: it silently overwrites the card another agent
-   just created, and the loser only finds out if they happened to commit. A
-   `FileExistsError` here means the folder was not yours - go back to step 2.
-4. Set `id`, `title`, `description`, `column`, `maturity`, `status`,
-   timestamps, and links. Use relative links only.
-   Reject the input if `maturity` is not one of the fixed enum values above or
-   does not match `column`; normalize before writing rather than writing a red
-   invalid card.
-5. Add the ID to the target column array in `board.json`: re-read the board
-   first, then prepend for `position: "top"` and append for
-   `position: "bottom"`. Never write back a board you read before step 2.
-6. Append `task.created` to the global event log and task event log.
+Why this is a command and not a recipe: writing `task.json` without inserting
+the id into `board.json` leaves a card that owns an id and is invisible to the
+VS Code extension, to `board_server.py`, and to everything else that reads the
+board - and nothing errors, because `next_id` has already moved. That happened
+twice in one hour on 2026-08-27, in two different repos, to two different
+agents working from the step list this section used to carry.
+
+Repair an existing orphan with:
+
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/validate_board.py" <project-root> --fix
+```
 
 New ideas default to `todo`.
 
@@ -132,33 +116,38 @@ New ideas default to `todo`.
 
 ## `moveTask(id, toColumn, actor, reason)`
 
-1. Read `board.json`.
-2. Find the task ID in exactly one current column. If not found or duplicated,
-   stop and report validation failure.
-3. Remove the ID from the old column and insert it at the top of `toColumn`
-   unless the caller provides a specific insertion index.
-4. Read `tasks/<id>/task.json`.
-5. Update `column`, `maturity`, and `updated_at` together. Column movement is
-   also maturity reconciliation:
-   - `toColumn: "todo"` -> keep the existing value when it is one of `idea`,
-     `planned`, `research`, `needs-decision`, `blocked`, or `deferred`;
-     otherwise set `planned`.
-   - `toColumn: "doing"` -> keep existing `validating` only when validation
-     state is already represented; otherwise set `in-progress`.
-   - `toColumn: "done"` -> keep existing `rejected` when the card was
-     explicitly closed without being built; otherwise set `complete`.
-6. If the move implies agent reconciliation, set:
+One command, for the same reason - a move is four writes too, and a half-done
+one leaves `board.json` saying `doing` while the card says `todo`:
 
-   ```json
-   "attention": {
-     "state": "required",
-     "reason": "<reason>",
-     "updated_at": "<timestamp>"
-   }
-   ```
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py" move MPI-42 --to doing --reason "Implementation started." --root <project-root>
+```
 
-7. Write `board.json` and `task.json`.
-8. Append `task.moved` to both event logs.
+It moves the id between columns in `board.json`, updates `column`, `maturity`
+and `updated_at` in `task.json`, sets `status` to `done` on a move into `done`,
+appends `task.moved` to both event logs, and validates before it exits.
+
+Maturity is reconciled from the destination column unless `--maturity` says
+otherwise: a value that is legal for the destination survives the move, anything
+else becomes that column's default (`todo` -> `planned`, `doing` ->
+`in-progress`, `done` -> `complete`). Use `--maturity rejected` for a card
+closed without being built, and `--maturity validating` once validation state
+exists.
+
+The move is refused before anything is written when the destination's linked
+file is missing - `checklist.md` for `doing`, `validation.md` for `done`. Write
+the file, then repeat the command. A card in `done` is never silently reopened
+by this: moving it back is a deliberate `--to doing` with a reason.
+
+If the move implies agent reconciliation, follow it with `writeTask` to set:
+
+```json
+"attention": {
+  "state": "required",
+  "reason": "<reason>",
+  "updated_at": "<timestamp>"
+}
+```
 
 Typical reconciliation moves:
 

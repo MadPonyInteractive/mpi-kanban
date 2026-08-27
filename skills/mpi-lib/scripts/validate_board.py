@@ -2,7 +2,12 @@
 
 Usage:
 
-    python validate_board.py [project-root]
+    python validate_board.py [project-root] [--fix]
+
+`--fix` first repairs orphaned task folders - a `tasks/<id>/` with a `task.json`
+that no `board.json` column lists, the residue of a card create that stopped
+halfway - by listing the id in the column its own card names and appending the
+missing `task.created` event. Nothing else is auto-repaired.
 
 `project-root` defaults to the current directory. The board is expected at
 `<project-root>/.agents/mpi-kanban/board.json`; a project with no board is not
@@ -15,10 +20,13 @@ the single code-level source of truth.
 """
 from __future__ import annotations
 
+import argparse
 import codecs
 import json
+import os
 import re
 import sys
+from datetime import datetime
 from pathlib import Path
 
 TASK_ID = re.compile(r"^MPI-[1-9][0-9]*$")
@@ -42,6 +50,52 @@ UNRESOLVED_COORDINATION_STATUSES = {
     "needs_verification",
     "needs_integration",
 }
+
+
+def now() -> str:
+    """A timestamp from the clock, offset included, matching what boards carry."""
+    return datetime.now().astimezone().isoformat(timespec="seconds")
+
+
+def style(path: Path) -> tuple[str, int]:
+    """(newline, indent) copied off an existing file, so a write stays a one-line diff.
+
+    Boards in the wild are `indent=2` with CRLF; this repo's own is `indent=1`.
+    Rewriting with json.dump defaults reformats the whole file into a useless diff.
+    """
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return "\n", 2
+    newline = "\r\n" if b"\r\n" in raw else "\n"
+    for line in raw.decode("utf-8-sig", "replace").splitlines()[1:]:
+        stripped = line.lstrip(" ")
+        if stripped and stripped != "}":
+            return newline, len(line) - len(stripped) or 2
+    return newline, 2
+
+
+def write_json(path: Path, data: dict, newline: str, indent: int,
+               exclusive: bool = False) -> None:
+    """Write `data`, keeping the file's own newline and indent.
+
+    `exclusive` uses mode 'x', never 'w': 'w' silently overwrites the card another
+    agent just created, and the loser only finds out if they happen to commit.
+    """
+    body = (json.dumps(data, indent=indent, ensure_ascii=False) + "\n").replace("\n", newline)
+    if exclusive:
+        with open(path, "xb") as handle:
+            handle.write(body.encode("utf-8"))
+        return
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_bytes(body.encode("utf-8"))
+    os.replace(tmp, path)
+
+
+def append_event(path: Path, record: dict, newline: str) -> None:
+    line = (json.dumps(record, ensure_ascii=False) + "\n").replace("\n", newline)
+    with open(path, "ab") as handle:
+        handle.write(line.encode("utf-8"))
 
 
 def load_json(errors: list[str], path: Path, label: str) -> object | None:
@@ -283,11 +337,87 @@ def validate_file_claims(errors: list[str], board_root: Path) -> None:
         if status not in FILE_CLAIM_STATUSES:
             errors.append(f"{label} has unknown status {status!r}")
 
+def already_logged(path: Path, task_id: str) -> bool:
+    """Whether this log already carries a `task.created` for `task_id`."""
+    try:
+        lines = path.read_text(encoding="utf-8-sig").splitlines()
+    except OSError:
+        return False
+    for line in lines:
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(record, dict) and record.get("type") == "task.created" \
+                and record.get("id") == task_id:
+            return True
+    return False
+
+
+def repair_orphans(root: Path) -> list[str]:
+    """Put orphaned task folders back on the board. Returns one line per repair.
+
+    An orphan is a `tasks/<id>/` with a `task.json` that no column lists - the
+    residue of a create that stopped after writing the card. The repair is the
+    one the two 2026-08-27 orphans needed by hand: insert the id at the head of
+    the column its own `task.json` names, and append the missing `task.created`.
+
+    Deliberately narrow. It does not touch maturities, columns, links or claims:
+    a --fix that rewrites judgement calls is one nobody can run without reading
+    the diff, which defeats the point of having it.
+    """
+    board_path = root / ".agents" / "mpi-kanban" / "board.json"
+    board_root = board_path.parent
+    if not board_path.is_file():
+        return []
+    board = load_json([], board_path, "board.json")
+    columns = board.get("columns") if isinstance(board, dict) else None
+    if not isinstance(columns, dict):
+        return []  # a board this broken needs a human, not an automatic insert
+    listed = {task_id for column in TASK_COLUMNS for task_id in (columns.get(column) or [])}
+    tasks_root = board_root / "tasks"
+    if not tasks_root.is_dir():
+        return []
+
+    newline, indent = style(board_path)
+    repaired: list[str] = []
+    for child in sorted(tasks_root.iterdir()):
+        if not child.is_dir() or child.name in listed or not (child / "task.json").is_file():
+            continue
+        card = load_json([], child / "task.json", child.name)
+        if not isinstance(card, dict):
+            continue
+        column = card.get("column") if card.get("column") in TASK_COLUMNS else "todo"
+        columns.setdefault(column, []).insert(0, child.name)
+        suffix = child.name.rsplit("-", 1)[-1]
+        if suffix.isdigit():
+            board["next_id"] = max(int(board.get("next_id") or 1), int(suffix) + 1)
+        record = {"schema": "mpi-kanban/event/v1", "type": "task.created", "id": child.name,
+                  "at": card.get("created_at") or now(), "actor": "validate_board --fix",
+                  "column": column, "title": card.get("title") or child.name}
+        for log in (board_root / "events.jsonl", child / "events.jsonl"):
+            if not already_logged(log, child.name):
+                append_event(log, record, newline)
+        repaired.append(f"listed orphan {child.name} in {column}")
+
+    if repaired:
+        write_json(board_path, board, newline, indent)
+    return repaired
+
+
 def main(argv: list[str]) -> int:
-    root = Path(argv[1] if len(argv) > 1 else ".").resolve()
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("project_root", nargs="?", default=".")
+    parser.add_argument("--fix", action="store_true",
+                        help="list orphaned task folders back on the board, then validate")
+    args = parser.parse_args(argv[1:])
+    root = Path(args.project_root).resolve()
     if not root.is_dir():
         print(f"not a directory: {root}", file=sys.stderr)
         return 2
+    if args.fix:
+        for line in repair_orphans(root) or ["nothing to repair"]:
+            print(line)
     board_errors = validate_board(root)
     if board_errors:
         print(f"Board validation FAILED ({root}):", file=sys.stderr)

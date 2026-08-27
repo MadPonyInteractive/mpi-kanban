@@ -228,6 +228,7 @@ def validate_mpi_lib_present() -> None:
         "task-board-ops/validate.md",
         "project-knowledge/indexing.md",
         "scripts/validate_board.py",
+        "scripts/task_ops.py",
         "scripts/new_uuid.py",
         "docs/coordination/README.md",
         "templates/board.json",

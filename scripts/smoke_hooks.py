@@ -8,14 +8,20 @@ import sys
 import tempfile
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1] / "hooks"
+REGISTRY = pathlib.Path(tempfile.gettempdir(), "mpi-smoke-boards.json")
 
 
 def _proc(hook, payload):
+    # session-start registers its repo in the browser board's registry, which is
+    # machine-global. Point it at a throwaway file or a smoke run leaves temp
+    # directories in the developer's own board list.
+    env = dict(os.environ, MPI_KANBAN_BOARDS_FILE=str(REGISTRY))
     return subprocess.run(
         [sys.executable, str(HOOKS / hook)],
         input=json.dumps(payload),
         capture_output=True,
         text=True,
+        env=env,
     )
 
 
@@ -235,6 +241,12 @@ def main():
 
         checks.append(("session-start registers the session it was handed",
                        (sessions_dir(root) / "me.json").exists()))
+
+        # The repo has to reach the browser board's tab list without anyone
+        # remembering to run a command inside it.
+        registered = json.loads(REGISTRY.read_text(encoding="utf-8")) if REGISTRY.exists() else {}
+        checks.append(("session-start registers the repo for the browser board",
+                       str(pathlib.Path(root).resolve()) in (registered.get("roots") or [])))
 
         code, out = run_out("session-end.py", {"session_id": "me", "cwd": root,
                                                "hook_event_name": "SessionEnd",

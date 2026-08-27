@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-27
+
+### Fixed
+
+- A card create can no longer half-write. `createTask` was a six-step prose
+  recipe with four separate file writes, and on 2026-08-27 two agents in two
+  repos stopped after the second: `task.json` on disk, `next_id` bumped, the id
+  never inserted into a `board.json` column. Nothing errored - `next_id` had
+  already moved, so no later create collided - and the card was invisible in the
+  VS Code extension, in the board server, and to everything else that reads the
+  board. The only symptom was a human saying the board was empty, which reads as
+  a stale viewer and cost a round of debugging the server instead.
+  `skills/mpi-lib/scripts/task_ops.py` now performs a create as ONE command:
+  atomic `mkdir` id claim, `task.json` written with mode `x`, the column insert,
+  `next_id`, both event logs, timestamps from the clock, and `validate_board()`
+  before it exits. A failure removes the task folder, so a create lands whole or
+  leaves nothing.
+- The same command performs a move, which has the same four-write shape and the
+  same failure - `board.json` saying `doing` while the card says `todo`. A move
+  into a column whose linked file is missing (`checklist.md` for `doing`,
+  `validation.md` for `done`) is refused before anything is written, rather than
+  producing a board that fails its own validator.
+- Typed timestamps go with it. Both 2026-08-27 cards carried authored values
+  (`09:25:00Z`, `09:05:00.000Z`) against an accurate machine clock; the create
+  path never read a clock because no step told it to. It does now. No hook
+  rejects `:00` seconds - an offset like `+01:00` ends that way, so the check
+  would have blocked correct writes.
+
+### Added
+
+- `validate_board.py --fix` repairs an orphaned task folder: it lists the id in
+  the column its own `task.json` names and appends the missing `task.created` to
+  both event logs, preserving the file's own indent and line endings. That is
+  exactly the repair both 2026-08-27 orphans needed by hand. Deliberately
+  narrow - it does not touch maturities, columns, links or claims.
+- `session-start` now reports board validation failures, so a half-written card
+  is named at the next session rather than found by reading `board.json` by
+  hand. The detection already existed; nothing ran it on the write path.
+- `session-start` also registers its repo in `~/.mpi-kanban/boards.json`, so
+  every project you open a session in becomes a tab on the browser board with no
+  per-repo command to remember. The registry stays what it was: a machine-global
+  list of paths, no heartbeat, no claim.
+- The browser board labels each project with the branch its working tree has
+  checked out, read straight from `.git/HEAD` - no subprocess on a two-second
+  poll, and a linked `git worktree` reports its own branch. It is a label, not a
+  filter: `.agents/` is gitignored in an adopted project, so the board belongs
+  to the working tree and a branch switch changes no cards.
+
 ## [1.3.1] - 2026-08-26
 
 ### Fixed
@@ -850,7 +898,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.1.1...v1.2.0

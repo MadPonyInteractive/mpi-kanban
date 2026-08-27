@@ -152,7 +152,13 @@ The script checks board schema, the fixed column set, card/column and
 maturity-enum coherence, required task fields, link paths, orphaned task
 folders, and board-level and task-level event logs. Exit 0 means the board
 is consistent; exit 1 prints one line per violation. `mpi-end-session` runs
-this check automatically before committing.
+this check automatically before committing, and a session start reports any
+violation it finds.
+
+Pass `--fix` to repair an orphaned task folder - a card whose `task.json` exists
+but which no column lists, so it is invisible in every viewer. The repair lists
+it in the column its own card names and appends the missing `task.created`
+event. Nothing else is auto-repaired.
 
 ## Board In A Browser
 
@@ -167,11 +173,18 @@ python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/board_server.py" <project-r
 `http://localhost:7337` - in the Claude Code browser pane, in Chrome, or in
 both at once.
 
-Run the same command from a second project and it registers that one into the
-server already running rather than fighting for the port, so one address holds
-every board and each gets a tab. The port is pinned and never auto-picked: the
-address is a bookmark. Pass `--port` to move it, `--forget` to drop a project
-registered by mistake.
+You rarely need to name a project: starting a Claude session in an adopted repo
+registers it, so it is already a tab the next time you look. Running the command
+inside a repo registers it too, and when a server is already up it joins that one
+rather than fighting for the port - one address holds every board. The port is
+pinned and never auto-picked: the address is a bookmark. Pass `--port` to move
+it, `--forget` to drop a project registered by mistake.
+
+Each board is labelled with the branch its working tree has checked out, read
+from `.git/HEAD`. It is a label, not a filter: `.agents/` is gitignored in an
+adopted project, so the board belongs to the working tree and switching branches
+does not change a card. A linked `git worktree` is a second working tree with a
+board of its own, and registers as its own tab.
 
 Start it once from a terminal and leave it up - it outlives sessions, which is
 the point when several projects share it. The page polls every two seconds, so a

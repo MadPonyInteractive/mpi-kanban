@@ -74,9 +74,9 @@ is the default and needs no approval.
   verification) -> do not create a card silently. Collect it and report it at
   the end of the step under `Noticed, not actioned:` so the user decides.
 - Create a card only when the user explicitly asks for one in the current
-  request, through `createTask` in
-  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. Never
-  hand-write a `task.json`.
+  request: run `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py create
+  --title "..." --column todo`, which writes the card AND lists it on the board
+  in one command. Never hand-write a `task.json`; half of one is invisible.
 
 First check the open `todo` and `doing` cards for one already covering the same
 system and extend that instead. Several cards on one system is the failure this

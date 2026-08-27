@@ -38,9 +38,58 @@ def _more(items):
     return ["  ... and %d more" % extra] if extra > 0 else []
 
 
-def summarize(doing, claims, messages, handoffs):
+def lib_path():
+    """`skills/mpi-lib/scripts`, which ships beside `hooks/` in the same plugin."""
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "..", "skills", "mpi-lib", "scripts")
+
+
+def register_board(root):
+    """Add this repo to the browser board's registry, so the tab list fills itself.
+
+    Registering used to mean running `board_server.py` once inside every repo,
+    which is a command nobody remembers for a board they only look at when
+    something is wrong. A session start already knows the repo root, so it does
+    it. The registry is a machine-global list of paths and nothing more - not a
+    coordination record, no heartbeat, no claim - so this is one small write.
+
+    Never fatal: a board you cannot list is worth less than a session you cannot
+    start.
+    """
+    try:
+        sys.path.insert(0, lib_path())
+        import board_server  # noqa: PLC0415 - only when a board actually exists
+        from pathlib import Path
+        board_server.register(Path(root))
+    except Exception:
+        pass
+
+
+def board_errors(root):
+    """`validate_board` findings, or []. The check the create path could skip.
+
+    A half-written card - `task.json` on disk, id never inserted into a column -
+    is invisible to every reader of `board.json`, so the only symptom is a human
+    saying the board is empty. It is cheap to notice here and expensive to notice
+    by hand: it cost a round of debugging the board server on 2026-08-27.
+    """
+    try:
+        sys.path.insert(0, lib_path())
+        import validate_board  # noqa: PLC0415
+        from pathlib import Path
+        return validate_board.validate_board(Path(root))
+    except Exception:
+        return []
+
+
+def summarize(doing, claims, messages, handoffs, errors=()):
     """Build the context lines from already-loaded records. None means silent."""
     lines = []
+    if errors:
+        lines.append("Board file problems (repair: `validate_board.py <root> --fix`):")
+        for message in errors[:MAX_ROWS]:
+            lines.append("  %s" % _clip(message, 96))
+        lines += _more(list(errors))
     if doing:
         lines.append("Cards in `doing`:")
         for card in doing[:MAX_ROWS]:
@@ -76,9 +125,9 @@ def summarize(doing, claims, messages, handoffs):
     # state, which made it invisible in exactly the quiet, fresh repo that has
     # no other way to learn the server exists. A hook with no board still
     # returns nothing, from `main()`; that constraint is untouched.
-    lines.append("Board in a browser: run "
-                 "`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/board_server.py` "
-                 "in the background, then open the URL it prints.")
+    lines.append("Board in a browser: this repo is registered, so it is already a tab. "
+                 "Run `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/board_server.py` "
+                 "in the background if nothing is serving yet, then open the URL it prints.")
     return "Mpi-Kanban state:\n" + "\n".join(lines)
 
 
@@ -115,7 +164,8 @@ def main():
         sys.exit(0)
     _mpi.ensure_session(root, data.get("session_id"),
                         datetime.datetime.now(datetime.timezone.utc))
-    context = summarize(*collect(root))
+    register_board(root)
+    context = summarize(*collect(root), errors=board_errors(root))
     if context:
         json.dump({"hookSpecificOutput": {"hookEventName": "SessionStart",
                                           "additionalContext": context}}, sys.stdout)
@@ -144,6 +194,12 @@ def _selftest():
     many = [{"id": "MPI-%d" % n, "title": "t", "maturity": "in-progress"} for n in range(9)]
     assert "and 4 more" in summarize(many, [], [], [])
     assert _clip("x" * 80).endswith("…")
+
+    # A half-written card is invisible in every viewer, so it is said out loud
+    # here rather than left for someone to find by reading board.json by hand.
+    broken = summarize([], [], [], [], ["orphaned task folder not listed in "
+                                        "board.json: tasks/MPI-629"])
+    assert "tasks/MPI-629" in broken and "--fix" in broken
     print("session-start selftest OK")
 
 

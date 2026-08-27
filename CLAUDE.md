@@ -176,6 +176,16 @@ If SPEC and PLAN disagree, ask the user before choosing.
   `<index>.owner.json` - that file is display only and a killed holder leaves it
   behind. `guard-gpu` stays opt-in per project; enabling it by default would
   block every `pytest` in every adopted repo the plugin is installed into.
+- A card create and a card move go through
+  `skills/mpi-lib/scripts/task_ops.py`, never through steps an agent performs
+  one at a time. Both are four file writes, and prose cannot make the fourth
+  happen: on 2026-08-27 two agents in two repos wrote `task.json`, bumped
+  `next_id`, and never inserted the id into a `board.json` column, leaving a
+  card that owns an id and is invisible to every reader. Nothing errored,
+  because `next_id` had already moved. Do not restore the step list in
+  `task-board-ops/mutate.md`, and do not let a skill assemble a card inline -
+  the enums stay inline in `mpi-continue` for the reason above, but the WRITE
+  does not.
 - The board server (`skills/mpi-lib/scripts/board_server.py`) is READ-ONLY and
   stays that way. It never writes a board, a card, or a claim; the only thing
   it writes anywhere is the registry of project paths. Moving a card is

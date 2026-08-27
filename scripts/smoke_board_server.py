@@ -137,6 +137,26 @@ def run_checks(port: int, home: Path, alpha: Path) -> None:
           [item["completed"] for item in doing["checklist"]] == [True, False],
           str(doing["checklist"]))
 
+    print("branch label")
+    check("a project with no .git carries no branch", board_server.branch(alpha) is None)
+    write(alpha / ".git" / "HEAD", "ref: refs/heads/feature/board-server\n")
+    check("the branch comes out of .git/HEAD",
+          board_server.branch(alpha) == "feature/board-server", str(board_server.branch(alpha)))
+    write(alpha / ".git" / "HEAD", "9f3c1a2b4d5e6f708192a3b4c5d6e7f809a1b2c3\n")
+    check("a detached head shows its short sha", board_server.branch(alpha) == "9f3c1a2")
+    # A linked worktree has a `.git` FILE, not a directory -- the case a naive
+    # read of `<root>/.git/HEAD` misses, and the one that matters here, since a
+    # worktree is a second checkout with a board of its own.
+    tree = home / "tree"
+    write(tree / ".git", f"gitdir: {alpha / '.git' / 'worktrees' / 'tree'}\n")
+    write(alpha / ".git" / "worktrees" / "tree" / "HEAD", "ref: refs/heads/side\n")
+    check("a linked worktree reports its own branch", board_server.branch(tree) == "side",
+          str(board_server.branch(tree)))
+    write(alpha / ".git" / "HEAD", "ref: refs/heads/main\n")
+    status, body = fetch(port, "/api/board?repo=alpha")
+    check("the board carries the branch to the page", json.loads(body).get("branch") == "main",
+          body[:80])
+
     print("failure modes stay visible")
     status, body = fetch(port, "/api/board?repo=beta")
     beta = {column["id"]: column["tasks"] for column in json.loads(body)["columns"]}

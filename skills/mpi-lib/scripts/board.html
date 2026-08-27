@@ -118,8 +118,11 @@ async function load() {
     // all reading "Mpi-Kanban" is the same problem one address was meant to fix.
     document.title = board.repo + " board";
     who.textContent = board.repo;
-    where.textContent = board.root;
-    where.title = board.root;
+    // The branch the agent writing these cards is standing in. The board itself
+    // is per working tree, not per branch, so this explains a checkout - it does
+    // not filter anything.
+    where.textContent = board.root + (board.branch ? "  @" + board.branch : "");
+    where.title = where.textContent;
     drawBoard();
     drawDetail();
   }
@@ -137,7 +140,8 @@ function drawTabs(boards) {
   for (const entry of boards) {
     const button = el("button", (entry.name === repo ? "on " : "") + (entry.ok ? "" : "bad"));
     button.textContent = entry.name;
-    button.title = entry.root + (entry.ok ? "" : " - " + entry.error);
+    button.title = entry.root + (entry.branch ? "  @" + entry.branch : "")
+      + (entry.ok ? "" : " - " + entry.error);
     button.onclick = () => {
       repo = entry.name; picked = null; openLink = null; seenBoard = "";
       pinUrl(); load();
