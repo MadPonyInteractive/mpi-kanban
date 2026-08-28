@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-08-28
+
+### Fixed
+
+- One repo no longer shows up as two tabs on the browser board. The registry
+  compared paths as raw strings, and Windows supplies two spellings of the same
+  directory: `board_server.py` registers a resolved path, whose drive letter
+  comes back upper-cased, while `session-start.py` registers the hook payload's
+  `cwd` verbatim and that arrives lower-cased. Both landed in the registry, and
+  `names()` dutifully de-collided them into `Mpi-Foo` and `Mpi-Foo-2` - two
+  identical tabs onto one project. `register()` now resolves before it writes
+  and compares on a normalised key, and `read_registry()` collapses duplicates
+  so a registry that already grew one heals on read.
+- Clicking a repo tab moves the highlight. `drawTabs` only ran when the
+  registry itself changed, so the `on` class stayed on whichever tab was
+  current when the page loaded: the board switched, the URL switched, and the
+  buttons said nothing had happened.
+
 ## [1.4.0] - 2026-08-27
 
 ### Fixed
@@ -898,7 +916,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.2.0...v1.3.0

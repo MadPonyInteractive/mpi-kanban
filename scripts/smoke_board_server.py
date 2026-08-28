@@ -211,6 +211,22 @@ def run_checks(port: int, home: Path, alpha: Path) -> None:
     check("--forget drops a live repo that would otherwise stick", "beta" not in names,
           str(sorted(names)))
 
+    # The bug in the wild: `main` registers a RESOLVED path while
+    # `session-start.py` registers the hook payload's `cwd` verbatim, so one repo
+    # entered the registry twice and the board grew a duplicate `alpha-2` tab.
+    board_server.register(Path(str(alpha.parent) + os.sep + ".." + os.sep
+                               + alpha.parent.name + os.sep + alpha.name))
+    names = [entry["name"] for entry in json.loads(fetch(port, "/api/boards")[1])["boards"]]
+    check("one repo registered under two spellings stays one tab",
+          names.count("alpha") == 1 and not any(n.endswith("-2") for n in names), str(names))
+
+    # Written straight into the file, the way a registry that grew a duplicate
+    # before this fix looks on disk: it has to heal on read, not stay broken.
+    registry = board_server.registry_path()
+    registry.write_text(json.dumps({"roots": [str(alpha), str(alpha) + os.sep]}), encoding="utf-8")
+    names = [entry["name"] for entry in json.loads(fetch(port, "/api/boards")[1])["boards"]]
+    check("a registry that already holds a duplicate heals on read", names == ["alpha"], str(names))
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

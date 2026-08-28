@@ -144,7 +144,10 @@ function drawTabs(boards) {
       + (entry.ok ? "" : " - " + entry.error);
     button.onclick = () => {
       repo = entry.name; picked = null; openLink = null; seenBoard = "";
-      pinUrl(); load();
+      // Redraw here too: the poll only calls drawTabs when the REGISTRY changes,
+      // so without this the `on` highlight stays on whichever tab was current
+      // when the page loaded and every click looks like it did nothing.
+      pinUrl(); drawTabs(boards); load();
     };
     tabs.append(button);
   }

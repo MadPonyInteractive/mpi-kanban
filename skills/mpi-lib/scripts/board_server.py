@@ -78,16 +78,37 @@ def registry_path() -> Path:
     return Path.home() / ".mpi-kanban" / "boards.json"
 
 
+def root_key(raw: str) -> str:
+    """The comparison key for a registered path: one repo, one key.
+
+    `C:\\AI\\Foo` and `c:\\AI\\Foo` are the same directory, and Windows hands out
+    both: `main` resolves its argument so the drive comes back upper-cased, but
+    `session-start.py` registers the hook payload's `cwd` verbatim and that
+    arrives lower-cased. Compared as raw strings they are two repos, so the
+    registry grew a second entry, `names()` renamed the pair `Mpi-Foo` and
+    `Mpi-Foo-2`, and the board showed one project as two identical tabs.
+    """
+    return os.path.normcase(os.path.normpath(raw))
+
+
 def read_registry() -> list[Path]:
     """Registered roots, most recently registered last.
 
     A root whose directory is gone drops out here. A root that still exists but
     has no board does NOT -- that is a repo waiting on `/mpi-init`, and saying so
-    on its tab is more use than making it vanish.
+    on its tab is more use than making it vanish. Two spellings of one root
+    collapse, so a registry that already grew a duplicate heals on the next read
+    instead of needing the file hand-edited.
     """
     data = read_json(registry_path())
     roots = data.get("roots", []) if isinstance(data, dict) else []
-    return [Path(raw) for raw in roots if isinstance(raw, str) and Path(raw).is_dir()]
+    table: dict[str, Path] = {}
+    for raw in roots:
+        if isinstance(raw, str) and Path(raw).is_dir():
+            key = root_key(raw)
+            table.pop(key, None)  # re-registered: it moves to most-recent
+            table[key] = Path(raw)
+    return list(table.values())
 
 
 def register(root: Path, forget: bool = False) -> None:
@@ -99,7 +120,10 @@ def register(root: Path, forget: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     data = read_json(path)
     roots = data.get("roots", []) if isinstance(data, dict) else []
-    roots = [r for r in roots if isinstance(r, str) and r != str(root)]
+    # Store one spelling whatever the caller hands over: a hook passes the raw
+    # payload `cwd`, which on Windows differs from a resolved path only in case.
+    root = Path(root).resolve()
+    roots = [r for r in roots if isinstance(r, str) and root_key(r) != root_key(str(root))]
     if not forget:
         roots.append(str(root))
     tmp = path.with_suffix(".tmp")
