@@ -141,7 +141,9 @@ Inputs: session path, task path, file paths or module ownership.
      integrator, split ownership, or ask the user.
 3. If a claim is stale, only an orchestrator or integrator may reclaim it when
    intent is clear. Uncertain cases ask the user.
-4. If no active writer blocks the file, create a file record with status
+4. If no active writer blocks the file, create a file record with
+   `schema: "mpi-kanban/file-claim/v1"` -- that literal, NOT
+   `mpi-kanban/file/v1` after the `state/files/` directory -- plus status
    `claimed`, `claim_kind: "write"`, owner session, owner role, task path, and
    heartbeat. Use `path` for a single file; use `paths` for one claim over a set
    of files or a module. Do not write both on the same record.

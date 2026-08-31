@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-08-31
+
+### Fixed
+
+- A file claim written by hand no longer arrives with the wrong `schema` and
+  gets rejected by the plugin's own validator. `coordination-ops/lifecycle.md`
+  told an agent to "create a file record with status `claimed`" and named every
+  field except the schema string, which lived one file away in
+  `docs/coordination/schemas.md`. An agent that skipped that read invented the
+  value from the `state/files/` directory name and wrote
+  `mpi-kanban/file/v1`, which `validate_board.py` rejects because the contract
+  is `mpi-kanban/file-claim/v1`. The literal is now inline in the step, along
+  with the wrong string it gets confused for. v0.10.0 repaired five records
+  that had already failed this way without fixing the prose that produced them.
+
 ## [1.4.1] - 2026-08-28
 
 ### Fixed
@@ -916,7 +931,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.1...v1.4.0
 [1.3.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.0...v1.3.1
