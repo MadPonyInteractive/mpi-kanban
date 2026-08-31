@@ -165,6 +165,16 @@ If SPEC and PLAN disagree, ask the user before choosing.
   and `validate_maturity_contract_docs()` in that same file checks the inline
   copies in `mpi-continue` and `mpi-execute-parallel` against it at release
   time. Do not remove that check believing the duplication is unguarded prose.
+- For the same reason, the file-claim `schema` literal stays INLINE in
+  `skills/mpi-lib/coordination-ops/lifecycle.md`, in the "Operation: Claim
+  Files" step that creates the record. Behind a pointer to
+  `docs/coordination/schemas.md` it was skipped, and agents invented
+  `mpi-kanban/file/v1` from the `state/files/` directory name -- which
+  `validate_board.py` rejects, because the contract is
+  `mpi-kanban/file-claim/v1`. v0.10.0 repaired five records that had already
+  failed this way without touching the prose that produced them; 1.4.2 fixed
+  the prose. Third instance of this failure in this repo after the `column` and
+  `maturity` enums. Do not deduplicate it back into a lib-only reference.
 - The GPU lease is deliberately NOT a coordination record. It lives at
   `~/.mpi-kanban/gpu/<index>.lock`, outside every repo, and it is held by an OS
   exclusive lock for the lifetime of one command. Both halves are load-bearing:
