@@ -53,7 +53,7 @@ made, never as current guidance. Current guidance is `SPEC.md` and `CLAUDE.md`.
 
 ## Parallel agent defaults
 
-Plan file: `docs/plans/2026-05-22-parallel-agent-defaults.md`. Independent of the
+Plan file: `docs/archive/mpi-kanban/plans/2026-05-22-parallel-agent-defaults.md`. Independent of the
 project-knowledge Phase 4 work; does not block or imply Phase 4.
 
 - [x] Make parallel use the default for eligible work in `SPEC.md` and
@@ -80,7 +80,7 @@ project-knowledge Phase 4 work; does not block or imply Phase 4.
 
 ## Project knowledge and architectural intent Phase 4
 
-Plan file: `docs/plans/2026-05-20-project-knowledge-architectural-intent-phase-4.md`.
+Plan file: `docs/archive/mpi-kanban/plans/2026-05-20-project-knowledge-architectural-intent-phase-4.md`.
 
 - [x] Add `lib/project-intent/modes.md` (mode contracts, default-mode rule,
   intentional engineering guardrails).
@@ -139,7 +139,7 @@ OpenCode, and future systems as target adapters around that source.
 
 ## KiloCode plugin packaging Phase 6
 
-Plan file: `docs/plans/2026-05-23-kilocode-plugin-packaging-phase-6.md`.
+Plan file: `docs/archive/mpi-kanban/plans/2026-05-23-kilocode-plugin-packaging-phase-6.md`.
 
 Superseded by Phase 7 before release. The Kilo-specific generator,
 marketplace docs, and template were removed in favor of the npx-only
@@ -161,7 +161,7 @@ skills.sh distribution path.
 
 ## Cross-agent skills distribution Phase 7
 
-Plan file: `docs/plans/2026-05-23-cross-agent-skills-distribution-phase-7.md`.
+Plan file: `docs/archive/mpi-kanban/plans/2026-05-23-cross-agent-skills-distribution-phase-7.md`.
 
 - [x] Confirm hard-drop release strategy: npx-only, all-or-nothing.
 - [x] Add `skills/mpi-lib/` support skill with shared reference docs.
@@ -179,7 +179,7 @@ Plan file: `docs/plans/2026-05-23-cross-agent-skills-distribution-phase-7.md`.
 
 ## Skill onboarding simplification and release readiness
 
-Plan file: `docs/plans/2026-05-31-skill-onboarding-simplification.md`.
+Plan file: `docs/archive/mpi-kanban/plans/2026-05-31-skill-onboarding-simplification.md`.
 
 - [x] Re-evaluate `mpi-init`, `mpi-project-setup`, `mpi-project-refresh`, and
   `mpi-project-mode` before changing behavior.

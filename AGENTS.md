@@ -23,9 +23,9 @@ Read these files only as needed:
 - `skills/mpi-lib/` before changing shared references.
 - `docs/migrating-to-1.0.md` before advising a project still running the
   pre-1.0 skills pack.
-- `docs/plans/2026-05-31-skill-onboarding-simplification.md` before changing
+- `docs/archive/mpi-kanban/plans/2026-05-31-skill-onboarding-simplification.md` before changing
   project lifecycle commands or skill surface.
-- `docs/plans/2026-05-23-cross-agent-skills-distribution-phase-7.md` is history
+- `docs/archive/mpi-kanban/plans/2026-05-23-cross-agent-skills-distribution-phase-7.md` is history
   only. It describes the npx-only packaging refactor that v1.0 reversed.
 
 If `SPEC.md` and `PLAN.md` disagree, ask the user before choosing an
