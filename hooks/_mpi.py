@@ -41,6 +41,20 @@ def adopted(root):
     return os.path.exists(os.path.join(root, BOARD))
 
 
+# The desktop app drives a `PowerShell` tool that is SEPARATE from `Bash`, and
+# names it the primary shell on Windows. A guard that tests `== "Bash"` exempts
+# it silently, exactly as a guard registered only on the edit tools exempted
+# `sed -i` before 1.0.1. Add a name here only alongside the `matcher` in
+# `hooks.json`; the two have to agree or the guard is off on one side.
+SHELL_TOOLS = ("Bash", "PowerShell")
+
+
+def is_shell(data):
+    """True when this tool call carries a shell command."""
+    return (data.get("tool_name") in SHELL_TOOLS
+            or "command" in (data.get("tool_input") or {}))
+
+
 SEPARATORS = {"&&", "||", ";", "|", "&", "\n"}
 # Commands whose file operands are written, not read.
 WRITERS = {"sed", "tee", "cp", "mv", "truncate", "install"}

@@ -103,7 +103,7 @@ def main():
     root = _mpi.project_root(data)
     if not _mpi.adopted(root):
         sys.exit(0)
-    if data.get("tool_name") != "Bash":
+    if not _mpi.is_shell(data):
         sys.exit(0)
 
     try:

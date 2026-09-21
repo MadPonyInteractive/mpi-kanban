@@ -16,9 +16,12 @@ Exit 2 blocks the call and returns the stderr text to the agent.
 
 Run self-check:  python guard-git.py --selftest
 """
-import json
+import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _mpi  # noqa: E402
 
 # `git` must sit at a command position (start, or after ; && || | & newline or
 # `$(`), so a `grep "git checkout --"` or a doc edit quoting the command is not
@@ -65,16 +68,16 @@ def check(command):
 
 
 def main():
-    try:
-        payload = json.load(sys.stdin)
-    except Exception:
-        sys.exit(0)  # an unreadable payload is not a reason to block a session
-    if payload.get("tool_name") != "Bash":
+    data = _mpi.payload()
+    if not data:  # an unreadable payload is not a reason to block a session
         sys.exit(0)
-    found = check(payload.get("tool_input", {}).get("command", ""))
+    if not _mpi.adopted(_mpi.project_root(data)):
+        sys.exit(0)
+    if not _mpi.is_shell(data):
+        sys.exit(0)
+    found = check((data.get("tool_input") or {}).get("command", ""))
     if found:
-        print(BLOCK_MSG.format(found=found), file=sys.stderr)
-        sys.exit(2)
+        _mpi.deny(BLOCK_MSG.format(found=found))
     sys.exit(0)
 
 

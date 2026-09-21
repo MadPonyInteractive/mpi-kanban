@@ -93,6 +93,19 @@ def bash_payload(root, command, session="me"):
             "tool_name": "Bash", "tool_input": {"command": command}}
 
 
+def powershell_payload(root, command, session="me"):
+    """A `PowerShell` tool call -- a separate tool from `Bash` in the desktop app.
+
+    This proves the guards' LOGIC on that payload shape. It can NOT prove that
+    the call reaches them: that is `hooks.json`'s `matcher`, which this harness
+    never consults because it builds the payload itself. Only a live session
+    proves a matcher. See the matcher note in CLAUDE.md.
+    """
+    payload = bash_payload(root, command, session)
+    payload["tool_name"] = "PowerShell"
+    return payload
+
+
 def main():
     with tempfile.TemporaryDirectory() as root:
         build_project(root)
@@ -209,6 +222,23 @@ def main():
         code, _ = run("guard-shell.py", bash_payload(root, "git log --oneline -5"))
         checks.append(("guard-shell allows a single-line command", code == 0))
 
+        code, err = run("guard-shell.py",
+                        powershell_payload(root, 'git commit -m @"\nsubject `id`\n"@'))
+        checks.append(("guard-shell blocks an expandable PowerShell here-string",
+                       code == 2 and "here-string" in err))
+
+        code, _ = run("guard-shell.py",
+                      powershell_payload(root, "git commit -m @'\nsubject `id`\n'@"))
+        checks.append(("guard-shell allows a literal PowerShell here-string", code == 0))
+
+        code, _ = run("guard-shell.py", powershell_payload(root, 'echo "a@"\necho done'))
+        checks.append(("guard-shell allows an @ glued to a word", code == 0))
+
+        code, err = run("guard-git.py",
+                        powershell_payload(root, "git checkout -- src/"))
+        checks.append(("guard-git blocks a destructive checkout from PowerShell",
+                       code == 2 and "BLOCKED" in err))
+
         # The GPU lease is opt-in, so the unconfigured project comes first.
         code, _ = run("guard-gpu.py", bash_payload(root, "python train.py --steps 10"))
         checks.append(("guard-gpu is off until the project configures patterns", code == 0))
@@ -271,6 +301,8 @@ def main():
                            not sessions_dir(plain).exists()))
             code, _ = run("guard-shell.py", bash_payload(plain, "cat <<EOF\nx\nEOF"))
             checks.append(("guard-shell is a no-op without a board", code == 0))
+            code, _ = run("guard-git.py", bash_payload(plain, "git checkout -- src/"))
+            checks.append(("guard-git is a no-op without a board", code == 0))
             code, _ = run("guard-gpu.py", bash_payload(plain, "python train.py"))
             checks.append(("guard-gpu is a no-op without a board", code == 0))
             code, out = run_out("session-start.py", {"session_id": "me", "cwd": plain,
