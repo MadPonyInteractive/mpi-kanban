@@ -38,6 +38,14 @@ RULES = [
     (re.compile(_CMD_POS + r"stash(?:\s+(?!create\b|list\b|show\b)|\s*$)", re.I), "git stash"),
     (re.compile(_CMD_POS + r"reset\s+(?:[^\n]*\s)?--hard\b", re.I), "git reset --hard"),
     (re.compile(_CMD_POS + r"clean\s+(?:[^\n]*\s)?-\S*[fdx]", re.I), "git clean -f/-d/-x"),
+    # `git add -A` / `git add .` -- stages the whole tree, peers included. The
+    # run of non-separator characters stops at `;&|`, so a second command on the
+    # line (`git add x.py && grep -A2 foo`) is not swept in.
+    (re.compile(_CMD_POS + r"add\s+(?:[^\n;&|]*\s)?(?:-A\b|--all\b|\.(?:\s|$))", re.I),
+     "git add -A / git add ."),
+    # A backtick between `-m` and the end of the command is substitution, not text.
+    (re.compile(_CMD_POS + r"commit\b[^\n;&|]*-m\b[^\n;&|]*`", re.I),
+     "a backtick inside `git commit -m`"),
 ]
 
 BLOCK_MSG = """BLOCKED: `{found}` discards uncommitted work across the whole pathspec.
@@ -58,6 +66,33 @@ After ANY revert, grep for a distinctive token of YOUR OWN work -- a clean
 
 If you genuinely need this, ask the user to run it."""
 
+ADD_MSG = """BLOCKED: `{found}` stages the WHOLE tree, not your files.
+
+An MPI tree is a SHARED tree with live peer agents. `-A` and `.` sweep in every
+peer's half-finished edit and every card they are mid-move on, and the commit
+that follows publishes them under your message.
+
+Do this instead:
+  * stage yours by name -> git add <path> [<path> ...]
+  * commit only yours   -> git commit --only <path> [<path> ...]
+  * check after         -> git status --short   (before is not enough)"""
+
+BACKTICK_MSG = """BLOCKED: a backtick inside `git commit -m` is COMMAND SUBSTITUTION.
+
+The shell runs what sits between the backticks, prints its error to stderr, and
+the commit STILL LANDS -- with a hole where that text should be. Exit 0, message
+silently wrong, and the log is the one place nobody re-reads.
+
+Do this instead:
+  * put the message in a file and use -F, with the flag BEFORE any `--` and the
+    file inside the repo:   git commit -F <repo>/msg.txt
+  * or drop the backticks from the subject."""
+
+MESSAGES = {
+    "git add -A / git add .": ADD_MSG,
+    "a backtick inside `git commit -m`": BACKTICK_MSG,
+}
+
 
 def check(command):
     """Return the matched destructive form, or None."""
@@ -77,7 +112,7 @@ def main():
         sys.exit(0)
     found = check((data.get("tool_input") or {}).get("command", ""))
     if found:
-        _mpi.deny(BLOCK_MSG.format(found=found))
+        _mpi.deny(MESSAGES.get(found, BLOCK_MSG).format(found=found))
     sys.exit(0)
 
 
@@ -99,6 +134,14 @@ def _selftest():
         "git clean -xdf",
         "git -C c:/AI/Mpi/Cubric-Studio checkout -- src/",
         "sudo git reset --hard",
+        "git add -A",
+        "git add .",
+        "git add --all",
+        "git add -A .",
+        "git add -- .",
+        "cd js && git add -A",
+        'git commit -m "fix `basename $PWD`"',
+        "git commit -m 'subject `date`'",
     ]
     allowed = [
         "git status",
@@ -115,6 +158,14 @@ def _selftest():
         'grep -rn "git checkout --" .agents/',           # quoting the command
         'echo "never run git stash here"',
         "git add CLAUDE.md",
+        "git add src/foo.py .agents/mpi-kanban/board.json",
+        "git add .agents/mpi-kanban/tasks/MPI-36/plan.md",  # a dot that starts a path
+        "git add -p src/foo.py",
+        "git add x.py && grep -A2 foo x.py",               # -A belongs to grep
+        'git commit -m "plain subject"',
+        'git commit -m "plain" && echo `date`',            # the backtick is a later command
+        "git commit -F .git/MSG.txt",
+        'grep -rn "git add -A" docs/',                     # quoting the command
     ]
     for c in blocked:
         assert check(c), f"should block: {c}"

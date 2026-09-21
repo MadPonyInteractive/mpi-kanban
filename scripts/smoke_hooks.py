@@ -239,6 +239,18 @@ def main():
         checks.append(("guard-git blocks a destructive checkout from PowerShell",
                        code == 2 and "BLOCKED" in err))
 
+        code, err = run("guard-git.py", powershell_payload(root, "git add -A"))
+        checks.append(("guard-git blocks git add -A",
+                       code == 2 and "stages the WHOLE tree" in err))
+
+        code, err = run("guard-git.py",
+                        bash_payload(root, 'git commit -m "subject `date`"'))
+        checks.append(("guard-git blocks a backtick inside git commit -m",
+                       code == 2 and "COMMAND SUBSTITUTION" in err))
+
+        code, _ = run("guard-git.py", bash_payload(root, "git add src/api/routes.py"))
+        checks.append(("guard-git allows staging by name", code == 0))
+
         # The GPU lease is opt-in, so the unconfigured project comes first.
         code, _ = run("guard-gpu.py", bash_payload(root, "python train.py --steps 10"))
         checks.append(("guard-gpu is off until the project configures patterns", code == 0))
