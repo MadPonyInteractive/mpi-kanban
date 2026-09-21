@@ -3,11 +3,15 @@
 Usage:
 
     python validate_board.py [project-root] [--fix]
+    python validate_board.py --selftest
 
-`--fix` first repairs orphaned task folders - a `tasks/<id>/` with a `task.json`
-that no `board.json` column lists, the residue of a card create that stopped
-halfway - by listing the id in the column its own card names and appending the
-missing `task.created` event. Nothing else is auto-repaired.
+`--fix` repairs two things. First, orphaned task folders - a `tasks/<id>/` with
+a `task.json` that no `board.json` column lists, the residue of a card create
+that stopped halfway - by listing the id in the column its own card names and
+appending the missing `task.created` event. Second, the five derived arrays of
+`state/index.json`, rebuilt from the status of each record on disk. Nothing
+else is auto-repaired: both are restatements of facts already written down,
+never a judgement call.
 
 `project-root` defaults to the current directory. The board is expected at
 `<project-root>/.agents/mpi-kanban/board.json`; a project with no board is not
@@ -49,6 +53,18 @@ UNRESOLVED_COORDINATION_STATUSES = {
     "needs_review",
     "needs_verification",
     "needs_integration",
+}
+# The five derived arrays of state/index.json: which directory each one indexes
+# and which record statuses belong in it, per the "Index Rules" section of
+# coordination-ops/lifecycle.md. `active_tasks` is NOT here - it is checked
+# record-by-record above, because a task record pointing at a done card needs a
+# judgement the status alone does not carry.
+INDEX_ARRAYS = {
+    "active_sessions": ("sessions", {"active", "idle", "handoff_ready"}),
+    "active_file_claims": ("files", {"claimed"}),
+    "pending_file_states": ("files", UNRESOLVED_COORDINATION_STATUSES | {"complete"}),
+    "open_messages": ("messages", {"open", "acknowledged", "replied"}),
+    "active_handoffs": ("handoffs", {"open", "accepted"}),
 }
 
 
@@ -303,11 +319,98 @@ def validate_board(root: Path) -> list[str]:
                                 f"{status!r}; remove it from active_tasks or mark the unresolved "
                                 "state explicitly"
                             )
+            validate_state_index(errors, board_root, state)
 
     validate_file_claims(errors, board_root)
 
     return errors
 
+
+
+def derive_index_arrays(board_root: Path) -> dict[str, list[str]]:
+    """The five derived index arrays as the records on disk say they should be.
+
+    Status-based, and deliberately NOT heartbeat-based: a stale heartbeat is not
+    a dead session, and `guard-claim` counts live peers by listing `sessions/`
+    rather than reading this index, so a session dropped here on a freshness
+    guess would be a lie with no upside.
+    """
+    derived: dict[str, list[str]] = {}
+    cache: dict[str, list[tuple[str, object]]] = {}
+    for field, (subdir, statuses) in INDEX_ARRAYS.items():
+        if subdir not in cache:
+            records: list[tuple[str, object]] = []
+            directory = board_root / "state" / subdir
+            if directory.is_dir():
+                for path in sorted(directory.glob("*.json")):
+                    try:
+                        records.append((f".agents/mpi-kanban/state/{subdir}/{path.name}",
+                                        json.loads(path.read_text(encoding="utf-8-sig"))))
+                    except (OSError, json.JSONDecodeError):
+                        continue  # an unreadable record is the per-record checks' problem
+            cache[subdir] = records
+        derived[field] = [rel for rel, record in cache[subdir]
+                          if isinstance(record, dict) and record.get("status") in statuses]
+    return derived
+
+
+def entry_path(value: object) -> str | None:
+    """The record path an index entry points at, string or object form.
+
+    The contract is a list of path strings, but Cubric-Vision's index carried 28
+    inlined objects in `active_handoffs` alone - `{"id": ..., "path": ...,
+    "status": "resolved", ...}`, a whole record copied into the index. Reading
+    the path out of them is what lets the rest of the check still run; they are
+    reported as a shape violation, and `--fix` writes them back as strings.
+    """
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict) and isinstance(value.get("path"), str):
+        return value["path"]
+    return None
+
+
+def summarise(values: list[str]) -> str:
+    """Name a few records, not all 274 of them - a wall of paths is not a report."""
+    head = ", ".join(value.rsplit("/", 1)[-1] for value in values[:5])
+    return head + (f", +{len(values) - 5} more" if len(values) > 5 else "")
+
+
+def validate_state_index(errors: list[str], board_root: Path, state: dict) -> None:
+    """Nothing reconciled the derived index arrays until MPI-36, and they drift.
+
+    Measured 2026-09-21: Cubric-Vision's index claimed 41 open messages against
+    30 on disk, 7 active sessions against 14, and its `active_handoffs` had
+    regrown 3 -> 32 in the five weeks since a hand prune. The only repair was a
+    prose sweep in `mpi-cleanup`, and the numbers say it was not being run.
+    """
+    label = ".agents/mpi-kanban/state/index.json"
+    for field, expected in derive_index_arrays(board_root).items():
+        listed_raw = state.get(field, [])
+        if not isinstance(listed_raw, list):
+            errors.append(f"{label} {field} must be a list")
+            continue
+        inlined = sum(1 for value in listed_raw if not isinstance(value, str))
+        if inlined:
+            errors.append(f"{label} {field} has {inlined} entry/entries inlined as objects; "
+                          "the contract is a list of record paths")
+        listed = [path for path in map(entry_path, listed_raw) if path is not None]
+        unreadable = len(listed_raw) - len(listed)
+        if unreadable:
+            errors.append(f"{label} {field} has {unreadable} entry/entries that name no record path")
+        duplicates = len(listed) - len(set(listed))
+        if duplicates:
+            # On its own a duplicate trips neither extra nor missing, so without
+            # this line an index can be wrong and report nothing.
+            errors.append(f"{label} {field} lists {duplicates} record(s) twice")
+        extra = [value for value in listed if value not in expected]
+        missing = [value for value in expected if value not in listed]
+        if extra:
+            errors.append(f"{label} {field} lists {len(extra)} record(s) whose status no "
+                          f"longer qualifies: {summarise(extra)}")
+        if missing:
+            errors.append(f"{label} {field} is missing {len(missing)} record(s): "
+                          f"{summarise(missing)}")
 
 
 def validate_file_claims(errors: list[str], board_root: Path) -> None:
@@ -336,6 +439,28 @@ def validate_file_claims(errors: list[str], board_root: Path) -> None:
         status = record.get("status")
         if status not in FILE_CLAIM_STATUSES:
             errors.append(f"{label} has unknown status {status!r}")
+        if status != "claimed":
+            continue
+        # A claim that outlives its owner locks the NEXT session out of its own
+        # card. It happened on 2026-09-21: a session handed MPI-36 over with its
+        # claim still `claimed`, and `guard-claim` refused the successor every
+        # write. The heartbeat was five minutes old, so freshness could not tell
+        # a handed-off session from a working one. Its STATUS can.
+        owner = record.get("owner_session")
+        if not isinstance(owner, str):
+            errors.append(f"{label} is claimed but names no owner_session")
+            continue
+        owner_path = board_root.parents[1] / owner
+        if not owner_path.is_file():
+            errors.append(f"{label} is claimed but its owner session record is missing: {owner}")
+            continue
+        owner_record = load_json(errors, owner_path, owner)
+        owner_status = owner_record.get("status") if isinstance(owner_record, dict) else None
+        if owner_status != "active":
+            errors.append(
+                f"{label} is still claimed while its owner session is {owner_status!r}; "
+                "release or complete it, or the next session is locked out of its own card"
+            )
 
 def already_logged(path: Path, task_id: str) -> bool:
     """Whether this log already carries a `task.created` for `task_id`."""
@@ -405,18 +530,129 @@ def repair_orphans(root: Path) -> list[str]:
     return repaired
 
 
+def repair_state_index(root: Path) -> list[str]:
+    """Rewrite the five derived index arrays from the records on disk.
+
+    The corrected arrays are built IN MEMORY and the whole file is written
+    through `write_json`, which keeps the file's own newline and indent so the
+    change reads one line per entry. Never byte-patched: slicing an entry out of
+    the text breaks when it is the array's LAST element, which is how an index
+    has been corrupted before.
+
+    Derived data only. Unlike `repair_orphans` this rewrites no judgement -
+    every value it writes is a restatement of a status already on disk.
+    """
+    board_root = root / ".agents" / "mpi-kanban"
+    index_path = board_root / "state" / "index.json"
+    if not board_root.joinpath("board.json").is_file() or not index_path.is_file():
+        return []
+    state = load_json([], index_path, "index.json")
+    if not isinstance(state, dict):
+        return []  # an index this broken needs a human, not an automatic rewrite
+    repaired: list[str] = []
+    for field, expected in derive_index_arrays(board_root).items():
+        if state.get(field) != expected:
+            repaired.append(f"state/index.json {field}: "
+                            f"{len(state.get(field) or [])} -> {len(expected)} record(s)")
+            state[field] = expected
+    if repaired:
+        state["updated_at"] = now()
+        newline, indent = style(index_path)
+        write_json(index_path, state, newline, indent)
+    return repaired
+
+
+def selftest() -> None:
+    """One runnable check: the drift is seen, and --fix clears it."""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        board_root = root / ".agents" / "mpi-kanban"
+        board_root.mkdir(parents=True)
+        (board_root / "board.json").write_text(
+            '{\n "schema": "mpi-kanban/board/v1",\n "next_id": 1,\n'
+            ' "columns": {\n  "todo": [],\n  "doing": [],\n  "done": []\n }\n}\n',
+            encoding="utf-8")
+        state_root = board_root / "state"
+
+        def record(subdir: str, name: str, body: dict) -> None:
+            (state_root / subdir).mkdir(parents=True, exist_ok=True)
+            (state_root / subdir / f"{name}.json").write_text(
+                json.dumps(body, indent=2) + "\n", encoding="utf-8")
+
+        record("sessions", "live", {"schema": "mpi-kanban/session/v1", "status": "active"})
+        record("sessions", "gone", {"schema": "mpi-kanban/session/v1", "status": "closed"})
+        record("handoffs", "open1", {"status": "open"})
+        record("handoffs", "old", {"status": "resolved"})
+        record("messages", "m1", {"status": "acknowledged"})
+        claim = {"schema": "mpi-kanban/file-claim/v1", "claim_kind": "write",
+                 "owner_role": "implementer", "paths": ["a.py"]}
+        record("files", "held", dict(claim, status="claimed",
+               owner_session=".agents/mpi-kanban/state/sessions/live.json"))
+        record("files", "orphan", dict(claim, status="claimed",
+               owner_session=".agents/mpi-kanban/state/sessions/gone.json"))
+        record("files", "pending", dict(claim, status="needs_review",
+               owner_session=".agents/mpi-kanban/state/sessions/live.json"))
+        (state_root / "index.json").write_text(json.dumps({
+            "schema": "mpi-kanban/state-index/v1",
+            "board": ".agents/mpi-kanban/board.json",
+            "active_sessions": [".agents/mpi-kanban/state/sessions/gone.json"],
+            "active_tasks": [],
+            "active_file_claims": [],
+            "pending_file_states": [],
+            # the same record twice: extra and missing both come back empty for it
+            "open_messages": [".agents/mpi-kanban/state/messages/m1.json"] * 2,
+            # a whole record inlined, the shape Cubric-Vision's index had drifted into
+            "active_handoffs": [{"id": "old", "status": "resolved",
+                                 "path": ".agents/mpi-kanban/state/handoffs/old.json"}],
+        }, indent=2) + "\n", encoding="utf-8")
+
+        errors = validate_board(root)
+        joined = "\n".join(errors)
+        assert "active_sessions lists 1" in joined, joined      # closed, still listed
+        assert "active_sessions is missing 1" in joined, joined  # active, not listed
+        assert "active_file_claims is missing 2" in joined, joined
+        assert "pending_file_states is missing 1" in joined, joined
+        assert "open_messages lists 1 record(s) twice" in joined, joined
+        assert "open_messages is missing" not in joined, "the duplicate hides nothing else"
+        assert "active_handoffs is missing 1" in joined, joined
+        # the inlined object is still read far enough to be judged on its status
+        assert "active_handoffs has 1 entry/entries inlined as objects" in joined, joined
+        assert "active_handoffs lists 1" in joined, joined
+        assert sum("locked out of its own card" in e for e in errors) == 1, joined
+
+        repaired = repair_state_index(root)
+        assert len(repaired) == 5, repaired
+        left = [e for e in validate_board(root) if "index.json" in e]
+        assert left == [], left
+        rewritten = json.loads((state_root / "index.json").read_text(encoding="utf-8"))
+        assert all(isinstance(v, str) for v in rewritten["active_handoffs"]), "not normalised"
+        # the repair restates statuses; it never silences the claim rule
+        assert any("locked out" in e for e in validate_board(root))
+
+        # an index whose arrays are already right is not rewritten at all
+        assert repair_state_index(root) == []
+    print("validate_board selftest: OK")
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("project_root", nargs="?", default=".")
     parser.add_argument("--fix", action="store_true",
-                        help="list orphaned task folders back on the board, then validate")
+                        help="list orphaned task folders back on the board and reconcile "
+                             "state/index.json, then validate")
+    parser.add_argument("--selftest", action="store_true", help="run the built-in checks and exit")
     args = parser.parse_args(argv[1:])
+    if args.selftest:
+        selftest()
+        return 0
     root = Path(args.project_root).resolve()
     if not root.is_dir():
         print(f"not a directory: {root}", file=sys.stderr)
         return 2
     if args.fix:
-        for line in repair_orphans(root) or ["nothing to repair"]:
+        for line in repair_orphans(root) + repair_state_index(root) or ["nothing to repair"]:
             print(line)
     board_errors = validate_board(root)
     if board_errors:
