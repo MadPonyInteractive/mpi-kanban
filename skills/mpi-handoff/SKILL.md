@@ -65,13 +65,14 @@ Running this skill IS the request to commit. Do not ask again, and do not
 report "did not commit" - getting the work onto the branch is half the point
 of handing off, and an uncommitted tree is invisible to the next session.
 
-- `git status`, then stage files by name. Never `git add -A` or `git add .`.
+- `git status --short`, `git add` new files by name - never `-A` or `.` - then
+  `git commit --only <paths>`. A bare commit commits the whole INDEX, so a
+  peer's staged files ride along: `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/git-ops/commit.md`.
 - Commit message follows the repo's recent conventional style
   (`git log --oneline -5` if unsure). Subject says why.
 - Push per `push_policy` in `.agents/mpi-kanban/project-profile.md`
-  frontmatter; absent means `auto`.
-  `ask` - one line, then push on approval. `never` - say the branch is
-  unpushed.
+  frontmatter; absent means `auto`. `ask` - one line, then push on approval.
+  `never` - say the branch is unpushed.
 - Rejected push: `git fetch`, `git merge --ff-only`, retry once. Still
   failing - report it and stop. Never force, never auto-rebase a shared tree.
 
@@ -177,7 +178,6 @@ The next action is: <next_action.description>
 
 ## Hard rules
 
-- Never `git add -A` or `git add .`.
 - Never move, close, or re-mature the card. That is close-out.
 - Never edit rules, docs, or memory here, even when the gap is obvious. Note it
   in `context.constraints` and let close-out handle it.
@@ -192,7 +192,7 @@ The next action is: <next_action.description>
 
 ## Success criteria
 
-- Files committed by name, pushed per policy.
+- Files committed with `--only`, pushed per policy.
 - Handoff JSON written, indexed in `active_handoffs`, pointer written when a
   card exists.
 - The paste block printed, self-contained.

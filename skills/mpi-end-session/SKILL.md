@@ -247,13 +247,14 @@ touched files. Commit without asking again, even if a general "commit only when
 the user asks" instruction is otherwise in effect - invoking this skill is that
 ask. Do not report "did not commit".
 
-- Stage files by name; never use `git add -A` or `git add .`.
-- The session running close-out, or an explicit integrator, owns the final
-  commit summary. Base the message on current coordination and Git state, not
-  stale assumptions from a previous file claim.
-- Commit message follows this repo's recent conventional style. Read
-  `git log --oneline -10` if uncertain. Write a clear "why" subject and a body
-  if multiple distinct changes are bundled.
+- `git add` any new files by name - never `-A` or `.` - then
+  `git commit --only <path> ... -m "<subject>"`. A bare commit commits the
+  whole INDEX, so a peer's staged files ride along. Read `git status --short`
+  AFTER the commit: `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/git-ops/commit.md`.
+- Close-out (or an explicit integrator) owns the final commit summary. Base it
+  on current coordination and Git state, not a stale file claim.
+- Message follows this repo's recent conventional style (`git log --oneline -10`
+  if unsure). Clear "why" subject, body when several changes are bundled.
 
 ### 9. Push
 
@@ -355,7 +356,6 @@ Then one `git status` confirming a clean tree, or naming what was deferred.
 
 ## Hard rules
 
-- Never use `git add -A` or `git add .`.
 - Never modify a rule file in `.agents/rules/` without explicit user approval.
 - Never auto-overwrite or delete a memory entry; ask first.
 - The commit and the claim auditor's dispatch are both authorized by invoking
