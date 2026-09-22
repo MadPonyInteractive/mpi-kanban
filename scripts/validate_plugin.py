@@ -34,7 +34,7 @@ DESCRIPTION_MAX = 1024
 # down. Do not add a new name here; split the skill instead.
 SKILL_LINE_BUDGET = 200
 SKILL_LINE_GRANDFATHERED = {
-    "mpi-continue": 601,
+    "mpi-continue": 559,
     "mpi-end-session": 394,
     "mpi-project-refresh": 335,
     "mpi-init": 306,

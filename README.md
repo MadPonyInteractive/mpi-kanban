@@ -9,8 +9,8 @@ plan, continue, parallel execution, handoff, end session, cleanup) so a single
 session or a whole team of agents can pick up work, coordinate file ownership,
 and ship together.
 
-Fourteen workflow skills: `mpi-init`, `mpi-project-refresh`, `mpi-brainstorm`,
-`mpi-create-plan`, `mpi-create-large-plan`, `mpi-continue`,
+Fifteen workflow skills: `mpi-init`, `mpi-project-refresh`, `mpi-brainstorm`,
+`mpi-create-plan`, `mpi-create-large-plan`, `mpi-continue`, `mpi-show`,
 `mpi-execute-parallel`, `mpi-message`, `mpi-umbrella`, `mpi-handoff`,
 `mpi-end-session`, `mpi-cleanup`, `mpi-archive`, `mpi-brief-rule` - plus the
 support skill `mpi-lib`, six enforcement hooks, and two read-only agents.
@@ -97,8 +97,8 @@ and will render as invalid cards; keep that detail in the task workspace or
 `status` instead.
 
 Ask `what is MPI-42?`, `show MPI-42`, or `look at the <title> card` to trigger
-`mpi-continue`'s read-only mode. It reads one card and its direct task-folder
-context without starting implementation.
+`mpi-show`. It reads one card and its direct task-folder context, reports, and
+stops - a lookup does not load the implementation skill.
 
 Ask `move MPI-42 to doing`, `set MPI-42 to validating`, or `mark MPI-42 done`
 to trigger `mpi-continue`'s direct card-state update mode. The skill reads the

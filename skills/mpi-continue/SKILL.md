@@ -1,6 +1,6 @@
 ---
 name: mpi-continue
-description: MPI workflow pack - Continue active MPI work, show/read one board task, or update one task-card state. Use when the user says "continue this MPI plan", "MPI continue", "continue", "resume", "keep going", "pick this back up", "read a handoff and continue", "what is MPI-5", "show/read/open MPI-5", "move/update/set MPI-5 to doing/validating/done", "mark the card validating", "run the ready cards", "dispatch ready cards", "work the board", "$mpi-continue", or wants implementation to proceed from an MPI plan/handoff. Board-wide dispatch requests route to mpi-execute-parallel.
+description: MPI workflow pack - Continue active MPI work, show/read one board task, or update one task-card state. Use when the user says "continue this MPI plan", "MPI continue", "continue", "resume", "keep going", "pick this back up", "read a handoff and continue", "move/update/set MPI-5 to doing/validating/done", "mark the card validating", "run the ready cards", "dispatch ready cards", "work the board", "$mpi-continue", or wants implementation to proceed from an MPI plan/handoff. Board-wide dispatch requests route to mpi-execute-parallel, and a read-only card lookup ("what is MPI-5", "show MPI-5") routes to mpi-show.
 ---
 
 # mpi-continue Skill
@@ -13,9 +13,9 @@ workspace state, then proposes the next best action based on reality. Legacy
 Markdown kanban entries are compatibility inputs only when `board.json` is
 absent or unmigrated.
 
-It also owns the read-only board-entry lookup path: "what is MPI-5?", "show
-MPI-5", "open MPI-5", "read MPI-5", "what is this card?", "look at the <title>
-card" -> run the read-only mode below instead of starting implementation.
+It does NOT own the read-only lookup path any more: "what is MPI-5?", "show
+MPI-5", "look at the <title> card" go to `mpi-show`, which does the bounded read
+and stops. See `## Read-only lookup -> mpi-show` below.
 
 It also owns bounded direct card-state updates when the user asks to move or
 set one JSON task card, for example "move MPI-42 to doing", "set MPI-42 to
@@ -82,58 +82,16 @@ First check the open `todo` and `doing` cards for one already covering the same
 system and extend that instead. Several cards on one system is the failure this
 rule prevents; an umbrella afterwards is a repair, not the goal.
 
-## Read-only board entry mode
+## Read-only lookup -> mpi-show
 
-Use this mode when the user asks to inspect one card/task rather than continue
-implementation.
+A request to READ one card - "what is MPI-5?", "show MPI-5", "read the
+<title> card" - belongs to the `mpi-show` skill. Invoke it and stop; do not
+read the card here. Everything below this line is the implementation path,
+and loading it to answer a lookup is exactly the cost `mpi-show` exists to
+remove.
 
-1. Check for `.agents/mpi-kanban/board.json`.
-2. If present, use it. Ignore `.agents/mpi-kanban/kanban.md` except to mention
-   that it is legacy/tombstoned if relevant.
-3. If `board.json` is absent, stop and tell the user to run `mpi-init`. A
-   legacy `.agents/mpi-kanban/kanban.md` is a migration input, not a board to
-   read work from.
-
-For JSON boards, resolve `MPI-*` IDs directly from `board.json`. For title
-lookups, load only the visible `task.json` files listed by `board.json` and
-match title case-insensitively. If multiple title matches exist, list the
-matching IDs and ask the user to choose one. If no match exists, report that
-the task was not found on the active JSON board. Do not search sibling repos or
-legacy boards to "confirm" unless the user explicitly asks.
-
-Stay inside `.agents/mpi-kanban/tasks/<id>/` and read direct
-links only:
-
-1. Required: `task.json`.
-2. Summary first: `brief.md`, when present.
-3. Current work detail: `plan.md`, then `checklist.md`, when present.
-4. Completion evidence: `validation.md`, when present.
-5. File context: `files.json`, when present.
-6. Recent activity: last 10 lines of `events.jsonl`, when present.
-7. Handoffs: list files under `handoffs/` and read only the newest one unless
-   the user asks for all.
-8. Research: list files under `research/`; read only a named research file or
-   the newest one if the task summary depends on it.
-
-Report:
-
-```text
-<ID> - <title>
-Column: <todo | doing | done>
-Status: <status/maturity/attention summary when available>
-
-Summary:
-<brief explanation in plain language>
-
-Linked context read:
-- <files read or "task.json only">
-
-Next useful action:
-<one sentence, e.g. continue, review validation, archive, or no action obvious>
-```
-
-After reporting, stop. Do not mutate board, task, state, memory, docs, or plan
-files.
+A lookup that then becomes "ok, continue it" is a new request and comes back
+here.
 
 ## Direct card update mode
 
@@ -595,7 +553,7 @@ handoff in about a minute.
   read-only: it never writes the board, `files.json`, or a claim. Dispatch
   without asking when two or more ready cards are provably disjoint, and report
   every excluded card with its reason.
-- In read-only board entry mode, read one named task/card only and do not
-  search sibling repositories or unrelated board surfaces.
+- A read-only card lookup is `mpi-show`'s, not this skill's. Route it and stop;
+  do not re-inline the lookup here to save an invocation.
 
 

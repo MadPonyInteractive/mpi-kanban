@@ -76,9 +76,11 @@ same trigger phrases and one of them carries the pre-1.0 contract. See
 - `mpi-create-large-plan` - create an adaptive, investigation-backed large
   plan.
 - `mpi-continue` - resume/implement from the active task, plan, handoff, and
-  current repo state; show one task card; or perform a bounded direct
-  task-card state update such as moving one `MPI-*` card to `doing`,
-  `validating`, or `done`.
+  current repo state; or perform a bounded direct task-card state update such
+  as moving one `MPI-*` card to `doing`, `validating`, or `done`.
+- `mpi-show` - read one task card and its direct task-folder links and report
+  it, without starting implementation. Split out of `mpi-continue` so a lookup
+  does not load the implementation body.
 - `mpi-execute-parallel` - execute explicit safe `## Parallel Batch` sections,
   and dispatch the ready cards on the board.
 - `mpi-message` - send, read, acknowledge, reply to, resolve, and explicitly
@@ -796,9 +798,8 @@ no-board case for each.
   `/plugin install mpi-kanban@mad-pony-interactive` installs skills, hooks, and
   agents together, and creates no `~/.claude/skills/mpi-*` entries.
 - `/plugin list` reports the `version` from `.claude-plugin/plugin.json`.
-- Agents can answer "what is MPI-5?" through `mpi-continue`'s bounded
-  read-only mode, which reads only the active board entry and direct linked
-  task files.
+- Agents can answer "what is MPI-5?" through `mpi-show`, which reads only the
+  active board entry and direct linked task files and writes nothing.
 - `${CLAUDE_PLUGIN_ROOT}` resolves in skill, agent, and hook content, and
   workflow skills read shared references successfully.
 - Every hook is inert in a project with no `board.json`, and blocks with a

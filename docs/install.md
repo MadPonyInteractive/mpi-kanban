@@ -138,7 +138,7 @@ The fixed human columns are `To do`, `Doing`, and `Done`, stored in JSON as
 `todo`, `doing`, and `done`. Task IDs are system-assigned visible IDs such as
 `MPI-42`; use those IDs when asking an agent to show, continue, or inspect
 work. Read-only card questions such as `what is MPI-42?` route through
-`mpi-continue` without starting implementation.
+`mpi-show`, which reads one card and stops.
 
 Direct card-state requests such as `move MPI-42 to doing`, `set MPI-42 to
 validating`, or `mark MPI-42 done` also route through `mpi-continue`. A
