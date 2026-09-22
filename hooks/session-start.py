@@ -20,12 +20,14 @@ Run self-check:  python session-start.py --selftest
 import datetime
 import json
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _mpi  # noqa: E402
 
 MAX_ROWS = 5  # per section; a wall of text gets skimmed, not read
+PROFILE = ".agents/mpi-kanban/project-profile.md"
 
 
 def _clip(text, width=64):
@@ -82,7 +84,53 @@ def board_errors(root):
         return []
 
 
-def summarize(doing, claims, messages, handoffs, errors=()):
+def profile_pack_version(text):
+    """`pack_version` out of a project profile's front matter, or None.
+
+    Anchored at a line start so the prose further down the profile, which
+    mentions `pack_version` in backticks, cannot be read as the value.
+    """
+    found = re.search(r"^pack_version:\s*(\S+)", text or "", re.M)
+    return found.group(1) if found else None
+
+
+def installed_version():
+    """The version of the plugin copy THIS hook ships in, or None.
+
+    Read beside the hook rather than from a global install path on purpose: a
+    session started with `--plugin-dir .` runs the checkout's hooks, and the
+    version it should report is the checkout's, not whatever is cached.
+    """
+    manifest = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "..", ".claude-plugin", "plugin.json")
+    return (_mpi.read_json(manifest) or {}).get("version")
+
+
+def drift_line(recorded, installed):
+    """One line when a project's recorded pack version is not the installed one.
+
+    Silent when either side is missing: an older profile that predates the field
+    and a plugin without a manifest are both "unknown", not "stale", and a
+    warning nobody can act on is the kind a reader learns to skip.
+    """
+    if not recorded or not installed or recorded == installed:
+        return None
+    return ("Pack version drift: this project records `pack_version: %s`, the "
+            "installed plugin is %s. Run `/mpi-project-refresh` to resync its "
+            "rules, templates and profile." % (recorded, installed))
+
+
+def pack_version_drift(root):
+    """`drift_line` for this project, reading both versions off disk."""
+    try:
+        with open(os.path.join(root, PROFILE), encoding="utf-8-sig") as handle:
+            recorded = profile_pack_version(handle.read())
+    except OSError:
+        return None
+    return drift_line(recorded, installed_version())
+
+
+def summarize(doing, claims, messages, handoffs, errors=(), drift=None):
     """Build the context lines from already-loaded records. None means silent."""
     lines = []
     if errors:
@@ -115,6 +163,11 @@ def summarize(doing, claims, messages, handoffs, errors=()):
     if lines:
         lines.append("Resume with `/mpi-continue`; switch sessions with "
                      "`/mpi-handoff`; close with `/mpi-end-session`.")
+    # After the resume line, not before it: drift is a property of the install,
+    # not work in flight, and a quiet project that only drifted must not be told
+    # to resume something it does not have.
+    if drift:
+        lines.append(drift)
     # The one line that lets any session in any adopted repo open the board
     # without being told the path. Cheaper than a skill, whose description would
     # load every session whether or not anyone wanted to look at a board.
@@ -165,7 +218,8 @@ def main():
     _mpi.ensure_session(root, data.get("session_id"),
                         datetime.datetime.now(datetime.timezone.utc))
     register_board(root)
-    context = summarize(*collect(root), errors=board_errors(root))
+    context = summarize(*collect(root), errors=board_errors(root),
+                        drift=pack_version_drift(root))
     if context:
         json.dump({"hookSpecificOutput": {"hookEventName": "SessionStart",
                                           "additionalContext": context}}, sys.stdout)
@@ -200,6 +254,29 @@ def _selftest():
     broken = summarize([], [], [], [], ["orphaned task folder not listed in "
                                         "board.json: tasks/MPI-629"])
     assert "tasks/MPI-629" in broken and "--fix" in broken
+
+    # pack_version drift: mismatch speaks, match and missing stay quiet. The
+    # drift is invisible otherwise - a project sat on 1.2.0 templates for five
+    # weeks with an installed 1.4.2 and nothing said so.
+    assert drift_line("1.3.1", "1.4.2").count("1.3.1") == 1
+    assert "1.4.2" in drift_line("1.3.1", "1.4.2")
+    assert "mpi-project-refresh" in drift_line("1.3.1", "1.4.2")
+    assert drift_line("1.4.2", "1.4.2") is None, "a match is not drift"
+    assert drift_line(None, "1.4.2") is None, "an unrecorded version is unknown"
+    assert drift_line("1.3.1", None) is None, "no manifest, nothing to compare"
+
+    front = "---\nmode: scalable-foundation\npack_version: 1.3.1\n---\n"
+    assert profile_pack_version(front) == "1.3.1"
+    assert profile_pack_version(front + "\ntext about `pack_version` here\n") == "1.3.1"
+    assert profile_pack_version("---\nmode: prototype\n---\n") is None
+    assert profile_pack_version("") is None
+    # prose alone must not be mistaken for the field
+    assert profile_pack_version("the profile carries `pack_version:` 9.9.9") is None
+
+    drifted = summarize([], [], [], [], drift=drift_line("1.3.1", "1.4.2"))
+    assert "1.3.1" in drifted and "1.4.2" in drifted
+    assert "/mpi-continue" not in drifted, "drift alone is not work to resume"
+    assert "1.3.1" not in summarize([], [], [], [], drift=None)
     print("session-start selftest OK")
 
 

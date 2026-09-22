@@ -9,6 +9,10 @@ import tempfile
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1] / "hooks"
 REGISTRY = pathlib.Path(tempfile.gettempdir(), "mpi-smoke-boards.json")
+# Read, never hardcoded: the drift line compares against the manifest beside the
+# hook, so a release bump must not turn the "they match" case red.
+PLUGIN_VERSION = json.loads(
+    (HOOKS.parent / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))["version"]
 
 
 def _proc(hook, payload):
@@ -289,6 +293,35 @@ def main():
         registered = json.loads(REGISTRY.read_text(encoding="utf-8")) if REGISTRY.exists() else {}
         checks.append(("session-start registers the repo for the browser board",
                        str(pathlib.Path(root).resolve()) in (registered.get("roots") or [])))
+
+        # pack_version drift. A project can sit for weeks on the templates of a
+        # pack it no longer runs, and until 1.5.0 only an explicit refresh said
+        # so. The profile is written here rather than by build_project, so the
+        # no-profile case above is the one that just ran.
+        start = {"session_id": "me", "cwd": root,
+                 "hook_event_name": "SessionStart", "source": "startup"}
+        profile = pathlib.Path(root, ".agents", "mpi-kanban", "project-profile.md")
+        checks.append(("session-start says nothing about a pack version with no profile",
+                       "Pack version drift" not in out))
+
+        profile.write_text("---\nmode: prototype\npack_version: 0.0.1\n---\n",
+                           encoding="utf-8")
+        code, out = run_out("session-start.py", start)
+        checks.append(("session-start names both versions when they differ",
+                       code == 0 and "Pack version drift" in out and "0.0.1" in out
+                       and PLUGIN_VERSION in out and "mpi-project-refresh" in out))
+
+        profile.write_text("---\nmode: prototype\npack_version: %s\n---\n" % PLUGIN_VERSION,
+                           encoding="utf-8")
+        code, out = run_out("session-start.py", start)
+        checks.append(("session-start is quiet when the pack version matches",
+                       code == 0 and "Pack version drift" not in out))
+
+        profile.write_text("---\nmode: prototype\n---\n", encoding="utf-8")
+        code, out = run_out("session-start.py", start)
+        checks.append(("session-start is quiet when the profile records no version",
+                       code == 0 and "Pack version drift" not in out))
+        profile.unlink()
 
         code, out = run_out("session-end.py", {"session_id": "me", "cwd": root,
                                                "hook_event_name": "SessionEnd",
