@@ -31,9 +31,33 @@ Read these files only as needed:
 If `SPEC.md` and `PLAN.md` disagree, ask the user before choosing an
 interpretation.
 
+## Critical Rules Snapshot
+
+Every sub-agent dispatched from this repository receives this section. It is
+pointers only; the full contracts live in `CLAUDE.md` under
+`## Hard Constraints`, and the shell, commit and reporting ones in
+`.agents/rules/behaviour.md`.
+
+- Edit only the files your dispatch gives you. Never `git add -A`, `git add .`,
+  or a bare `git commit` - commit with `--only <path>`.
+- No heredocs and no multi-line escaped strings in shell calls. Write a script
+  file and run it by path, or use a single-quoted `python -c`.
+- Do not add board columns or task-card fields. Widening an existing field's
+  value set is allowed; new columns and new fields are not.
+- Create and move cards through `skills/mpi-lib/scripts/task_ops.py`, never by
+  hand - a card written step by step loses its `board.json` insert silently.
+- Reference a shipped file as `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/<path>`,
+  never project-relative.
+- A contract stated only in prose will drift. Put a check behind it in
+  `scripts/validate_plugin.py` or `skills/mpi-lib/scripts/validate_board.py`.
+- Report in four bullets: CHANGED, VERIFIED (with the command), STILL OPEN,
+  NEXT AGENT NEEDS. An unverified result is never rounded up.
+
+Generic agent conduct lives in `.agents/rules/behaviour.md`.
+
 ## Plugin Layout
 
-- Workflow skills live under `skills/mpi-*/SKILL.md`. There are twelve, plus
+- Workflow skills live under `skills/mpi-*/SKILL.md`. There are fifteen, plus
   the `mpi-lib` support skill.
 - Enforcement hooks live under `hooks/`, registered by `hooks/hooks.json`.
   Every hook must exit 0 when the project has no board, and every hook has a
