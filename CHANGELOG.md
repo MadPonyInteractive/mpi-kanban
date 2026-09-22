@@ -74,12 +74,20 @@ changes what gets blocked.
   "show MPI-5" - and stops. The lookup is the cheapest thing anyone asks of the
   pack and it used to load `mpi-continue` whole, dispatch and verify gates
   included, to do four bounded reads. `mpi-continue` drops from 601 lines to
-  559 behind a routing stub, and reads no `mpi-lib` file, which would put the
-  loading cost straight back. This reverses a 2026-05-31 decision that merged a
+  559 behind a routing stub, and `mpi-show` reads no `mpi-lib` file of its own,
+  which would put the loading cost straight back. This reverses a 2026-05-31 decision that merged a
   standalone lookup skill away; that failure was trigger coverage rather than
   ownership, so the split shipped only after a fresh session proved the new
   skill actually triggers, and the stub is there so a future miss is handed on
   instead of improvised.
+
+### Also in this release
+
+- Two non-functional commits made just after the v1.4.2 tag and carried in this
+  range: the pre-JSON-board plans and a legacy handoff were archived under
+  `docs/archive/` with their inbound links repointed (f23f02b), and the
+  file-claim schema literal was written into `CLAUDE.md` as a hard constraint
+  (9b5240a).
 
 ## [1.4.2] - 2026-08-31
 

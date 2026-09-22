@@ -96,7 +96,18 @@ If SPEC and PLAN disagree, ask the user before choosing.
   itself, so it proves a hook's LOGIC and can never prove its MATCHER - 21/21
   was green throughout. Only a live session against the installed plugin proves
   registration, and a session cannot prove its own change, because `hooks.json`
-  is read at session start exactly like `skills/`.
+  is read at session start exactly like `skills/` - which applies to a skill's
+  `description` too, so a new skill cannot prove its own triggering either.
+- A guard binds per TOOL NAME. Claude Desktop on Windows drives a `PowerShell`
+  tool that is separate from `Bash` and is the primary shell there, so the
+  PreToolUse matcher must be `Bash|PowerShell` and no guard may test
+  `tool_name` itself - `_mpi.is_shell()` is the one place that lists the shell
+  tools. Registered against `Bash` alone the entire enforcement layer is off on
+  the default path, silently: the guard that should have fired just says
+  nothing. Three layers each kept the guards off independently - the matcher, a
+  tool-scoped `if` condition in `hooks.json`, and hard-coded `tool_name` tests
+  in `guard-git` and `guard-gpu` - so widening only the obvious one fixes
+  nothing. Shipped that way from 1.0.0 and fixed in 1.5.0.
 - A skill that dispatches `agents/<name>.md` must ship it;
   `validate_plugin.py` checks this.
 - `isolation: "worktree"` is not the isolation mechanism for dispatch. A
