@@ -102,6 +102,7 @@ value for the filename and the `id` field.
   "id": "<uuid>",
   "generated_at": "<ISO-8601>",
   "status": "open",
+  "from_session": ".agents/mpi-kanban/state/sessions/<claude-session-id>.json",
   "session": { "name": "<what this session was doing>", "branch": "<branch>" },
   "goal": {
     "original": "<what the user set out to do>",
@@ -133,11 +134,10 @@ value for the filename and the `id` field.
 }
 ```
 
-Keys earlier handoffs carried but this one omits - `from_session`, `to_role`,
-`allowed_actions`, `knowledge_preservation`, `project_knowledge`,
-`rules_active` - stay legal to read and are simply absent. `mpi-continue` loads
-project knowledge from disk, so restating it cost a paragraph of generation
-every switch and bought nothing.
+Keys earlier handoffs carried but this one omits - `to_role`, `allowed_actions`,
+`knowledge_preservation`, `project_knowledge`, `rules_active` - stay legal to
+read and are simply absent. `from_session` is NOT one of them: it is the only
+thing tying an abandoned file claim back to the session that walked away.
 
 Keep `context` tight. Three constraints the next session would waste time
 rediscovering beat fifteen it already knows.
