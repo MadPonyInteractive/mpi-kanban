@@ -7,6 +7,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-09-22
+
+Six findings from a Claude Code usage report covering 2026-08-15 to 2026-09-21
+(4,952 messages, 493 sessions), each verified live against this repo and against
+the pack's heaviest consumer before it was fixed. The minor rather than a patch
+is for the guards: they now bind to a tool they never bound to before, which
+changes what gets blocked.
+
+### Fixed
+
+- The PreToolUse guards now bind to the `PowerShell` tool. The desktop app on
+  Windows drives a `PowerShell` tool separate from `Bash` and makes it the
+  primary shell, and every guard was registered against `Bash` alone - so the
+  whole enforcement layer was off on the default path. Proved before the fix:
+  `git restore --bogus-flag` was blocked through Bash and ran clean through
+  PowerShell. Three layers each kept the guards off on their own: the matcher,
+  a tool-scoped `if` condition on `guard-git`, and a hard-coded `tool_name`
+  test in `guard-git` and `guard-gpu`, now a shared `_mpi.is_shell()`. This is
+  the same class as the 1.0.0 edit-tool matcher bug fixed in 1.0.1, and it is
+  why a green `scripts/smoke_hooks.py` is not evidence: the harness builds the
+  payload itself, so it proves a guard's logic and never its registration.
+- `guard-git` no longer fires in repositories that have no board. It never
+  imported `_mpi` and never checked for `board.json`, so it enforced itself in
+  every repository on the machine - both halves of a hard constraint, missed
+  since 1.0.0.
+- `guard-shell` now catches an expandable PowerShell here-string (`@"..."@`),
+  where `$` and the backtick expand. Literal here-strings (`@'...'@`) stay
+  allowed: nothing expands inside them, so they are the PowerShell equivalent
+  of the single-quoted `python -c` the guard already sanctions.
+- Two git rules that had been stated in prose for several releases, and fired
+  again anyway, now have a check behind them: `git add -A`, and a backtick
+  inside `git commit -m`. Each gets its own block message, because staging the
+  whole tree and command substitution fail differently from discarding a peer's
+  work. Both rules stop scanning at a command separator rather than running to
+  the end of the line, so `git add x.py && grep -A2 foo` is not blocked; the
+  cost is a miss on a message containing `&` or `|`, taken deliberately,
+  because a wrong block is worse than a miss - an agent cannot tell a guard bug
+  from a rule.
+- The commit recipe the skills ship no longer causes the swallow it warns
+  about. The `--only` recipe now lives in `skills/mpi-lib/git-ops/commit.md`,
+  `behaviour-rules.md` no longer bans `--only`, and the untracked-abort,
+  silent-directory-skip and `git status --short`-after rules are stated where
+  the commit is actually made.
+- `state/index.json` is now reconciled by `validate_board.py` instead of
+  drifting. The five index arrays are derived from the records on disk, `--fix`
+  rewrites them whole from memory rather than by byte surgery, and a
+  `--selftest` covers both. It found and repaired real drift in this repo and
+  in a copy of another project's state, including two classes the design had
+  not predicted: entries inlined as whole objects, and a duplicate entry that
+  trips neither the missing nor the extra check.
+- A handoff writes `from_session` again. A handoff does not release the
+  outgoing session's file claim, and nothing linked a stranded claim back to
+  the session that walked away, so the next session could be refused every
+  write to its own card. The field is restored at the top level, where the
+  pre-1.1 records already kept it, so a reader that handles the old shape needs
+  no change.
+
+### Added
+
+- A session now says when the project has drifted off the installed pack
+  version. `session-start.py` compares the project's recorded `pack_version`
+  against the installed plugin's and prints the difference, outside the
+  resume block, so a quiet but drifted project is not told to resume nothing.
+- `mpi-show`, a skill that owns the read-only card lookup - "what is MPI-5?",
+  "show MPI-5" - and stops. The lookup is the cheapest thing anyone asks of the
+  pack and it used to load `mpi-continue` whole, dispatch and verify gates
+  included, to do four bounded reads. `mpi-continue` drops from 601 lines to
+  559 behind a routing stub, and reads no `mpi-lib` file, which would put the
+  loading cost straight back. This reverses a 2026-05-31 decision that merged a
+  standalone lookup skill away; that failure was trigger coverage rather than
+  ownership, so the split shipped only after a fresh session proved the new
+  skill actually triggers, and the stub is there so a future miss is handed on
+  instead of improvised.
+
 ## [1.4.2] - 2026-08-31
 
 ### Fixed
@@ -931,7 +1005,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.2...v1.5.0
 [1.4.2]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.3.1...v1.4.0
