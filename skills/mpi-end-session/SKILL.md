@@ -24,9 +24,8 @@ stop and run `mpi-handoff` instead. It commits, pushes, and writes the handoff
 in about a minute, and skips every knowledge pass below because none of it can
 be concluded mid-job.
 
-Genuinely unclear? Ask in one line: `Finished, or continuing in a new session?`
-Do not guess. The two differ by roughly ten minutes and everything that
-survives the session.
+Genuinely unclear -> default to `mpi-handoff` and say so in one line: it is
+cheap, loses nothing, and close-out can still run later.
 
 ## Process
 
@@ -108,11 +107,11 @@ Rules for the loop, all four kinds:
 - **Only from repetition that already happened** here or in a recorded earlier
   session. **Never propose from directory structure** - an empty
   `.claude/agents/` directory is not evidence anyone needs an agent.
-- Propose; do not create. One line each, wait for approval.
+- Propose as a `Your call:` line with the agent's pick; nothing created before
+  a yes.
 
-Cardinal rule: creating or modifying any architectural rule file needs explicit
-per-file approval. Keep the edits concise - short bullets, no prose bloat, no
-new headings unless strictly required.
+Cardinal rule: an architectural rule-file change is a `Your call:` line, never
+a write before a yes. Keep proposals concise - short bullets, no prose bloat.
 
 ### 2b. Lightweight project knowledge refresh
 
@@ -122,9 +121,9 @@ affected architecture, conventions, important commands, or agent guidance;
 `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/updates.md` has the
 update shape.
 
-Drifted -> propose one concise edit per affected file, current vs. proposed,
-and wait for per-file approval. Nothing drifted -> say so in one line. Broader
-drift -> recommend `mpi-project-refresh`.
+Drifted -> a `Your call:` line per affected file, current vs. proposed, with
+the agent's pick; apply on a yes in a follow-up commit. Nothing drifted -> say
+so in one line. Broader drift -> recommend `mpi-project-refresh`.
 
 ### 3. Knowledge-healing pass (do NOT skip)
 
@@ -144,9 +143,9 @@ answer honestly - did any of these happen?
 
 Heal at the source: the ONE doc the project's map routes to, never a catch-all
 dump file. Fix mechanical heals directly (dead pointers, broken links, stale
-references, memory corrections, MEMORY.md index drift). Substantive changes -
-new rule text, doc additions, router-row changes, skill edits - get a one-line
-proposal per file and wait for approval.
+references, memory corrections, MEMORY.md index drift). Substantive changes
+- new rule text, doc additions, router-row changes, skill edits - get one
+`Your call:` line per file, current vs. proposed.
 
 **Never edit the pack itself.** Files under the installed plugin root are not
 project files; record the change as a memory note or a card instead.
@@ -161,8 +160,8 @@ Per `~/.claude/CLAUDE.md`:
 - Anything learned worth keeping? Write to the right file under the project's
   memory directory or `~/.claude/memory/`.
 - Update the `MEMORY.md` index entry with one dated line.
-- Ask before removing or modifying an existing memory entry; show current
-  content plus the proposed change.
+- A change to an existing memory entry is a `Your call:` line - current
+  vs. proposed text, with the agent's pick; nothing edited before a yes.
 
 ### 5. Board check
 
@@ -210,12 +209,10 @@ Every one had its evidence recorded already.
 
 ### 7. Project extension point, then the claim auditor
 
-If `.agents/mpi-kanban/close-out.md` exists, run its steps HERE - after the
-shared passes, **before** the commit, so anything it proposes lands in the same
-commit. That file holds project-specific close-out steps: release awareness,
-changelog checks, version-registry drift, dependency-set checks. Treat them as
-pointers producing one-line proposals, same approval discipline as the rest of
-close-out, unless the file says otherwise.
+If `.agents/mpi-kanban/close-out.md` exists, run its project-specific steps
+HERE - after the shared passes, **before** the commit - so anything approved
+lands in the same commit. Each one (release awareness, changelog, version
+drift, dependencies) is a `Your call:` line, unless the file says otherwise.
 
 Then dispatch `agents/claim-auditor.md` when it ships with the installed
 plugin: read-only, output capped at 40 lines, verdicts sorted FALSE first.
@@ -331,33 +328,36 @@ Then close or complete the active coordination session and task per
 closed records from active index arrays; preserve pending records that still
 need cleanup, review, verification, or integration.
 
-### 11. Final report - four bullets, no more
+Then release this session's file claims (it defaults to this session):
+`python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py" release`.
 
-Everything else goes in the card or the plan. This is what the user reads.
+### 11. Final report - close-out order
 
-```markdown
-**CHANGED:** <what landed, one line; commit subject + file count; pushed or not>
-**VERIFIED:** <the command or check that proved it, and its result>
-**STILL OPEN:** <cards left in doing, unanswered validation questions, deferred items, or "nothing">
-**NEXT AGENT NEEDS:** <the one thing a fresh session must know, or "nothing">
+Paste this block; do not redecide the wording. Everything else goes in the
+card or the plan.
+
+```text
+<BREAKS USERS: what + "fixed, test added" or "card MPI-n made"> | Nothing breaking | Not checked: <why>
+Changed from the brief: <what and why>          (only when something did)
+Left before close: <what, or "nothing">
+Your call: <question> My pick: <answer>         (one line each, only when needed)
+Done: <what landed> - <the check that proved it>
+Spent: <amount> of <approved amount>            (only when money was spent)
+<n> unrelated notes saved to the card           (only when any)
 ```
 
-Two additions are allowed below the four bullets, and only these:
-
-- `Did not run:` - any close-out step skipped, with its reason. The claim
-  auditor and the coordination reads are the usual two. Omit when nothing was
-  skipped. A four-bullet report with no slot for this is why a skipped step
-  reads as a passed one.
-- `Noticed, not actioned:` - separate work found this session that was
-  deliberately not turned into cards, one line each. Omit when empty. Do not
-  create cards for these; the user decides.
+`Nothing breaking` is earned: verification ran, passed, and found nothing
+breaking; otherwise `Not checked: <why>`. A skipped step (claim audit,
+coordination reads) -> `Left before close`, with its reason. Unrelated finds
+-> the card's `brief.md` `## Noticed`; the report prints only the count.
 
 Then one `git status` confirming a clean tree, or naming what was deferred.
 
 ## Hard rules
 
-- Never modify a rule file in `.agents/rules/` without explicit user approval.
-- Never auto-overwrite or delete a memory entry; ask first.
+- A rule-file change in `.agents/rules/` is a `Your call:` line, never a write
+  before a yes.
+- A memory-entry change is a `Your call:` line, current vs. proposed; nothing edited before a yes.
 - The commit and the claim auditor's dispatch are both authorized by invoking
   this skill; neither needs a second ask.
 - Pushing follows `push_policy`, default `auto`. Never force-push, never
@@ -374,8 +374,8 @@ Then one `git status` confirming a clean tree, or naming what was deferred.
 - Never write a handoff here. If the work turns out to be unfinished, stop and
   route to `mpi-handoff` - a close-out that also hands off is the expensive
   path this split exists to remove.
-- The consolidation sweep proposes umbrellas; it never creates one without
-  approval and never closes, merges, or deletes the clustered cards.
+- The consolidation sweep proposes umbrellas as a `Your call:` line; it never
+  creates, closes, merges, or deletes cards before a yes.
 - Never edit files under the installed plugin root. Record pack changes as a
   memory note or a card instead.
 
@@ -383,12 +383,12 @@ Then one `git status` confirming a clean tree, or naming what was deferred.
 
 - All session-touched files committed, or explicitly deferred with a reason;
   pushed per `push_policy`.
-- Rules/docs reflect any architectural change, with per-file approval.
+- Rules/docs impact surfaces as `Your call:` lines, not written unasked.
 - Knowledge gaps healed at the source, or "no knowledge gaps hit" stated.
 - Memory entries written for non-obvious learnings; `MEMORY.md` index current.
 - Every touched card is `done` on evidence, or has an asked question on record.
   No card parked in `validating` in silence.
 - The claim auditor ran, or the report says why it did not.
-- The report is four bullets; `git status` clean, or remaining items explained.
+- The report follows close-out order; `git status` clean or explained.
 - Suggest `mpi-cleanup` when old plans, handoffs, closed coordination state, or
   archived task workspaces are likely stale. Do not run cleanup automatically.

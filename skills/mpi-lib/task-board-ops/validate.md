@@ -1,7 +1,8 @@
 # task-board-ops/validate - validation and repair checks
 
 Read this when validating or repairing a JSON task board. Validation reports
-problems; repair requires explicit user approval before writing.
+problems; safe repairs apply without asking and are reported, unsafe repairs
+still need the user's choice.
 
 ---
 
@@ -78,9 +79,11 @@ requires that file for the task's current state. Examples:
 
 ## Repair Proposals
 
-Repairs must be proposed, not silently applied.
+Safe repairs (below) apply without asking and are reported; unsafe repairs
+still need the user's choice.
 
-Safe repairs to propose:
+Safe repairs - apply and report, except where a bullet below still says
+"after approval":
 
 - Create a missing optional linked file with default empty content.
 - Add an unlisted task folder to `todo` when its `task.json` is valid.

@@ -13,8 +13,9 @@ only the files that match the task topic, not the whole project.
 3. Only the files listed under the matching topic block (`Read first`,
    `Rules`, `Memory`).
 4. Cross-cutting entries from the index when relevant.
-5. If no topic matches, ask the user for a pointer instead of scanning the
-   repo.
+5. If no topic matches, run a bounded search for the task's key terms (a few
+   targeted `rg` queries, not a repo scan) and say what was read. Ask the
+   user for a pointer only when that search finds nothing.
 
 This order replaces "read everything." Skills that previously prompted the
 agent to scan all of `CLAUDE.md`, all rules, or all docs upfront should

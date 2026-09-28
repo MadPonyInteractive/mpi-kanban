@@ -38,9 +38,10 @@ named set is a decision, not an opening bid.
 `files.json` when it lists files, otherwise the paths its `plan.md` or
 description names.
 
-Below 8 `todo` cards, say so and ask whether to continue anyway. A small
-backlog is usually not sprawl, and an umbrella over three unrelated cards is
-just a worse board.
+Below 8 `todo` cards, continue anyway and say the backlog is small - the user
+asked for this. A small backlog is usually not sprawl; only cluster cards
+that truly belong together, since an umbrella over unrelated cards is just a
+worse board.
 
 ### 2. Propose before creating
 

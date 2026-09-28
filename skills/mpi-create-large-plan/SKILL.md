@@ -138,18 +138,16 @@ Lib pointers, read only when needed:
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `createTask`, `writeTask`,
   `ensureLinkedFiles`, `attachPlan`.
 
-If `mpi-brainstorm` passed a task ID, call `loadTask(<id>)`. If it passed only
-a title, call `findTask` by exact title and handle duplicates by asking the
-user to choose the visible `MPI-*` ID. Otherwise ask:
-
-```text
-Does this work already have a task on the board? If yes, give the MPI ID or exact title. Reply "no" for a fresh To do task.
-```
+If `mpi-brainstorm` passed a task ID, call `loadTask(<id>)`. Otherwise search
+the board: `findTask` by exact title, then by keywords from the goal. One
+match (exact-title included) -> use it and name it. No match -> a fresh `todo`
+task (below). Several matches (exact-title duplicates included) -> pick the
+closest, say which, and list the others.
 
 If an existing task matches:
 
-1. If the task is in `done`, ask before reopening it into `todo`. On approval,
-   call `moveTask(id, "todo", actor, "Reopened for a new large plan.")`.
+1. If the task is in `done`, reopen it into `todo` and say so: call
+   `moveTask(id, "todo", actor, "Reopened for a new large plan.")`.
 2. If the task is in `todo` or `doing`, leave it in its current column unless
    the user explicitly asks to move it.
 3. Call `ensureLinkedFiles(id, { "research": "research/" })` if preserving

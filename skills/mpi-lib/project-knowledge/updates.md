@@ -6,21 +6,28 @@ the single source for how those updates behave.
 
 ## Approval
 
-All writes require explicit user approval, except where called out below.
+All writes require explicit user approval, except where called out below. In
+`mpi-end-session`'s lightweight pass, "approval" means a close-out `Your
+call` line the user answers with a yes; `mpi-init` and `mpi-project-refresh`
+keep a blocking proposal stop.
 
 - **First-time creation:** the proposal is the full draft of the profile or
   index. The skill writes only after the user approves.
 - **Edits to an existing profile or index:** the proposal shows current
-  content vs proposed content per section. The skill writes only after the
-  user approves each section change.
+  content vs proposed content per section. `mpi-init`/`mpi-project-refresh`
+  write only after the user approves each section change. `mpi-end-session`
+  prints each section change as a close-out `Your call` line instead and
+  writes only on a yes.
 - **Rule files (`.agents/rules/*.md`):** init and refresh may propose new
   rule files or edits to existing rule files when reusable project-specific
-  conventions need a dedicated home. ASK per file. Cardinal rule, same as
-  `mpi-end-session`. Never create or edit a rule without explicit approval.
+  conventions need a dedicated home. ASK per file and wait. `mpi-end-session`
+  prints a close-out `Your call` line per file instead and does not wait.
+  Never create or edit a rule without a yes.
 - **Edits to memory:** prefer pointing at existing project/user memory. Only
   propose new or changed memory entries when the user agrees the knowledge
-  belongs in memory and not in the profile/index/rules. Use
-  `AskUserQuestion` before removing or modifying existing memory entries.
+  belongs in memory and not in the profile/index/rules. Ask in plain text
+  before removing or modifying an existing memory entry - show the current
+  content and the proposed change - not `AskUserQuestion`.
 - **Edits to `AGENTS.md`:** init may create or update `AGENTS.md`
   directly after the user approves the setup proposal. Prefer the
   pointer-first strategy: keep existing agent entrypoints concise and point

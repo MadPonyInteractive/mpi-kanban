@@ -91,7 +91,9 @@ more surface area. Engineering intent matters from the first commit.
   conventions in the project profile or a referenced rule.
 - **Clarification behavior:** surface tradeoffs explicitly. When two
   approaches are both defensible, present both with the recommended choice
-  and the reason. Ask before introducing a new abstraction layer.
+  and the reason. Name a new abstraction layer in the brief's `How` line
+  instead of asking separately - the brief is where the user approves the
+  approach.
 - **Proactive engineering bar:** during planning, enforce strong patterns and
   OOP where they pay off, and proactively name future-proofing concerns and
   scalability suggestions the user has not raised (data model growth, extension

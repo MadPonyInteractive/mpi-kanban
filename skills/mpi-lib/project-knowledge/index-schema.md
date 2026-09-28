@@ -28,8 +28,8 @@ substitute for the profile. Example:
 
 ```markdown
 Match the topic closest to the current task. Read the listed files first.
-If no topic matches, read the project profile and ask the user for a
-pointer rather than scanning the repo end-to-end.
+If no topic matches, run a bounded search for the task's key terms and say
+what was read. Ask the user for a pointer only if that search finds nothing.
 ```
 
 ### `## Topics`

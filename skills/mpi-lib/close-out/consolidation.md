@@ -13,12 +13,13 @@ Two cards belong to the same cluster when they touch the same files or the
 same directory, or when they describe the same subsystem in different words.
 A cluster is worth proposing at three cards or more.
 
-## Propose, then stop
+## Your call
 
-One line per cluster:
+One line per cluster, as the close-out `Your call:` line (Proposals rule,
+`mpi-end-session`):
 
 ```text
-11 todo cards cluster into 3 themes. Make umbrellas?
+Your call: 11 todo cards cluster into 3 themes - make umbrellas? My pick: yes
 - API surface (MPI-31, MPI-35, MPI-40, MPI-44) - all touch src/api/**
 - Install docs (MPI-33, MPI-34, MPI-41) - all touch docs/install.md and README.md
 - Board validator (MPI-37, MPI-38, MPI-45) - all touch scripts/validate_board.py
@@ -31,8 +32,8 @@ card fields.
 
 ## Rules
 
-- Create nothing without approval, one umbrella at a time, through `createTask`
-  in `task-board-ops/mutate.md`.
+- Create nothing before a yes. On a yes, create one umbrella at a time,
+  through `createTask` in `task-board-ops/mutate.md`, as a follow-up commit.
 - Never close, merge, or delete the clustered cards as part of this. They stay
   until their work lands in the umbrella's plan, and the user decides which of
   the two the board keeps.

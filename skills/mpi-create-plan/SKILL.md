@@ -77,7 +77,8 @@ because several files may change.
    rules and docs.
 3. If the goal is clearly large or uncertain, or if independent parallel
    implementation looks likely (work splits into disjoint-ownership tasks),
-   recommend `mpi-create-large-plan` instead and wait for confirmation.
+   switch to `mpi-create-large-plan` instead and say so in one line; the user
+   can redirect back to a compact plan.
 4. **Front-load decisions (scalable-foundation).** When project mode is
    `scalable-foundation`, before writing the plan, exercise the mode's
    clarification and proactive-engineering behavior from
@@ -106,18 +107,21 @@ Lib pointers, read only when needed:
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `createTask`, `writeTask`,
   `ensureLinkedFiles`, `attachPlan`.
 
-If `mpi-brainstorm` passed a task ID, call `loadTask(<id>)`. If it passed only
-a title, call `findTask` by exact title and handle duplicates by asking the
-user to choose the visible `MPI-*` ID. Otherwise ask:
+If `mpi-brainstorm` passed a task ID, call `loadTask(<id>)`. Otherwise search
+the board for existing work: `findTask` by exact title first, then by
+keywords from the goal.
 
-```text
-Does this work already have a task on the board? If yes, give the MPI ID or exact title. Reply "no" for a fresh To do task.
-```
+- One match (including one exact-title match): use it and name it, e.g.
+  `Found MPI-42 "Video history support"; reusing it.`
+- No match: proceed to "If no task matches" below for a fresh `todo` task.
+- Several matches (including several cards sharing the exact title): pick the
+  closest and say which, listing the others, e.g. `Using MPI-42 "Video
+  history support"; also saw MPI-51, MPI-58.`
 
 If an existing task matches:
 
-1. If the task is in `done`, ask before reopening it into `todo`. On approval,
-   call `moveTask(id, "todo", actor, "Reopened for a new plan.")`.
+1. If the task is in `done`, reopen it into `todo` and say so: call
+   `moveTask(id, "todo", actor, "Reopened for a new plan.")`.
 2. If the task is in `todo` or `doing`, leave it in its current column unless
    the user explicitly asks to move it.
 3. Call `attachPlan(id, planMarkdown, actor)`.

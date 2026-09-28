@@ -14,21 +14,14 @@ not have. That is the whole reason it exists apart from `mpi-end-session`.
 
 ## What this deliberately does NOT do
 
-None of these run here. They belong to `mpi-end-session`, which runs once when
-the work is actually finished, not once per session switch:
+None of these run here - they belong to `mpi-end-session`, which runs once
+when the work is finished, not once per session switch: rule/doc impact pass,
+project-knowledge drift check, knowledge-healing replay, memory pass, board
+validation, the consolidation sweep, the `validating` card sweep, or any
+sub-agent (`claim-auditor` included).
 
-- rule/doc impact pass over changed files
-- project-knowledge drift check
-- knowledge-healing replay
-- memory pass
-- board validation and the consolidation sweep
-- the `validating` card sweep
-- `claim-auditor`, or any other sub-agent
-
-A session that hands off is not done. Preserving knowledge into docs, rules,
-and memory is close-out work, and paying for it at every switch is what made
-handoffs cost more than the work they interrupt. Resist the pull to be
-thorough here - thoroughness has a skill, and this is not it.
+A session that hands off is not done. Paying for this at every switch is what
+made handoffs cost more than the work they interrupt.
 
 ## The running notes are the source
 
@@ -161,20 +154,24 @@ its own card: `python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py"
 
 ### 5. Report
 
-Three lines plus the block. Nothing else - anything worth more than this
-belongs in the plan or the handoff, and the user is switching windows right
-now.
+Breaker line first, then `Committed:`, `Card:`, `Handoff:`. Always print the
+paste block after them, in its own fenced block so the app shows a copy
+button - a link or a path alone is never the handoff.
+
+BREAKS USERS: <what> - <fixed, or "card MPI-n made"> | Nothing breaking | Not checked: <why>
+Committed: <subject> (<n> files) - pushed | not pushed (<policy>)
+Card: <MPI-* id and title> stays in doing   (or "no board card")
+Handoff: <path> - <n> claim(s) released
+
+Tab naming: read the tab's own title when the harness gives a session tool
+for that (Claude Desktop: `get_session`, session_id `self`, a deferred tool
+loaded via ToolSearch). Title ends in a number -> paste block's first line
+names the next tab. No number, or no such tool -> skip that line.
 
 ```text
-**COMMITTED:** <subject> (<n> files) - pushed | not pushed (<policy>)
-**CARD:** <MPI-* id and title> stays in doing   (or "no board card")
-**HANDOFF:** .agents/mpi-kanban/state/handoffs/<uuid>.json - <n> claim(s) released
-
-To resume in a new session, paste this:
----
+Name this tab "<title with the number + 1>".      (only when known)
 Read .agents/mpi-kanban/state/handoffs/<uuid>.json and use mpi-continue to continue from where we left off.
 The next action is: <next_action.description>
----
 ```
 
 ## Hard rules

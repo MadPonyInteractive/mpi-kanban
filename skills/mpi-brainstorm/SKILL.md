@@ -34,10 +34,12 @@ purpose.
    a response before continuing.
 5. **Capture the idea on the JSON task board.** See "After design approved"
    below.
-6. **Ask: want a plan?** "Do you want to create a plan for this?" If yes,
-   invoke `mpi-create-plan` for normal work or `mpi-create-large-plan` for
-   complex/adaptive work, passing the created task ID and title forward in the
-   prompt context. Session ends.
+6. **Go straight to planning.** After the design is approved and the card is
+   captured, invoke `mpi-create-plan` for normal work or
+   `mpi-create-large-plan` for complex/adaptive work (see "End state" below
+   for the picking rule), passing the created task ID and title forward in
+   the prompt context, and say in one line which plan skill you're starting
+   and why. The user can stop it. Session ends.
 
 ## Context exploration rule
 
@@ -58,7 +60,7 @@ context lean.
 - **Explore alternatives**: propose 2-3 approaches before settling.
 - **Incremental validation**: present one section, get approval, continue.
 
-## After design approved (BEFORE asking "Want a plan?")
+## After design approved (before starting the plan)
 
 Lib pointers, read each only when its recipe is actually needed:
 
@@ -82,9 +84,9 @@ Steps:
    - **Actor:** current agent name, such as `claude`.
 
 3. Before creation, call `findTask(e => e.title === <title>)`. If it already
-   returns a duplicate, ask the user for a distinguishing suffix and retry with
-   the revised title. Exact duplicate titles make later title-based lookup
-   ambiguous.
+   returns a duplicate, add a distinguishing suffix yourself (a short
+   qualifier, or " (2)") and say so, then create with the revised title. Exact
+   duplicate titles make later title-based lookup ambiguous.
 
 4. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` for `createTask`. Call
    `createTask(input)`. The recipe allocates the system task ID; never ask the
@@ -114,23 +116,23 @@ plan.
 
 ## End state
 
-After the todo task is captured:
+After the todo task is captured, go straight to planning:
 
-1. Ask: **"Do you want to create a plan for this?"**
-2. If **yes**, choose the plan skill:
+1. Choose the plan skill:
    - Use `mpi-create-plan` by default for compact, normal work.
    - Use `mpi-create-large-plan` when the work is complex, uncertain,
      multi-phase, likely to benefit from parallel investigation, or splittable
      into independent parallel implementation tasks. Parallel implementation
      eligibility alone is enough reason to choose the large-plan path, since
      compact plans cannot carry `## Parallel Batch` sections.
-   Include in the prompt context: the task ID and title, e.g.
+2. Invoke it and say in one line which one and why, e.g. "Starting
+   mpi-create-plan for MPI-42 (compact, single flow)." Include in the prompt
+   context: the task ID and title, e.g.
    `Create a plan for MPI-42 "Video history support"`. The plan skill will
    attach the plan to that task workspace.
-3. If **no**, session ends. The task stays in `todo` until someone runs
-   `mpi-create-plan` / `mpi-create-large-plan` against it later.
 
-**No auto-invocation past this point.** The user is always in control.
+The plan invocation above is automatic; the user can stop it before or during
+planning. `mpi-init` routing above still asks first - that is a separate call.
 
 ## Hard rules
 

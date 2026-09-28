@@ -70,13 +70,20 @@ is the default and needs no approval.
 - Same system, same files, or needed to make this card's verification pass ->
   fold it in: append a `checklist.md` item, extend `plan.md`, note it in
   `validation.md`. Do not create a card.
-- Genuinely separate work (different system, not needed for this card's
-  verification) -> do not create a card silently. Collect it and report it at
-  the end of the step under `Noticed, not actioned:` so the user decides.
-- Create a card only when the user explicitly asks for one in the current
-  request: run `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py create
-  --title "..." --column todo`, which writes the card AND lists it on the board
-  in one command. Never hand-write a `task.json`; half of one is invisible.
+- Breaks users or the next release, in any system:
+  - small, and no other live session claims those files -> fix it now; lead
+    the close-out with it.
+  - otherwise -> lead the close-out with it, and create a card for it without
+    asking. This is the only card an agent creates unasked.
+- Everything else (genuinely separate work, not breaking anything) -> add one
+  line to the active card's `brief.md` under `## Noticed`. Do not create a
+  card silently; the close-out prints only the count, replacing the old
+  `Noticed, not actioned:` report.
+- Create a card for non-breaking discovered work only when the user explicitly
+  asks for one in the current request: run
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py create --title
+  "..." --column todo`, which writes the card AND lists it on the board in one
+  command. Never hand-write a `task.json`; half of one is invisible.
 
 First check the open `todo` and `doing` cards for one already covering the same
 system and extend that instead. Several cards on one system is the failure this
@@ -355,23 +362,14 @@ session id, so `guard-claim` cannot catch two of them writing one file.
 
 ## Gate 1 - Continue brief
 
-Before implementation, output a brief and stop:
+This is still a stop: print the brief below and wait for the user's go before
+implementing.
 
-```markdown
-## Continue Brief: <next action>
-
-**Source:** <plan path and handoff path if any>
-**Project mode:** <profile mode, or "no profile">
-**Current state:** <1-3 bullets>
-**Conventions in play:** <1-3 bullets from matched topic block, or "none">
-**Plan drift:** <none or summary of plan edits made/proposed>
-**Files likely touched:** <files/modules>
-**Coordination:** <active claims, pending file states, relevant open messages, or none>
-**Approach:** <2-4 sentences>
-**Risk:** Low | Medium | High
-**Verify after:** <specific check>
-
-Reply "go" (or "ok", "yes", "proceed") to start implementation.
+```text
+Next: <one plain sentence: what I will do>
+How: <one or two plain sentences: the approach>
+Risk: <what could go wrong, or "none">
+Heads-up: <plan drift, a peer holding a needed file, an open message>   (only when one exists)
 ```
 
 Do not implement before the user approves.
@@ -379,6 +377,17 @@ Do not implement before the user approves.
 ## Implementation
 
 After approval:
+
+```text
+Stop only when you cannot carry on without the user:
+- a look-and-feel or product call
+- an eye-test
+- anything public, sent as the user (email, messages), or that cannot be undone
+- anything that costs money: state the price and the number of runs first; the
+  yes covers only that, so ask again before going past it
+Everything else: take your recommended option and say so in one line.
+Questions that can wait go in the close-out's "Your call" line.
+```
 
 1. Renew the session heartbeat.
 2. Claim the files/modules likely to be edited before changing them.
@@ -405,21 +414,21 @@ Default to `auto` when the line is absent (legacy/compact plans). For a
 multi-phase plan, use the current phase's verify mode if it declares one,
 otherwise the plan-level value.
 
-Branch on (verify mode) x (did self-verification pass):
+Branch on (verify mode) x (did self-verification pass). Every path's report
+leads with the breaker line: "Nothing breaking" only when this step's
+verification ran and passed AND nothing found breaks users or the next
+release; when verification did not run, say "Not checked: <why>" instead. Add
+`Changed from the brief:`, `Left before close:`, `Your call:`, or `Spent:`
+lines only when they apply.
 
 **A. `auto` and self-verification passed → do not stop for the user.**
 Report the result and continue straight into the "After verified work" steps
 below (plan/board/state update), then move to the next step or completion.
 Output:
 
-```markdown
-Continue step complete (auto-verified).
-
-**Files changed:** <list>
-**Key changes:** <summary>
-**Verification run:** <checks executed> -> PASSED
-**Plan updates:** <summary or none>
-
+```text
+<BREAKS USERS: what + "fixed, test added" or "card MPI-n made"> | Nothing breaking
+Done: <what landed> - <the check that proved it>
 Continuing to the next step.
 ```
 
@@ -429,34 +438,21 @@ agent has not already verified.
 **B. `user-ux` and self-verification passed → stop for the user's eyes.**
 The card has a UI/UX surface only the user can judge. Output:
 
-```markdown
-Continue step complete - needs your check in the app.
-
-**Files changed:** <list>
-**Key changes:** <summary>
-**Automated checks:** <checks executed> -> PASSED
-
-**Check in the app:**
-<exact, specific UI/UX steps for the user to look at and feel>
-
-**Option 1 - Looks good** - say "1" or "verified"
-**Option 2 - Changes / keep talking** - say "2" (then describe what to change)
+```text
+<BREAKS USERS: ...> | Nothing breaking (automated checks)
+Left before close: your look at it.
+Check in the app: <exact, specific steps to look at and feel>
+Say "1" if it looks right, or "2" and what to change.
 ```
 
 Stop and wait.
 
 **C. Self-verification failed or could not run (any verify mode) → stop and
-report the blocker.** A failed or unrunnable check is a real stop, never an
-auto-continue. Output:
+report the blocker.** A failed or unrunnable check is a real blocker; lead
+with it instead of the breaker line. Output:
 
-```markdown
-Continue step complete - verification did not pass.
-
-**Files changed:** <list>
-**Key changes:** <summary>
-**Verification run:** <checks executed> -> FAILED / could not run
-**What failed:** <specific failure / why it could not run>
-
+```text
+<what failed, or "Not checked"> - <the specific failure, or why it could not run>
 I will not mark this verified. Say how to proceed, or "2" to keep talking.
 ```
 
@@ -525,8 +521,9 @@ handoff in about a minute.
   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` for the write recipes. Do not
   derive legal values from existing cards.
 - Never create a task card unless the user asked for one in the current
-  request. Discovered work folds into the active card by default; see
-  `## Discovered work`.
+  request, except a breaker too large to fix on the spot: create that card
+  without asking and lead the close-out with it. Discovered work folds into
+  the active card by default; see `## Discovered work`.
 - Never hand-write or hand-edit a `task.json`. Every card write goes through a
   `mutate.md` recipe so the enum, coherence, and events stay correct.
 - The card must be in `doing` before any implementation edit. In `file` mode,
