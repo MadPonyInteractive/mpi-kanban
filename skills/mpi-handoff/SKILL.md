@@ -5,9 +5,8 @@ description: MPI workflow pack - Hand the work to a fresh session in under two m
 
 # mpi-handoff Skill
 
-Save the thread and get out of the way. The session continues in a fresh
-window within a minute or two, so nothing here re-derives what is already
-written down.
+Save the thread and get out of the way. The session continues in a fresh window
+within a minute or two, so nothing here re-derives what is already written down.
 
 **Budget: under two minutes, under ~20k tokens.** If this skill is taking
 longer than a commit and a file write, something in it has grown that should
@@ -47,8 +46,7 @@ Notes missing, empty, or clearly older than the work on disk? Reconstruct from
 Note: plan running notes were stale; handoff reconstructed from context. Slower than it should be.
 ```
 
-A silent fallback hides that the cheap path was skipped, and the habit never
-gets fixed.
+A silent fallback hides the skipped cheap path, and the habit never gets fixed.
 
 ## Process
 
@@ -158,6 +156,9 @@ Never duplicate the handoff body into the task workspace. Add the handoff to
 that file as `utf-8-sig` - a BOM is common in the wild and plain `utf-8`
 `json.load` dies on it.
 
+Then release this session's file claims, or the next session is locked out of
+its own card: `python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py" release`.
+
 ### 5. Report
 
 Three lines plus the block. Nothing else - anything worth more than this
@@ -167,7 +168,7 @@ now.
 ```text
 **COMMITTED:** <subject> (<n> files) - pushed | not pushed (<policy>)
 **CARD:** <MPI-* id and title> stays in doing   (or "no board card")
-**HANDOFF:** .agents/mpi-kanban/state/handoffs/<uuid>.json
+**HANDOFF:** .agents/mpi-kanban/state/handoffs/<uuid>.json - <n> claim(s) released
 
 To resume in a new session, paste this:
 ---
@@ -182,8 +183,7 @@ The next action is: <next_action.description>
 - Never edit rules, docs, or memory here, even when the gap is obvious. Note it
   in `context.constraints` and let close-out handle it.
 - Never spawn a sub-agent.
-- `resume_prompt` must stand alone - the fresh session has zero memory of this
-  one.
+- `resume_prompt` must stand alone: the fresh session remembers none of this.
 - New handoffs go under `.agents/mpi-kanban/state/handoffs/`. `docs/handoffs/`
   is legacy compatibility, not canonical state.
 - Never edit files under the installed plugin root.
@@ -194,7 +194,7 @@ The next action is: <next_action.description>
 
 - Files committed with `--only`, pushed per policy.
 - Handoff JSON written, indexed in `active_handoffs`, pointer written when a
-  card exists.
+  card exists, and every claim this session held released.
 - The paste block printed, self-contained.
 - The card is still in `doing`.
 - No rule, doc, or memory file was touched.

@@ -237,8 +237,15 @@ or integration is still pending.
 Inputs: session path, task path, active plan, JSON task-board item or legacy
 kanban entry, next role.
 
-1. Update active task/file records to `handoff_ready`, `complete`, or
-   `needs_integration` as appropriate.
+1. Release the session's file claims, after its last commit:
+   `python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py release`
+   (add `--status needs_integration` when someone must reconcile the work).
+   Each `claimed` record becomes `complete` and the index follows. Never write
+   `handoff_ready` on a file claim - it is a SESSION status (step 4), and
+   `validate_board.py` rejects it on a claim. A kept claim locks the next
+   session out of its own card, and re-arms whenever this window is used
+   again, weeks later included. Task records keep their status; the next
+   session attaches to them.
 2. Generate a UUID and write
    `.agents/mpi-kanban/state/handoffs/<uuid>.json`.
 3. Add the handoff path to `active_handoffs`.

@@ -26,6 +26,11 @@ Usage:
                              [--position top|bottom] [--actor claude] [--root .]
     python task_ops.py move MPI-42 --to doing [--maturity validating]
                              [--reason "..."] [--actor claude] [--root .]
+    python task_ops.py release [--session <claude-session-id>] [--status complete]
+                             [--root .]
+
+`release` hands back every file claim a session holds - by default this one,
+read from CLAUDE_CODE_SESSION_ID - and reconciles `state/index.json`.
 
 Run self-check:  python task_ops.py --selftest
 """
@@ -41,11 +46,15 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from validate_board import (  # noqa: E402
+    FILE_CLAIM_STATUSES,
     TASK_COLUMNS,
     TASK_MATURITY_BY_COLUMN,
     append_event,
+    load_json,
     now,
     repair_orphans,
+    repair_state_index,
+    set_claim_status,
     style,
     validate_board,
     write_json,
@@ -199,6 +208,36 @@ def move(root: Path, task_id: str, to_column: str, maturity: str | None,
     return task_id
 
 
+def release(root: Path, session_id: str, status: str) -> list[str]:
+    """Hand back every file claim `session_id` still holds. Returns the records released.
+
+    `mpi-handoff` never did this, so a handed-off window kept its claims: the
+    next session was locked out of its own card (MPI-36, 2026-09-21), and a
+    window the user returns to weeks later renews its heartbeat on its first
+    tool call, which re-arms every claim it ever held. Releasing is two writes
+    per claim - the record, then the index - the shape an agent stops between.
+    Ownership is matched the way `guard-claim` matches it.
+    """
+    board_root, _, _ = paths(root)
+    claims_root = board_root / "state" / "files"
+    released: list[str] = []
+    for record_path in sorted(claims_root.glob("*.json")) if claims_root.is_dir() else []:
+        record = load_json([], record_path, record_path.name)
+        if not isinstance(record, dict) or record.get("status") != "claimed":
+            continue
+        owner_path = record.get("owner_session")
+        if not isinstance(owner_path, str) or not owner_path:
+            continue
+        owner = load_json([], root / owner_path, owner_path)
+        if Path(owner_path).name == f"{session_id}.json" or (
+                isinstance(owner, dict) and owner.get("claude_session_id") == session_id):
+            set_claim_status(record_path, record, status, "claim_released")
+            released.append(record_path.name)
+    if released:
+        repair_state_index(root)
+    return released
+
+
 def report(root: Path) -> int:
     """The check the create path could finish without ever running."""
     errors = validate_board(root)
@@ -230,6 +269,17 @@ def main(argv: list[str] | None = None) -> int:
     shift.add_argument("--maturity", default=None, help="default: reconciled from the column")
     shift.add_argument("--reason", default="")
 
+    free = sub.add_parser("release", help="release every file claim a session holds")
+    free.add_argument("--session", default=os.environ.get("CLAUDE_CODE_SESSION_ID"),
+                      help="default: this session, from CLAUDE_CODE_SESSION_ID")
+    free.add_argument("--status", default="complete",
+                      choices=sorted(FILE_CLAIM_STATUSES - {"claimed", "stale"}))
+    # `mutate.md` put --root AFTER the subcommand and argparse exited 2 on it,
+    # one wasted round trip per agent; SUPPRESS keeps the top-level value.
+    for each in (new, shift, free):
+        each.add_argument("--root", default=argparse.SUPPRESS)
+        each.add_argument("--actor", default=argparse.SUPPRESS)
+
     args = parser.parse_args(argv)
     root = Path(args.root).resolve()
     try:
@@ -237,6 +287,12 @@ def main(argv: list[str] | None = None) -> int:
             task_id = create(root, args.title, args.description, args.column,
                              args.maturity, args.status, args.position, args.actor)
             print(f"Created {task_id} in {args.column}")
+        elif args.command == "release":
+            if not args.session:
+                raise Failure("no session id - pass --session <claude-session-id>")
+            names = release(root, args.session, args.status)
+            print(f"Released {len(names)} claim(s) as {args.status}"
+                  + (": " + ", ".join(names) if names else ""))
         else:
             move(root, args.task_id, args.to, args.maturity, args.reason, args.actor)
             print(f"Moved {args.task_id} to {args.to}")
@@ -336,6 +392,33 @@ def _selftest() -> None:
             assert "exactly one column" in str(exc)
         else:
             raise AssertionError("moving an unlisted card must fail")
+
+        # release hands back only this session's claims, and the index follows.
+        # Record names differ from the ids, so ownership must come from
+        # claude_session_id - the way guard-claim reads it - not the filename.
+        state = board_root / "state"
+        (state / "sessions").mkdir(parents=True)
+        (state / "files").mkdir()
+        rel = ".agents/mpi-kanban/state/"
+        for name, sid in (("s1", "me"), ("s2", "peer")):
+            write_json(state / "sessions" / f"{name}.json", {
+                "schema": "mpi-kanban/session/v1", "status": "active",
+                "claude_session_id": sid}, "\n", 2)
+            write_json(state / "files" / f"{sid}.json", {
+                "schema": "mpi-kanban/file-claim/v1", "status": "claimed", "claim_kind": "write",
+                "paths": ["a.py"], "owner_session": f"{rel}sessions/{name}.json"}, "\n", 2)
+        write_json(state / "index.json", {
+            "schema": "mpi-kanban/state-index/v1", "board": ".agents/mpi-kanban/board.json",
+            "active_file_claims": [f"{rel}files/me.json", f"{rel}files/peer.json"]}, "\n", 2)
+        assert main(["release", "--root", str(root), "--session", "me"]) == 0, \
+            "--root after the subcommand must work, and the board must validate"
+        index = load(state / "index.json")
+        assert index["active_file_claims"] == [f"{rel}files/peer.json"], index
+        assert index["pending_file_states"] == [f"{rel}files/me.json"], index
+        mine = load(state / "files" / "me.json")
+        assert mine["status"] == "complete" and mine["recent_events"][-1]["event"] == "claim_released"
+        assert load(state / "files" / "peer.json")["status"] == "claimed", "a peer's claim is not mine"
+        assert release(root, "me", "complete") == [], "nothing left to release"
 
     print("task_ops selftest OK")
 

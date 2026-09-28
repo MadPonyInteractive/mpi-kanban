@@ -5,13 +5,15 @@ Usage:
     python validate_board.py [project-root] [--fix]
     python validate_board.py --selftest
 
-`--fix` repairs two things. First, orphaned task folders - a `tasks/<id>/` with
+`--fix` repairs three things. First, orphaned task folders - a `tasks/<id>/` with
 a `task.json` that no `board.json` column lists, the residue of a card create
 that stopped halfway - by listing the id in the column its own card names and
-appending the missing `task.created` event. Second, the five derived arrays of
-`state/index.json`, rebuilt from the status of each record on disk. Nothing
-else is auto-repaired: both are restatements of facts already written down,
-never a judgement call.
+appending the missing `task.created` event. Second, a file claim carrying
+`handoff_ready`, which is set to `complete` - the status the handoff recipe
+that wrote it meant. Third, the five derived arrays of `state/index.json`,
+rebuilt from the status of each record on disk. Nothing else is auto-repaired:
+all three are restatements of facts already written down, never a judgement
+call.
 
 `project-root` defaults to the current directory. The board is expected at
 `<project-root>/.agents/mpi-kanban/board.json`; a project with no board is not
@@ -438,7 +440,8 @@ def validate_file_claims(errors: list[str], board_root: Path) -> None:
             errors.append(f"{label} paths must be a list of strings")
         status = record.get("status")
         if status not in FILE_CLAIM_STATUSES:
-            errors.append(f"{label} has unknown status {status!r}")
+            hint = " - a SESSION status; --fix sets it to complete" if status == "handoff_ready" else ""
+            errors.append(f"{label} has unknown status {status!r}{hint}")
         if status != "claimed":
             continue
         # A claim that outlives its owner locks the NEXT session out of its own
@@ -530,6 +533,37 @@ def repair_orphans(root: Path) -> list[str]:
     return repaired
 
 
+def set_claim_status(record_path: Path, record: dict, status: str, event: str) -> None:
+    """Rewrite one claim record's status in its own format, leaving a trace of why."""
+    record["status"] = status
+    events = record.get("recent_events")
+    record["recent_events"] = (events if isinstance(events, list) else []) + [
+        {"at": now(), "event": event}]
+    newline, indent = style(record_path)
+    write_json(record_path, record, newline, indent)
+
+
+def repair_claim_statuses(root: Path) -> list[str]:
+    """Set a file claim's `handoff_ready` to `complete`. Returns one line per repair.
+
+    `handoff_ready` is a SESSION status, but `coordination-ops/lifecycle.md`
+    § Record Handoff told agents to write it onto their file claims too, until
+    MPI-37. Every handoff that followed the recipe left a record this validator
+    rejects - Cubric-Vision MPI-591, 2026-09-27, twice in a row. `complete` is
+    what the recipe meant: the writer stopped, and its change stays as
+    provenance. Runs before `repair_state_index`, so the record lands in
+    `pending_file_states` in the same pass.
+    """
+    claims_root = root / ".agents" / "mpi-kanban" / "state" / "files"
+    repaired: list[str] = []
+    for record_path in sorted(claims_root.glob("*.json")) if claims_root.is_dir() else []:
+        record = load_json([], record_path, record_path.name)
+        if isinstance(record, dict) and record.get("status") == "handoff_ready":
+            set_claim_status(record_path, record, "complete", "handoff_ready_repaired")
+            repaired.append(f"state/files/{record_path.name}: handoff_ready -> complete")
+    return repaired
+
+
 def repair_state_index(root: Path) -> list[str]:
     """Rewrite the five derived index arrays from the records on disk.
 
@@ -594,6 +628,9 @@ def selftest() -> None:
                owner_session=".agents/mpi-kanban/state/sessions/gone.json"))
         record("files", "pending", dict(claim, status="needs_review",
                owner_session=".agents/mpi-kanban/state/sessions/live.json"))
+        # the status the pre-MPI-37 handoff recipe wrote onto claims
+        record("files", "handed", dict(claim, status="handoff_ready",
+               owner_session=".agents/mpi-kanban/state/sessions/gone.json"))
         (state_root / "index.json").write_text(json.dumps({
             "schema": "mpi-kanban/state-index/v1",
             "board": ".agents/mpi-kanban/board.json",
@@ -621,13 +658,20 @@ def selftest() -> None:
         assert "active_handoffs has 1 entry/entries inlined as objects" in joined, joined
         assert "active_handoffs lists 1" in joined, joined
         assert sum("locked out of its own card" in e for e in errors) == 1, joined
+        assert "unknown status 'handoff_ready' - a SESSION status" in joined, joined
 
+        assert repair_claim_statuses(root) == ["state/files/handed.json: handoff_ready -> complete"]
+        assert repair_claim_statuses(root) == [], "a second --fix must be a no-op"
+        handed = json.loads((state_root / "files" / "handed.json").read_text(encoding="utf-8"))
+        assert handed["recent_events"][-1]["event"] == "handoff_ready_repaired", handed
         repaired = repair_state_index(root)
         assert len(repaired) == 5, repaired
         left = [e for e in validate_board(root) if "index.json" in e]
         assert left == [], left
         rewritten = json.loads((state_root / "index.json").read_text(encoding="utf-8"))
         assert all(isinstance(v, str) for v in rewritten["active_handoffs"]), "not normalised"
+        assert ".agents/mpi-kanban/state/files/handed.json" in rewritten["pending_file_states"]
+        assert not any("unknown status" in e for e in validate_board(root))
         # the repair restates statuses; it never silences the claim rule
         assert any("locked out" in e for e in validate_board(root))
 
@@ -640,8 +684,8 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("project_root", nargs="?", default=".")
     parser.add_argument("--fix", action="store_true",
-                        help="list orphaned task folders back on the board and reconcile "
-                             "state/index.json, then validate")
+                        help="list orphaned task folders back on the board, set handoff_ready "
+                             "file claims to complete, reconcile state/index.json, then validate")
     parser.add_argument("--selftest", action="store_true", help="run the built-in checks and exit")
     args = parser.parse_args(argv[1:])
     if args.selftest:
@@ -652,7 +696,8 @@ def main(argv: list[str]) -> int:
         print(f"not a directory: {root}", file=sys.stderr)
         return 2
     if args.fix:
-        for line in repair_orphans(root) + repair_state_index(root) or ["nothing to repair"]:
+        repaired = repair_orphans(root) + repair_claim_statuses(root) + repair_state_index(root)
+        for line in repaired or ["nothing to repair"]:
             print(line)
     board_errors = validate_board(root)
     if board_errors:

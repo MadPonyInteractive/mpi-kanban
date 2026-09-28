@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `mpi-handoff` now releases the session's file claims. It never did, so a
+  handed-off window kept them: the next session was locked out of its own
+  card, and a window the user came back to weeks later renewed its heartbeat
+  on its first tool call, which re-armed every claim it ever held. The release
+  is one command, `task_ops.py release`, which reads the session id from
+  `CLAUDE_CODE_SESSION_ID`, sets each `claimed` record the session owns to
+  `complete`, and reconciles `state/index.json`. It is a script and not a step
+  list because it is two writes per claim, the shape agents stop between.
+- `coordination-ops/lifecycle.md` § Record Handoff no longer tells agents to
+  set file claims to `handoff_ready`. That is a SESSION status; the file-claim
+  set never had it, so every handoff that followed the recipe left a claim
+  `validate_board.py` rejects - seen twice in a row on Cubric-Vision. The
+  validator now says so, and `--fix` sets an existing one to `complete`.
+- `task_ops.py` accepts `--root` and `--actor` after the subcommand as well as
+  before. `task-board-ops/mutate.md` has documented them after it all along,
+  and that form exited 2.
+
 ## [1.5.0] - 2026-09-22
 
 Six findings from a Claude Code usage report covering 2026-08-15 to 2026-09-21
