@@ -226,6 +226,32 @@ Board lifecycle is `To do -> Doing -> Done`. Planning, checklists, validation,
 attention, and handoffs live in the task workspace instead of being embedded in
 card bodies.
 
+### Briefs, stops, and reports
+
+The skills are built so you read two messages per session: the brief and the
+report.
+
+- **The brief.** Before implementing, `mpi-continue` prints `Next:`, `How:`,
+  `Risk:`, and a `Heads-up:` line only when there is one (plan drift, a peer
+  holding a file, an open message), then waits for your go. It is the one
+  planned stop, because it is where a wrong approach costs nothing to catch.
+- **Mid-work stops** happen only for a look-and-feel or product call, an
+  eye-test, anything public, sent as you, or irreversible, and anything that
+  costs money. Money comes with the price and the number of runs first, and
+  your yes covers only that. Everything else the agent decides and says so in
+  one line.
+- **Reports** open with one line: what breaks users or the next release,
+  `Nothing breaking`, or `Not checked: <why>`. `Nothing breaking` is earned: the
+  step's check ran and passed. A breaker found anywhere is fixed on the spot
+  when it is small and no other session holds its files; otherwise it gets a
+  card, the only card an agent makes unasked. Questions that could wait come as
+  `Your call: <question> My pick: <answer>` lines, and close-out changes to your
+  rules, docs, or memory come the same way - nothing is written before your
+  yes, and nothing waits for it.
+- **The handoff** prints its resume note in its own code block, so the app
+  shows a copy button. When the tab's title ends in a number, the note's first
+  line names the next tab with that number plus one.
+
 ## Enforcement
 
 Six hooks ship with the plugin and register themselves on install. They replace

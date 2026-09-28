@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Fewer stops, shorter reports. The user reads two messages per session - the
+brief and the report - and was reading every word of both, because anything
+that broke the release could hide anywhere in a report, usually under
+"Noticed, not actioned". Meanwhile most of the stops asked for a yes the user
+always gave.
+
+### Changed
+
+- **Reports lead with whether anything breaks users.** Step reports,
+  `mpi-end-session`'s final report, batch integration and the handoff report
+  open with one line: `BREAKS USERS: <what>`, `Nothing breaking`, or
+  `Not checked: <why>`. `Nothing breaking` is earned - the step's check ran and
+  passed. Then, only when they apply: what changed from the brief, what is left
+  before close, `Your call:` lines each carrying the agent's pick, `Done:` with
+  its proof, money spent against the approved amount, and a count of unrelated
+  notes, which now go to the card's `brief.md` under `## Noticed` instead of
+  the report.
+- **The brief is three lines**: `Next:`, `How:`, `Risk:`, plus `Heads-up:` only
+  when there is plan drift, a peer holding a file, or an open message. It
+  replaces the ten-field Continue Brief, and it is still a stop.
+  `mpi-continue/brief-template.md`, a stale copy of the old brief, is deleted.
+- **Mid-work stops are a fixed list**: a look-and-feel or product call, an
+  eye-test, anything public, sent as the user, or irreversible, and anything
+  that costs money. Everything else is the agent's pick, said in one line. A
+  money yes is capped: the agent states the price and the number of runs first
+  and asks again before going past them, and a worker never spends without a
+  budget from the orchestrator.
+- **A breaker found in any system is handled, not listed.** Small and on
+  unclaimed files -> fixed on the spot. Otherwise it leads the report and gets
+  a card - the only card an agent creates unasked.
+- **Close-out approvals no longer wait.** Rule, doc, profile, memory and
+  umbrella proposals in `mpi-end-session` print as `Your call:` lines; nothing
+  is written before a yes, and the close-out finishes without one.
+  `mpi-init` and `mpi-project-refresh` keep their one proposal stop.
+- A stop audit cut the rest: the planning skills find or reopen the card, pick
+  the plan size and chain into the plan themselves and say so; a genuinely
+  unclear "finished or continuing?" defaults to `mpi-handoff`; a topic miss in
+  the knowledge index becomes a bounded search; safe board repairs apply
+  without asking.
+- `mpi-handoff` prints the resume note in its own fenced block, so the app
+  shows a copy button, and never a bare link or path. When the tab's title ends
+  in a number, the note's first line names the next tab with the number plus
+  one.
+
+### Fixed
+
+- `mpi-execute-parallel` stopped "run the ready cards" in every new session:
+  the session hook writes the session record but not its `state/index.json`
+  line, so the board validator was red until someone ran `--fix`. Dispatch now
+  runs `validate_board.py --fix` (safe repairs only) before its gate.
+- `mpi-end-session` releases the session's file claims with
+  `task_ops.py release`, as `mpi-handoff` has since 1.5.1. A closed-out
+  session left them `claimed`.
+
+### Added
+
+- `validate_report_contract()` in `scripts/validate_plugin.py` checks the
+  inline report copies: the brief's exact lines, the breaker line in every
+  report template, the fenced handoff paste block, and the capped money rule.
+  `mpi-continue/brief-template.md` joins the removed-paths list.
+
 ## [1.5.1] - 2026-09-28
 
 ### Fixed

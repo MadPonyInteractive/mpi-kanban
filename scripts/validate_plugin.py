@@ -103,6 +103,7 @@ REMOVED_PATHS = (
     "docs/coordination",
     "skills/mpi-init/templates/kanban.md",
     "docs/nimbalyst-interop.md",
+    "skills/mpi-continue/brief-template.md",
 )
 
 errors: list[str] = []
@@ -392,6 +393,52 @@ def validate_maturity_contract_docs() -> None:
             )
 
 
+REPORT_BREAKER = re.compile(r"BREAKS USERS.{0,80}?Nothing breaking", re.DOTALL)
+REPORT_BRIEF_LABELS = (["Next", "How", "Risk"], ["Next", "How", "Risk", "Heads-up"])
+REPORT_PASTE_BLOCK = re.compile(
+    r"```text\n(?:Name this tab[^\n]*\n)?"
+    r"Read \.agents/mpi-kanban/state/handoffs/<uuid>\.json[^\n]*\n"
+    r"The next action is:[^\n]*\n```"
+)
+REPORT_MONEY_RULE = (
+    "anything that costs money: state the price and the number of runs first; "
+    "the yes covers only that, so ask again before going past it"
+)
+
+
+def validate_report_contract() -> None:
+    # MPI-38. Report text lives INLINE in every skill that prints it, because
+    # behind a pointer it gets skipped (the maturity-enum lesson). The price of
+    # inline is copies that drift; this is what keeps them honest.
+    texts: dict[str, str] = {}
+    for name in ("mpi-continue", "mpi-end-session", "mpi-execute-parallel", "mpi-handoff"):
+        path = ROOT / "skills" / name / "SKILL.md"
+        if not path.exists():
+            fail(f"missing report contract doc: {path.relative_to(ROOT)}")
+            continue
+        texts[name] = path.read_text(encoding="utf-8", errors="ignore")
+        # Every close-out leads with whether anything breaks users.
+        if not REPORT_BREAKER.search(texts[name]):
+            fail(f"skills/{name}/SKILL.md: report lost its breaker line (BREAKS USERS | Nothing breaking)")
+
+    if "mpi-continue" in texts:
+        blocks = re.findall(r"```text\n(.*?)```", texts["mpi-continue"], re.DOTALL)
+        briefs = [block for block in blocks if block.startswith("Next:")]
+        labels = [line.split(":", 1)[0] for line in briefs[0].splitlines()] if len(briefs) == 1 else None
+        if labels not in REPORT_BRIEF_LABELS:
+            fail("skills/mpi-continue/SKILL.md: the brief must be one ```text block of exactly Next/How/Risk (+ optional Heads-up)")
+
+    # A link or a path alone is never the handoff; the fence is what gives the
+    # paste block a copy button.
+    if "mpi-handoff" in texts and not REPORT_PASTE_BLOCK.search(texts["mpi-handoff"]):
+        fail("skills/mpi-handoff/SKILL.md: the resume paste block is not in its own ```text fence")
+
+    # The capped money yes: a yes covers the stated price and runs, nothing past it.
+    for name in ("mpi-continue", "mpi-execute-parallel"):
+        if name in texts and REPORT_MONEY_RULE not in " ".join(texts[name].split()):
+            fail(f"skills/{name}/SKILL.md: the money stop (price and runs first, yes capped) is missing")
+
+
 def validate_task_board_tree() -> None:
     for message in board_rules.validate_board(ROOT):
         fail(message)
@@ -658,6 +705,7 @@ def main() -> int:
     validate_pack_version()
     validate_task_board_templates()
     validate_maturity_contract_docs()
+    validate_report_contract()
     validate_task_board_tree()
     validate_boot_docs()
     validate_coordination_messages()

@@ -657,8 +657,10 @@ matches the written plan.
 7. Adds stable checklist items in the task workspace.
 8. Inspects current repo state.
 9. Updates/annotates plan drift when needed.
-10. Presents a continue brief before implementation.
-11. Presents a post-implementation verification gate before marking work done.
+10. Presents the brief before implementation and waits for a go (see Reports
+    and stops below).
+11. Self-verifies after implementation. An `auto` card whose check passed
+    continues without stopping; a `user-ux` card or a failed check stops.
 12. Moves fully implemented work toward `done` only after validation state is
     represented in the task workspace.
 
@@ -671,8 +673,43 @@ path must read `skills/mpi-lib/task-board-ops/_schema.md` and
 not infer legal `column`, `maturity`, or `status` values from existing cards.
 Requests such as "set MPI-42 to validating" map to `column: "doing"` plus
 `maturity: "validating"` only after `validation.md` exists or is written with
-validation state. Requests to mark a card done require represented validation
-state and explicit final-completion approval in the current request.
+validation state. A card moves to done when `validation.md` records the
+evidence that closes it - a check that ran and passed, or the user's own
+confirmation. It asks first only when the verification needs human eyes that
+have not seen it yet.
+
+### Reports and stops
+
+The user reads two messages per session: the brief and the report. The text of
+both lives inline in each skill that prints it, not behind a pointer, and
+`validate_report_contract()` in `scripts/validate_plugin.py` keeps the copies
+in step.
+
+- **Brief** (`mpi-continue`): exactly `Next:`, `How:`, `Risk:`, plus
+  `Heads-up:` only when there is plan drift, a peer holding a needed file, or
+  an open message. It stays a stop.
+- **Mid-work stops** (`mpi-continue`, the `mpi-execute-parallel` worker
+  briefing): a look-and-feel or product call, an eye-test, anything public,
+  sent as the user, or irreversible, and anything that costs money. Money
+  states the price and number of runs first; the yes covers only that. A
+  worker never spends without a budget from the orchestrator. Everything else
+  is the agent's pick, said in one line.
+- **Report order** (step reports, `mpi-end-session`, batch integration): the
+  breaker line (`BREAKS USERS: <what>` | `Nothing breaking` | `Not checked:
+  <why>`), then `Changed from the brief:`, `Left before close:`, `Your call:
+  <question> My pick: <answer>`, `Done: <what> - <proof>`, `Spent: <amount> of
+  <approved>`, and a count of unrelated notes. The breaker line is always first;
+  the rest appear when they apply. `Nothing breaking` requires that the step's
+  verification ran and passed. A failed or unrunnable check leads with the
+  failure instead.
+- **Found work**: a breaker in any system is fixed on the spot when small and
+  no other live session claims its files; otherwise it leads the report and
+  gets a card, the only card an agent creates unasked. Unrelated finds go to
+  the card's `brief.md` under `## Noticed`.
+- **Close-out proposals** (rules, docs, profile, memory, umbrellas) are
+  `Your call:` lines: nothing is written before a yes, and the close-out does
+  not wait for one. `mpi-init` and `mpi-project-refresh` keep their one
+  proposal stop.
 
 ## 10. Parallel Execution
 
@@ -684,8 +721,9 @@ state and explicit final-completion approval in the current request.
    `Briefings:` rule or bundle names, and `**Verify:**`.
 
 2. **Board batch** - ready cards selected from `.agents/mpi-kanban/board.json`.
-   Requires a passing `python validate_board.py` run before dispatch; a
-   validator failure stops selection entirely. A card is selectable when it is
+   Runs `python validate_board.py <root> --fix` first, which applies only the
+   safe repairs, then requires a passing run before dispatch; a failure left
+   after the fix stops selection entirely. A card is selectable when it is
    in `todo`, its `maturity` is exactly `planned`, its task workspace has a
    `plan.md`, it carries no `attention.state: "required"`, and its ownership is
    derivable and disjoint from every other selected card and every active write
@@ -719,8 +757,13 @@ references the canonical state handoff. The canonical handoff remains under
 `state/handoffs/`; task-local pointers are discovery aids for task lookup and
 must not duplicate long handoff state.
 
-The final chat output must include a pasteable resume block pointing the next
-session to `mpi-continue`.
+The final chat output leads with the breaker line, then `Committed:`, `Card:`,
+and `Handoff: <path> - <n> claim(s) released`, then the pasteable resume block
+pointing the next session to `mpi-continue`. The resume block is always printed
+in its own ```` ```text ```` fence, so the app shows a copy button; a link or a
+path alone is never the handoff. When the harness exposes the tab's title and
+it ends in a number, the block's first line names the next tab with that number
+plus one.
 
 ## 12. Brief Rule Bundles
 

@@ -141,6 +141,20 @@ If SPEC and PLAN disagree, ask the user before choosing.
   every verified step. That note is what makes a cheap handoff possible; if it
   goes stale, `mpi-handoff` falls back to summarising a full context and the
   cost returns.
+- Every report leads with whether anything breaks users (`BREAKS USERS:` |
+  `Nothing breaking` | `Not checked:`), and the brief stays a stop. The user
+  reads two messages per session, the brief and the report, and had been
+  reading every word of both because a release breaker could hide anywhere in
+  a report, usually under a "noticed" list at the bottom. The breaker line puts
+  it where it is read; `Nothing breaking` is only allowed when the step's check
+  ran and passed, or the line teaches the user to skip it. The brief
+  (`Next`/`How`/`Risk`) keeps its stop because it is where a wrong approach
+  is caught for free. Every other mid-work stop needs one of four reasons: a
+  look-and-feel or product call, an eye-test, public/sent-as-user/irreversible,
+  or money with a capped yes. Do not add a stop without one of them; a question
+  that can wait is a `Your call:` line. The report text is inline in each skill
+  that prints it, for the same reason as the enums, and
+  `validate_report_contract()` checks the copies. MPI-38, 1.6.0.
 - A SKILL.md body is loaded in full on every invocation, so its length is a
   recurring token cost. The budget is 200 lines, enforced by
   `validate_skill_sizes()` in `scripts/validate_plugin.py`. Skills already over
