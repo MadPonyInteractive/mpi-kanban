@@ -346,10 +346,10 @@ Spent: <amount> of <approved amount>            (only when money was spent)
 <n> unrelated notes saved to the card           (only when any)
 ```
 
-`Nothing breaking` is earned: verification ran, passed, and found nothing
-breaking; otherwise `Not checked: <why>`. A skipped step (claim audit,
-coordination reads) -> `Left before close`, with its reason. Unrelated finds
--> the card's `brief.md` `## Noticed`; the report prints only the count.
+Line 1 is word for word, never a paraphrase. `Nothing breaking` is earned:
+verification ran, passed, found nothing breaking; else `Not checked: <why>`.
+A skipped step (claim audit, coordination reads) -> `Left before close`, with
+its reason. Unrelated finds -> `brief.md` `## Noticed`; print only the count.
 
 Then one `git status` confirming a clean tree, or naming what was deferred.
 

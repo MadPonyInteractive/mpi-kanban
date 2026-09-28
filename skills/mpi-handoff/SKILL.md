@@ -154,14 +154,17 @@ its own card: `python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py"
 
 ### 5. Report
 
-Breaker line first, then `Committed:`, `Card:`, `Handoff:`. Always print the
-paste block after them, in its own fenced block so the app shows a copy
-button - a link or a path alone is never the handoff.
+Print these four lines as-is, then the paste block, nothing else. Line 1 is
+word for word `Nothing breaking`, `Not checked: <why>` or `BREAKS USERS: ...`,
+never a paraphrase. The paste block gets its own fence so the app shows a
+copy button; a link or a path alone is never the handoff.
 
+```text
 BREAKS USERS: <what> - <fixed, or "card MPI-n made"> | Nothing breaking | Not checked: <why>
 Committed: <subject> (<n> files) - pushed | not pushed (<policy>)
 Card: <MPI-* id and title> stays in doing   (or "no board card")
 Handoff: <path> - <n> claim(s) released
+```
 
 Tab naming: read the tab's own title when the harness gives a session tool
 for that (Claude Desktop: `get_session`, session_id `self`, a deferred tool

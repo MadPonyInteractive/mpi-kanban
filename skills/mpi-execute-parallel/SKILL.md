@@ -234,9 +234,9 @@ finish:
 4. Integrate results. If same-file or cross-worker reconciliation is required,
    claim the affected files as `integrator` before editing them.
 5. Run the batch verification.
-6. Report in Close-out order: the breaker line first (`BREAKS USERS: <what>` |
-   `Nothing breaking`, only when the batch verification ran and passed and
-   nothing found breaks users or the next release | `Not checked: <why>`),
+6. Report in Close-out order. Line 1, word for word, never a paraphrase:
+   `BREAKS USERS: <what>` | `Nothing breaking` (batch verification ran, passed,
+   nothing breaks users or the next release) | `Not checked: <why>`. Then
    `Changed from the brief` (only if any), `Left before close`, `Your call`
    lines with picks, `Done` with proof, `Spent: <amount> of <approved>` (only
    when money was spent), and the notes count. Then `mpi-continue`'s gate:

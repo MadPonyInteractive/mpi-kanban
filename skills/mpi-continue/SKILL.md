@@ -414,12 +414,12 @@ Default to `auto` when the line is absent (legacy/compact plans). For a
 multi-phase plan, use the current phase's verify mode if it declares one,
 otherwise the plan-level value.
 
-Branch on (verify mode) x (did self-verification pass). Every path's report
-leads with the breaker line: "Nothing breaking" only when this step's
-verification ran and passed AND nothing found breaks users or the next
-release; when verification did not run, say "Not checked: <why>" instead. Add
-`Changed from the brief:`, `Left before close:`, `Your call:`, or `Spent:`
-lines only when they apply.
+Branch on (verify mode) x (did self-verification pass). Print the path's block
+as-is, with no bullets or extra paragraphs around it. Its line 1 is word for
+word `Nothing breaking` (only when this step's check ran and passed and nothing
+found breaks users or the next release), `Not checked: <why>`, or
+`BREAKS USERS: <what>` - never a paraphrase. Add `Changed from the brief:`,
+`Left before close:`, `Your call:`, or `Spent:` lines only when they apply.
 
 **A. `auto` and self-verification passed → do not stop for the user.**
 Report the result and continue straight into the "After verified work" steps

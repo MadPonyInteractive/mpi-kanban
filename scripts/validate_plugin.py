@@ -420,6 +420,10 @@ def validate_report_contract() -> None:
         # Every close-out leads with whether anything breaks users.
         if not REPORT_BREAKER.search(texts[name]):
             fail(f"skills/{name}/SKILL.md: report lost its breaker line (BREAKS USERS | Nothing breaking)")
+        # The breaker line is a fixed literal the user scans for. The first live
+        # run of these skills printed "Nothing is broken." until this was said.
+        if "never a paraphrase" not in " ".join(texts[name].split()):
+            fail(f"skills/{name}/SKILL.md: the breaker line lost its word-for-word rule")
 
     if "mpi-continue" in texts:
         blocks = re.findall(r"```text\n(.*?)```", texts["mpi-continue"], re.DOTALL)

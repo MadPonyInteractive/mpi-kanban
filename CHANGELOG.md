@@ -18,8 +18,9 @@ always gave.
 - **Reports lead with whether anything breaks users.** Step reports,
   `mpi-end-session`'s final report, batch integration and the handoff report
   open with one line: `BREAKS USERS: <what>`, `Nothing breaking`, or
-  `Not checked: <why>`. `Nothing breaking` is earned - the step's check ran and
-  passed. Then, only when they apply: what changed from the brief, what is left
+  `Not checked: <why>`, word for word so it can be scanned for, and with no
+  bullets or extra paragraphs around the report. `Nothing breaking` is
+  earned - the step's check ran and passed. Then, only when they apply: what changed from the brief, what is left
   before close, `Your call:` lines each carrying the agent's pick, `Done:` with
   its proof, money spent against the approved amount, and a count of unrelated
   notes, which now go to the card's `brief.md` under `## Noticed` instead of
@@ -64,8 +65,9 @@ always gave.
 ### Added
 
 - `validate_report_contract()` in `scripts/validate_plugin.py` checks the
-  inline report copies: the brief's exact lines, the breaker line in every
-  report template, the fenced handoff paste block, and the capped money rule.
+  inline report copies: the brief's exact lines, the breaker line and its
+  word-for-word rule in every report template, the fenced handoff paste block,
+  and the capped money rule.
   `mpi-continue/brief-template.md` joins the removed-paths list.
 
 ## [1.5.1] - 2026-09-28
