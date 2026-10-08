@@ -363,8 +363,11 @@ python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/gpu_lease.py" status
 
 `run` takes a free device under an OS exclusive lock held for the lifetime of
 the command, sets `CUDA_VISIBLE_DEVICES` for the child, and waits when every
-device is busy. Run it as a background Bash call and the waiting costs no
-tokens. This is a real lock across sessions, repos, and windows - unlike a file
+device is busy. Waiters are served in arrival order: each takes a numbered
+ticket under `~/.mpi-kanban/gpu/queue/` and only the first in line may try a
+device, so a peer running batches back to back cannot re-take the GPU ahead of
+someone already waiting. `status` lists the line after the devices. Run it as a
+background Bash call and the waiting costs no tokens. This is a real lock across sessions, repos, and windows - unlike a file
 claim, because the kernel is enforcing it rather than a cooperating agent.
 
 There is no release step. The lock drops when the command exits, including on

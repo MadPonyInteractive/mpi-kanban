@@ -200,7 +200,9 @@ python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/gpu_lease.py" status
    at the moment you check is not free when the command reaches the device.
 2. Run it as a BACKGROUND Bash call. `run` blocks until a device frees up, so
    in the foreground it burns the tool timeout, and in the background the wait
-   costs no tokens and the harness wakes you when it exits.
+   costs no tokens and the harness wakes you when it exits. Waiters are served
+   first come, first served (`~/.mpi-kanban/gpu/queue/`) and `status` lists
+   the line; `--poll` only sets how fast you notice your turn.
 3. `run` sets `CUDA_VISIBLE_DEVICES` for the child, which sees its device as
    `0` whichever slot it got. Do not set that variable yourself.
 4. Exit 75 means the wait expired and the command never ran. Re-run with a

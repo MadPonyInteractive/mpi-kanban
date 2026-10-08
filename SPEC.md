@@ -572,13 +572,24 @@ all. So the GPU lease is machine-global and deliberately outside `state/`:
 ```text
 ~/.mpi-kanban/gpu/<index>.lock          the lock, one per NVIDIA device
 ~/.mpi-kanban/gpu/<index>.owner.json    display only, never liveness
+~/.mpi-kanban/gpu/queue/<n>.ticket      one per waiter, first come first served
 ```
 
 `skills/mpi-lib/scripts/gpu_lease.py run -- <command>` takes the first free
 device with an OS exclusive lock (`msvcrt.locking` on Windows, `fcntl.flock`
 elsewhere), sets `CUDA_VISIBLE_DEVICES` for the child, waits when every device
 is busy, and returns 75 if the wait expires without running the command.
-`status` lists each device as free or names its holder.
+`status` lists each device as free or names its holder, then the waiters in
+queue order.
+
+Waiting is FIFO. A waiter takes a ticket numbered after every live one, and
+only the lowest live ticket may try a device; it leaves the queue the moment it
+holds one. Without this, every waiter re-polled the lock and the first retry
+after a release won, so a holder chaining `run` calls starved everyone else. A
+ticket is live while its owner holds a kernel lock on it, the same rule as the
+device lock, so a killed waiter drops out without a pid check or heartbeat. A
+short queue lock serialises ticket creation and probing, so no ticket is ever
+probed between being created and being locked.
 
 The OS lock is the whole design. It is what removes the heartbeat, the TTL, and
 the stale-lease reclaim path that `state/` records need: the kernel drops the

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The GPU lease is a queue now.** `gpu_lease.py run` waited by re-polling a
+  non-blocking lock, so whoever retried first after a release won. A session
+  running batches as back-to-back `run` calls re-took the GPU within moments of
+  each release, and on 2026-10-08 a recording polling every 20 s, then 2 s,
+  waited 70+ minutes behind one. Each waiter now takes a numbered ticket in
+  `~/.mpi-kanban/gpu/queue/` behind every live one, and only the first in line
+  may try a device, so a holder that re-queues goes to the back. The device
+  lock is still the kernel's and still the only exclusion; a ticket is live
+  while its owner holds a kernel lock on it, so a killed waiter leaves the line
+  the way a killed holder frees its device, with no pid check or heartbeat.
+  `status` lists the line after the devices. `--poll` now only sets how fast
+  the first waiter notices a release. A copy of 1.6.0 or older still running
+  in another session does not queue and can take a free device ahead of the
+  line until that session picks up this release.
+
 ## [1.6.0] - 2026-09-28
 
 Fewer stops, shorter reports. The user reads two messages per session - the
