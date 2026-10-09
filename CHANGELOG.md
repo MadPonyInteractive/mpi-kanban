@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-10-09
+
 ### Fixed
 
 - **The GPU lease is a queue now.** `gpu_lease.py run` waited by re-polling a
@@ -1116,7 +1118,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.1...HEAD
+[1.6.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.4.2...v1.5.0
