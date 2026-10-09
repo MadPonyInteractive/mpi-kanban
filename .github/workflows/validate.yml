@@ -19,3 +19,6 @@ jobs:
 
       - name: Run plugin validator
         run: python scripts/validate_plugin.py
+
+      - name: GPU lease selftest (POSIX lock path)
+        run: python skills/mpi-lib/scripts/gpu_lease.py --selftest
