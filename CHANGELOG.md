@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The GPU lease sees Ollama.** Ollama keeps a model in VRAM for its
+  keep-alive (5 minutes by default) after whatever asked for it is gone, and
+  the lease could not see it: on 2026-10-10 a 7.4 GB model an app had loaded
+  sat on a 16 GB card while `gpu_lease.py status` read `GPU 0 free`, and the
+  leased job that started on top of it failed streaming weights and took
+  Claude Code down twice. Now a model Ollama holds in VRAM makes every device
+  busy: `status` names it and `run` waits for it. When a leased command exits,
+  the lease tells Ollama to unload every model it holds and waits up to 15 s for
+  them to go before releasing the device, so a model the command loaded,
+  directly or through an app, does not outlive its lease. If one is still
+  loaded after that, the next waiter keeps waiting for it rather than starting
+  on top of it. Ollama is
+  found at `OLLAMA_HOST`, default `127.0.0.1:11434`. Ollama does not say which
+  GPU it loaded onto, so on a machine with several cards one loaded model holds
+  them all.
+- **`guard-gpu` blocks a direct unleased Ollama call in every project.**
+  `ollama run`, or an HTTP call to `:11434/api/generate`, `/chat` or `/embed`,
+  is refused unless wrapped in the lease, even in a project with no
+  `gpu_command_patterns`. Every other pattern stays opt-in.
+
 ## [1.6.1] - 2026-10-09
 
 ### Fixed

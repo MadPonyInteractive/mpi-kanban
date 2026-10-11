@@ -19,6 +19,12 @@ chance it touches a GPU would be worse than the collision it prevents.
 Patterns are regexes matched against the raw command. A command already routed
 through `gpu_lease.py` passes.
 
+The one exception to opt-in is a direct Ollama call (`OLLAMA_PATTERNS`), checked
+in every adopted repo, configured or not. Opt-in exists because a generic pattern
+blocks every `pytest`; `ollama run` has no such false positive, and an unleased
+Ollama model nearly took the machine down (MPI-41). An app or script that calls
+Ollama for you is not caught here -- the lease's own Ollama check covers that.
+
 Deliberately NOT checked: whether a slot is free right now. Free at the moment
 of the check is not free three seconds later when the command actually reaches
 the device, so the rule is always wrap, never wrap-if-busy.
@@ -35,6 +41,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _mpi  # noqa: E402
 
 CONFIG = ".agents/mpi-kanban.local.md"
+OLLAMA_PATTERNS = [r"\bollama\s+run\b", r":11434/api/(generate|chat|embed)"]
 
 BLOCK_MSG = """BLOCKED: this command uses the GPU without holding a lease.
 
@@ -110,12 +117,10 @@ def main():
         with open(os.path.join(root, CONFIG), encoding="utf-8-sig") as handle:
             patterns = configured_patterns(handle.read())
     except OSError:
-        sys.exit(0)
-    if not patterns:
-        sys.exit(0)
+        patterns = []
 
     command = (data.get("tool_input") or {}).get("command")
-    hit = offending(command, patterns)
+    hit = offending(command, patterns + OLLAMA_PATTERNS)
     if hit:
         _mpi.deny(BLOCK_MSG.format(pattern=hit, command=command))
     sys.exit(0)
@@ -148,6 +153,14 @@ def _selftest():
         'python "/plugin/skills/mpi-lib/scripts/gpu_lease.py" run -- python train.py',
         patterns), "the wrapped form must pass"
     assert not offending("python train.py", ["(unclosed"]), "a bad regex disables itself"
+
+    assert offending("ollama run ornith:9b hi", OLLAMA_PATTERNS)
+    assert offending("curl -s http://127.0.0.1:11434/api/chat -d @q.json", OLLAMA_PATTERNS)
+    assert not offending("ollama ps", OLLAMA_PATTERNS)
+    assert not offending("ollama stop ornith:9b", OLLAMA_PATTERNS)
+    assert not offending("curl -s http://127.0.0.1:11434/api/ps", OLLAMA_PATTERNS)
+    assert not offending('python "/p/gpu_lease.py" run -- ollama run ornith:9b hi',
+                         OLLAMA_PATTERNS)
     print("guard-gpu selftest OK")
 
 

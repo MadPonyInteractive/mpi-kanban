@@ -38,6 +38,13 @@ Slots come from `nvidia-smi`, so an onboard Intel/AMD adapter never gets one and
 no agent can be handed a device too weak to run on. A machine with no NVIDIA
 device runs the command unleased rather than blocking work.
 
+Ollama holds VRAM without holding a lease: a model stays loaded for its
+keep-alive (5 min by default) after whatever asked for it is gone, and a leased
+job that starts on top of it can crash the machine (MPI-41). So a model Ollama
+has in VRAM counts as every slot busy -- `status` names it and `run` waits --
+and when a leased command exits, every model Ollama holds is unloaded before the
+slot is released, so nothing the command loaded outlives its lease.
+
 Exit codes: the child's, or 75 when the wait timed out and the child never ran.
 
 Run self-check:  python gpu_lease.py --selftest
@@ -50,6 +57,8 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.parse
+import urllib.request
 
 SLOT_ENV = "MPI_KANBAN_GPU_SLOT"
 WAIT_TIMEOUT = 75  # EX_TEMPFAIL: the wait expired, the command did not run
@@ -79,6 +88,58 @@ def devices():
     if proc.returncode != 0:
         return []
     return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
+
+
+def _ollama():
+    """Ollama's base URL, read from OLLAMA_HOST the way Ollama itself reads it."""
+    host = os.environ.get("OLLAMA_HOST") or "127.0.0.1"
+    url = urllib.parse.urlsplit(host if "://" in host else "http://" + host)
+    name = url.hostname or "127.0.0.1"
+    if name in ("0.0.0.0", "::"):  # a bind-all address: Ollama is reachable on loopback
+        name = "127.0.0.1"
+    return "%s://%s:%s" % (url.scheme, name, url.port or 11434)
+
+
+def _ollama_ps():
+    """Every model Ollama has loaded, or [] when Ollama is not running.
+
+    The 1 s timeout is what a machine without Ollama pays per check.
+    """
+    try:
+        with urllib.request.urlopen(_ollama() + "/api/ps", timeout=1) as reply:
+            return json.load(reply).get("models") or []
+    except Exception:  # not running, not Ollama, half an answer: nothing is loaded
+        return []
+
+
+def ollama_models():
+    """Names of the models Ollama holds in VRAM right now.
+
+    ponytail: Ollama does not say which GPU it loaded onto, so one loaded model
+    marks EVERY slot busy. Right on a one-card box, too strict on several cards;
+    per-device needs `nvidia-smi --query-compute-apps` matched to Ollama's pid.
+    """
+    return [m.get("name", "?") for m in _ollama_ps() if m.get("size_vram", 1)]
+
+
+def ollama_unload():
+    """Unload every model Ollama holds, and wait (15 s at most) until it has.
+
+    Runs as a leased command exits, BEFORE the slot is released, so a model the
+    command loaded -- directly or through an app it drove -- leaves with it.
+    """
+    loaded = [m.get("model") or m.get("name") for m in _ollama_ps()]
+    for name in loaded:
+        request = urllib.request.Request(
+            _ollama() + "/api/generate", json.dumps({"model": name, "keep_alive": 0}).encode(),
+            {"Content-Type": "application/json"})
+        with contextlib.suppress(Exception):  # never fail the run over a cleanup call
+            urllib.request.urlopen(request, timeout=30).close()
+    deadline = time.monotonic() + 15
+    while loaded and _ollama_ps() and time.monotonic() < deadline:
+        time.sleep(0.5)
+    if loaded:
+        print("mpi-kanban: unloaded Ollama %s" % ", ".join(loaded), file=sys.stderr, flush=True)
 
 
 def _take(handle, at=0):
@@ -227,8 +288,9 @@ def cmd_run(argv, poll, timeout):
     ticket, ahead = _enqueue(argv)
     try:
         while True:
-            turn = slots if _first(ticket) else []  # only the head of the queue may try a slot
-            for index in turn:
+            first = _first(ticket)  # only the head of the queue may try a slot
+            held = ollama_models() if first else []  # ...and not while Ollama sits in VRAM
+            for index in (slots if first and not held else []):
                 handle = acquire(index)
                 if not handle:
                     continue
@@ -241,6 +303,7 @@ def cmd_run(argv, poll, timeout):
                     try:
                         return subprocess.call(argv, env=child)
                     finally:
+                        ollama_unload()
                         _forget(index)
             if time.monotonic() >= deadline:
                 print("mpi-kanban: every GPU still busy after %gs, command not run.\n"
@@ -248,8 +311,9 @@ def cmd_run(argv, poll, timeout):
                       file=sys.stderr, flush=True)
                 return WAIT_TIMEOUT
             if not announced:
-                print("mpi-kanban: all %d GPU slots busy, waiting... (%d ahead in the queue)"
-                      % (len(slots), ahead), file=sys.stderr, flush=True)
+                print("mpi-kanban: all %d GPU slots busy, waiting... (%d ahead in the queue)%s"
+                      % (len(slots), ahead, "; Ollama holds " + ", ".join(held) if held else ""),
+                      file=sys.stderr, flush=True)
                 announced = True
             time.sleep(poll)
     finally:
@@ -261,11 +325,13 @@ def cmd_status():
     if not slots:
         print("no NVIDIA device found")
         return 0
+    held = ollama_models()
     for index in slots:
         handle = acquire(index)
         if handle:
             handle.close()  # a probe: held for an instant, so a waiter may miss one poll
-            print("GPU %s  free" % index)
+            print("GPU %s  busy   ollama holds %s" % (index, ", ".join(held)) if held
+                  else "GPU %s  free" % index)
             continue
         owner = _read(_owner_path(index))
         print("GPU %s  busy   %s  pid %s  since %s  %s" % (
@@ -304,9 +370,42 @@ def main():
 
 
 def _selftest():
+    import http.server
+    import threading
+
+    loaded = []  # the fake Ollama's VRAM: what /api/ps answers
+
+    class FakeOllama(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):  # /api/ps
+            self._reply({"models": loaded})
+
+        def do_POST(self):  # /api/generate: keep_alive 0 unloads, anything else loads
+            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            if body.get("keep_alive") == 0:
+                loaded[:] = [m for m in loaded if m["model"] != body["model"]]
+            else:
+                loaded.append({"name": body["model"], "model": body["model"], "size_vram": 1})
+            self._reply({"done": True})
+
+        def _reply(self, doc):
+            data = json.dumps(doc).encode()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+        def log_message(self, *_):
+            pass
+
+    # every child points at the fake: a selftest must never unload the user's real models
+    fake = http.server.ThreadingHTTPServer(("127.0.0.1", 0), FakeOllama)
+    threading.Thread(target=fake.serve_forever, daemon=True).start()
+    ollama_host = "127.0.0.1:%d" % fake.server_address[1]
+
     me = os.path.abspath(__file__)
     scratch = tempfile.mkdtemp(prefix="gpu-lease-")
-    base = dict(os.environ, MPI_KANBAN_GPU_ROOT=scratch, MPI_KANBAN_GPU_DEVICES="0")
+    base = dict(os.environ, MPI_KANBAN_GPU_ROOT=scratch, MPI_KANBAN_GPU_DEVICES="0",
+                OLLAMA_HOST=ollama_host)
     base.pop(SLOT_ENV, None)
 
     def lease(env, *extra, script="import os;print(os.environ['CUDA_VISIBLE_DEVICES'])"):
@@ -388,6 +487,26 @@ def _selftest():
     assert none.stdout.strip() == "", none
     assert none.returncode == 1, "no CUDA_VISIBLE_DEVICES is set when unleased"
 
+    # MPI-41: a model Ollama keeps in VRAM is the GPU busy, though no lease holds the slot
+    loaded.append({"name": "big:9b", "model": "big:9b", "size_vram": 7400000000})
+    status = subprocess.run([sys.executable, me, "status"], env=base,
+                            capture_output=True, text=True).stdout
+    assert "GPU 0  busy   ollama holds big:9b" in status, status
+    blocked = lease(base, "--timeout", "1", "--poll", "0.2")
+    assert blocked.returncode == WAIT_TIMEOUT and not blocked.stdout.strip(), blocked
+    assert "Ollama holds big:9b" in blocked.stderr, blocked.stderr
+
+    # a model in system RAM only is not on the GPU; and whatever the leased command
+    # loads into Ollama is unloaded before the slot is released
+    loaded[:] = [{"name": "cpu:1b", "model": "cpu:1b", "size_vram": 0}]
+    load = ("import json,urllib.request as u;u.urlopen(u.Request('http://%s/api/generate',"
+            "json.dumps({'model':'child:1b'}).encode())).close()" % ollama_host)
+    used = lease(base, "--timeout", "5", "--poll", "0.2", script=load)
+    assert used.returncode == 0, used
+    assert loaded == [], "a model outlived the lease that loaded it: %s" % loaded
+    assert "unloaded Ollama cpu:1b, child:1b" in used.stderr, used.stderr
+
+    fake.shutdown()
     print("gpu_lease selftest OK")
 
 

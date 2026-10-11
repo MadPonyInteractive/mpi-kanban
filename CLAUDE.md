@@ -211,6 +211,12 @@ If SPEC and PLAN disagree, ask the user before choosing.
   `<index>.owner.json` - that file is display only and a killed holder leaves it
   behind. `guard-gpu` stays opt-in per project; enabling it by default would
   block every `pytest` in every adopted repo the plugin is installed into.
+  The one exception is a direct Ollama call (`OLLAMA_PATTERNS` in
+  `guard-gpu.py`), blocked unleased in every adopted repo: it has no `pytest`
+  false positive, and an unleased Ollama model nearly crashed the machine
+  (MPI-41, approved by the user 2026-10-11). The lease itself also treats a
+  model Ollama holds in VRAM as every slot busy and unloads Ollama when a
+  leased command exits, because an app calling Ollama is invisible to the guard.
 - A card create and a card move go through
   `skills/mpi-lib/scripts/task_ops.py`, never through steps an agent performs
   one at a time. Both are four file writes, and prose cannot make the fourth

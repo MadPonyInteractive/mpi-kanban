@@ -259,6 +259,10 @@ def main():
         code, _ = run("guard-gpu.py", bash_payload(root, "python train.py --steps 10"))
         checks.append(("guard-gpu is off until the project configures patterns", code == 0))
 
+        code, err = run("guard-gpu.py", bash_payload(root, "ollama run ornith:9b hi"))
+        checks.append(("guard-gpu blocks unleased Ollama even unconfigured (MPI-41)",
+                       code == 2 and "without holding a lease" in err))
+
         pathlib.Path(root, ".agents", "mpi-kanban.local.md").write_text(
             "---\ngpu_command_patterns:\n  - python .*train\n---\n", encoding="utf-8")
 

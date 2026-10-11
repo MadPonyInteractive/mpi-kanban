@@ -377,7 +377,17 @@ Devices come from `nvidia-smi`. An onboard Intel or AMD adapter never becomes a
 slot, so no agent is handed a GPU too weak to run on, and a machine with no
 NVIDIA device runs the command unleased. More GPUs simply means more slots.
 
-Enforcement is opt-in per project - see `gpu_command_patterns` below.
+Ollama counts too. A model Ollama holds in VRAM makes every device busy, even
+with no lease held, because Ollama keeps a model loaded for minutes after
+whatever asked for it is gone. `status` names the model and `run` waits for it.
+When a leased command exits, the lease tells Ollama to unload every model and
+waits up to 15 s for them to go before releasing the device, so a model the
+command loaded, directly or through an app, does not outlive its lease; one that
+lingers still holds off the next waiter. Ollama is found at `OLLAMA_HOST`, default `127.0.0.1:11434`.
+
+Enforcement is opt-in per project - see `gpu_command_patterns` below. The
+exception is a direct Ollama call (`ollama run`, or an HTTP call to
+`:11434/api/generate|chat|embed`), which is blocked unleased in every project.
 
 ## Per-Project Config
 
