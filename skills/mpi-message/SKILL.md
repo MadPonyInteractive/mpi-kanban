@@ -74,7 +74,12 @@ or when a workflow needs an async handoff request.
    - `claim`: contested file claim path
    - `handoff`: related handoff path
 5. Run the shared `Send Message` operation.
-6. Report the message ID, path, recipient selector, and subject.
+6. Report the message ID, path, recipient, and subject. Name a recipient or
+   sender SESSION by its desktop session title (the name in the user's
+   sidebar, from `ListAgents` or `list_sessions`), never by a card ID or
+   session ID: a session moves between cards, and the user finds sessions by
+   title. Same for the subject ("From <my title> to <their title>: ..."). A
+   card ID may follow the title in brackets, never replace it.
 
 ## Read Inbox
 

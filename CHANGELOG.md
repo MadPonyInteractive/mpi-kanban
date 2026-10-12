@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`mpi-message` names sessions by their desktop title.** Agents reported a
+  peer as "MPI-1084" or a session id, which the user cannot map to a window,
+  and a session moves between cards. The report and the subject now use the
+  session title, with a card ID in brackets at most.
+
 ## [1.6.2] - 2026-10-11
 
 ### Fixed
