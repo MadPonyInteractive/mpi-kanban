@@ -104,8 +104,9 @@ Lib pointers, read only when needed:
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` - JSON board and task-card shape.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`, `ensureBoard`,
   `loadTask`, `findTask`.
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `createTask`, `writeTask`,
-  `ensureLinkedFiles`, `attachPlan`.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `createTask`, `attachPlan`;
+  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/implement.md` - `writeTask`,
+  `ensureLinkedFiles`, `moveTask`.
 
 If `mpi-brainstorm` passed a task ID, call `loadTask(<id>)`. Otherwise search
 the board for existing work: `findTask` by exact title first, then by

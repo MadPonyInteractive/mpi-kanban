@@ -679,9 +679,11 @@ matches the written plan.
 
 `mpi-continue` also owns direct JSON task-card state updates when the user asks
 to move or set one visible card without asking for code implementation. That
-path must read `skills/mpi-lib/task-board-ops/_schema.md` and
-`skills/mpi-lib/task-board-ops/mutate.md` before writing card state. It must
-not infer legal `column`, `maturity`, or `status` values from existing cards.
+path (`skills/mpi-continue/card-update.md`) takes legal values from the
+skill's inline `## Card contract` and writes through the recipes in
+`skills/mpi-lib/task-board-ops/implement.md`; it reads `_schema.md` before
+writing any field the contract does not cover. It must not infer legal
+`column`, `maturity`, or `status` values from existing cards.
 Requests such as "set MPI-42 to validating" map to `column: "doing"` plus
 `maturity: "validating"` only after `validation.md` exists or is written with
 validation state. A card moves to done when `validation.md` records the

@@ -30,8 +30,8 @@ Lib pointers:
   contract.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`, `loadTask`,
   `listTasks`.
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `appendEvent` and structured
-  board/task writes.
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/implement.md` - `appendEvent` and structured
+  board/task writes (preflight: `mutate.md`).
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/validate.md` - board validation checks before
   and after archive.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/messages.md` - read relevant unresolved

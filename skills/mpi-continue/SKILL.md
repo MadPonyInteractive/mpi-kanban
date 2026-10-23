@@ -5,36 +5,29 @@ description: MPI workflow pack - Continue active MPI work, show/read one board t
 
 # mpi-continue Skill
 
-## Purpose
+Continue from the card, its plan, the latest handoff, and the workspace as it
+really is. Plans are living documents: when reality drifted, fix the plan;
+never force the next unchecked item.
 
-Continue active work intelligently. This skill replaces rigid "execute next"
-behavior: it reads the active JSON task card, plan, latest handoff, and current
-workspace state, then proposes the next best action based on reality. Legacy
-Markdown kanban entries are compatibility inputs only when `board.json` is
-absent or unmigrated.
+Route first. `<here>` is `${CLAUDE_PLUGIN_ROOT}/skills/mpi-continue`; read a
+sub-file only when its line applies:
 
-It does NOT own the read-only lookup path any more: "what is MPI-5?", "show
-MPI-5", "look at the <title> card" go to `mpi-show`, which does the bounded read
-and stops. See `## Read-only lookup -> mpi-show` below.
+- Read-only lookup ("what is MPI-5?", "show MPI-5") -> invoke `mpi-show` and
+  stop; never re-inline the lookup here. "Continue it" afterwards comes back.
+- Move or set one card without implementing -> read `<here>/card-update.md`.
+- Whole board ("run the ready cards", "work the board"), a `## Parallel Batch`
+  as the next unit, or two or more ready cards -> read `<here>/dispatch.md`.
+- `state/index.json` shows an open message, stale coordination records, or
+  another writer's claim or pending state on a file you need -> read
+  `<here>/peers.md`.
 
-It also owns bounded direct card-state updates when the user asks to move or
-set one JSON task card, for example "move MPI-42 to doing", "set MPI-42 to
-validating", or "mark the current card done". These updates use the same
-task-board mutation references as implementation flow; do not infer legal
-values by grepping existing cards.
-
-When shared coordination state exists, `mpi-continue` also reads
-`.agents/mpi-kanban/state/index.json` first and follows its pointers only as
-needed. The shared contract is documented in
-`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/docs/coordination/README.md`.
-Lifecycle operations are documented in
-`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md` and status values in
-`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md`.
-
-Plans are living documents. If implementation has drifted, update or annotate
-the plan instead of forcing the next unchecked item.
-
-Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
+Recipes (read the one you call): `beginImplementation`, `moveTask`,
+`writeTask`, `appendEvent` in
+`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/implement.md`;
+`findBoard`/`findTask` in `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md`;
+checklist shape in `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/plan-ops/derive.md`;
+sessions and claims in `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md`,
+their status values in `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md`.
 
 ## Card contract
 
@@ -50,315 +43,66 @@ board; other cards may be wrong.
   `blocked`, or `deferred`; `doing` -> `in-progress` or `validating`;
   `done` -> `complete` or `rejected`
 
-When to use new `todo` values: `research` — needs investigation before
-planning; `needs-decision` — understood but a decision is outstanding;
-`blocked` — ready but waiting on another card or an external dependency;
-`deferred` — deliberately postponed, not being picked up in the current
-stretch. For `done`: `rejected` — closed without being built, kept as a
-record of the decision.
+`research` needs investigation first; `needs-decision` waits on a decision;
+`blocked` waits on another card or outside dependency; `deferred` is
+deliberately postponed; `rejected` closed unbuilt, kept as the decision record.
 
-These are not maturity values: `active`, `accepted`, `done`, `implementing`,
+Not maturity values: `active`, `accepted`, `done`, `implementing`,
 `implementation`, `validated`, `Validated`, `validation`, `spec`, `scoped`,
-`designed`, `review`. Process detail belongs in `status`, `attention`,
-`description`, or the linked task workspace files.
+`designed`, `review`. Process detail goes in `status`, `attention`,
+`description`, or workspace files. An invalid or incoherent maturity is fixed by
+the same write that changes or confirms the column. Every write goes through a
+recipe - never hand-edit a `task.json`. A field this contract does not cover ->
+read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` first.
 
 ## Discovered work
 
 Work found while implementing the active card belongs to the active card. That
 is the default and needs no approval.
 
-- Same system, same files, or needed to make this card's verification pass ->
-  fold it in: append a `checklist.md` item, extend `plan.md`, note it in
-  `validation.md`. Do not create a card.
-- Breaks users or the next release, in any system:
-  - small, and no other live session claims those files -> fix it now; lead
-    the close-out with it.
-  - otherwise -> lead the close-out with it, and create a card for it without
-    asking. This is the only card an agent creates unasked.
-- Everything else (genuinely separate work, not breaking anything) -> add one
-  line to the active card's `brief.md` under `## Noticed`. Do not create a
-  card silently; the close-out prints only the count, replacing the old
-  `Noticed, not actioned:` report.
-- Create a card for non-breaking discovered work only when the user explicitly
-  asks for one in the current request: run
-  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py create --title
-  "..." --column todo`, which writes the card AND lists it on the board in one
-  command. Never hand-write a `task.json`; half of one is invisible.
+- Same system, same files, or needed for this card's verification -> fold it
+  in: a `checklist.md` item, a `plan.md` extension, a `validation.md` note.
+- Breaks users or the next release, in any system: small and no other live
+  session claims the files -> fix it now; otherwise create a card without
+  asking - the only card an agent creates unasked. Either way the close-out
+  leads with it.
+- Everything else -> one line in the card's `brief.md` under `## Noticed`; the
+  close-out prints only the count.
+- A card for non-breaking work only when the user asks in the current request:
+  `python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py" create
+  --title "..." --column todo`. Never hand-write a `task.json`; half of one is
+  invisible.
 
-First check the open `todo` and `doing` cards for one already covering the same
-system and extend that instead. Several cards on one system is the failure this
-rule prevents; an umbrella afterwards is a repair, not the goal.
+First extend an open `todo`/`doing` card already covering the same system.
+Several cards on one system is the failure this prevents; an umbrella
+afterwards is a repair, not the goal.
 
-## Read-only lookup -> mpi-show
+## Start
 
-A request to READ one card - "what is MPI-5?", "show MPI-5", "read the
-<title> card" - belongs to the `mpi-show` skill. Invoke it and stop; do not
-read the card here. Everything below this line is the implementation path,
-and loading it to answer a lookup is exactly the cost `mpi-show` exists to
-remove.
+Source, first match wins: a handoff path (`.agents/mpi-kanban/state/handoffs/<uuid>.json`;
+a legacy `docs/handoffs/` pointer -> load the canonical one it names); a card
+id; a plan path; a `doing` card with `attention.state === "required"`; a
+`doing` card linked to the active plan; without `board.json` only, a legacy
+VALIDATING/IMPLEMENTING/PLANNING `kanban.md` entry with a `Plan file:` line.
+None -> ask `Which MPI plan or handoff should I continue from? Please paste the path.`
 
-A lookup that then becomes "ok, continue it" is a new request and comes back
-here.
-
-## Direct card update mode
-
-Use this mode when the user explicitly asks to move or set one task card's
-board state without asking to implement code.
-
-1. Resolve `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib`, then read
-   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md`,
-   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md`, and
-   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` before writing anything. Do not
-   derive allowed `column`, `maturity`, or `status` values from existing
-   cards.
-2. Locate exactly one JSON task by `MPI-*` ID or unambiguous title. If
-   `board.json` is absent, stop and report that direct card-state updates
-   require the JSON task board.
-3. Map the user's requested state through the card contract:
-   - `todo`, `to do`, `backlog`, `planned`, `reopen` -> `moveTask(id, "todo",
-     actor, reason)` and coherent `maturity: "planned"` unless it is a raw
-     idea.
-   - `doing`, `in progress`, `implementing`, `implementation started` ->
-     `beginImplementation(id, actor, planPath, sessionTitle)` when work is
-     starting or the card is in `todo`; otherwise `moveTask(id, "doing", actor,
-     reason)` and `writeTask` only if a concise badge/status change is needed.
-   - `validating`, `needs validation`, `ready for validation`, yellow card ->
-     ensure `validation.md` and `events.jsonl` exist, write or update
-     `validation.md` with a short validation-state note if none exists, append
-     `validation.updated`, keep/move the card in `doing`, then call
-     `writeTask(id, { "maturity": "validating", "status": "active" }, actor)`.
-   - `done`, `complete`, `completed` -> move to `done` when `validation.md`
-     records the evidence that closes it: the command that ran and passed, or
-     the user's own confirmation. Evidence closes a card. Keep it in `doing`
-     with `maturity: "validating"` and validation attention only when the
-     evidence is missing, the check failed, or the card's verification
-     genuinely needs human eyes that have not seen it yet - and say which of
-     those it is.
-4. Append/verify the required events through `mutate.md` recipes. Meaningful
-   card updates append to both `.agents/mpi-kanban/tasks/<id>/events.jsonl`
-   and `.agents/mpi-kanban/events.jsonl`.
-5. Report the resulting `column`, `maturity`, `status`, and linked task file
-   touched, then stop. Do not inspect unrelated tasks or sibling repositories.
-
-## Pre-conditions
-
-Find the active work from the first available source:
-
-1. Handoff path mentioned by the user or visible in context, including either
-   `.agents/mpi-kanban/state/handoffs/<uuid>.json` or legacy
-   `docs/handoffs/*.json`.
-2. JSON task ID mentioned by the user, such as `MPI-42`.
-3. Plan path mentioned by the user or visible in context.
-4. `doing` task with `attention.state === "required"` or a recent
-   `attention.required` event.
-5. `doing` task linked to the active plan.
-6. Legacy VALIDATING, IMPLEMENTING, or PLANNING kanban entry with a
-   `Plan file:` body line, only when no JSON board is available.
-
-If none is visible, ask:
-
-```text
-Which MPI plan or handoff should I continue from? Please paste the path.
-```
-
-## Session setup
-
-Lib pointers, read only when needed:
-
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` - JSON board and task-card schema
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`, `loadTask`, `findTask`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` - `moveTask`, `writeTask`,
-  `ensureLinkedFiles`, `appendEvent`, `setAttention`,
-  `beginImplementation`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/plan-ops/derive.md` - derive stable checklist items from the
-  active plan
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md` - session/task/file claim lifecycle
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md` - state vocabulary
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/indexing.md` - context-budget rules
-
-1. Read the handoff if present. If it is a legacy `docs/handoffs/` pointer to a
-   canonical `.agents/` handoff, load the canonical handoff before continuing.
-   If the handoff names `task_card.id`, `plan.file`, and task workspace links,
-   treat those as the primary route. Do not enumerate unrelated active
-   coordination tasks or done board cards unless these pointers are missing,
-   contradictory, or blocked.
-2. **Load project knowledge if present.** Read
-   `.agents/mpi-kanban/project-profile.md` and
-   `.agents/mpi-kanban/project-knowledge-index.md` before the Continue Brief.
-   Pick the topic block matching the active plan. Load only the listed
-   docs/rules; do not rediscover the whole project. If the profile is
-   absent, fall back to the existing pre-condition behavior.
-3. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/lifecycle.md`. Call `ensureStateRoot()` when
-   coordination state is relevant, then read `state/index.json` as the active
-   coordination facade. For a complete handoff route, use the index only for
-   blockers and current pointers: `active_file_claims`, `pending_file_states`,
-   `open_messages`, `active_handoffs`, and `active_sessions`.
-   Treat stale unrelated `active_tasks` records as cleanup findings, not as a
-   reason to scan every task before the Continue Brief.
-4. At this continue startup boundary, read any `open_messages` records pointed
-   to by the index when they target the active session, task, files, workspace,
-   agent, role, or user. Treat statuses `open`, `acknowledged`, and `replied`
-   as unresolved. Include relevant messages in the Continue Brief and resolve,
-   acknowledge, reply, or ask the user before editing when a message changes
-   the next action. This is an async boundary check only; do not promise live
-   interruption, remote delivery, broadcast, or a background broker.
-5. Register or renew an `implementer` session and create or attach a task
-   coordination record for the active JSON task card and plan.
-6. Read the active plan.
-7. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` and locate the active task by
-   handoff task ID first when available, otherwise by direct task ID, linked
-   plan path, or required attention in `doing`.
-8. Read `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/plan-ops/derive.md` before presenting the Continue
-   Brief so the expected checklist shape is known.
-9. When implementation starts or resumes, use
-   `beginImplementation(id, actor, planPath, sessionTitle)` from
-   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`. It must move `todo -> doing`
-   when needed, set `maturity: "in-progress"`, set `status: "active"`, set
-   active session context, derive checklist items from the active plan, and
-   append events together. Do not leave a `doing` card with
-   `maturity: "planned"` or `maturity: "implementing"`.
-10. Inspect current workspace state with small commands (`git status`,
-   targeted file reads/searches). Do not run large diffs unless needed.
-
-## Orient and detect drift
-
-Before proposing work, compare the plan/handoff with actual state:
-
-- What is complete?
-- What is pending?
-- What changed since the plan was written?
-- Are any remaining plan items obsolete, merged, or blocked?
-- Is a `## Parallel Batch` now the next unit? If the next eligible unit is a
-  valid batch (disjoint `Ownership:`, per-task `**Verify:**`, no intra-batch
-  dependency, no active write claim on owned files), the default is to route to
-  `mpi-execute-parallel`, not to implement it sequentially here.
-- Do the ready cards split into disjoint work? Run `## Autonomous dispatch` on
-  every start, before the Continue Brief, whether or not the user asked for it.
-- Are there docs/rules/memory notes that should be preserved before handoff?
-- Did `state/index.json` report stale active coordination records tied to done
-  cards? Report these as cleanup/refresh findings; do not silently close
-  unrelated task records during normal continuation.
-
-If the plan is stale, edit the plan before implementation:
-
-- Add a dated bullet under `## Plan Drift`.
-- Update `## Current State`.
-- Move obsolete work into `## Completed` or remove/rewrite remaining items.
-- Keep the plan concise; do not preserve stale tasks for history when a drift
-  note explains the change.
-
-## Parallel batch routing
-
-A card whose `plan.md` carries phases and `## Parallel Batch` sections is an
-**umbrella card**: one card holding work that splits. There is no `parent`
-field and no umbrella flag - the plan's shape makes it one, deliberately,
-because the board contract forbids new card fields.
-
-When the active card's next eligible unit is a valid `## Parallel Batch` -
-disjoint `Ownership:`, a per-task `**Verify:**`, no intra-batch dependency, no
-fresh write claim on the owned files - route it to `mpi-execute-parallel` and
-announce the split. Do not ask first. The batch was written into the plan
-deliberately, and the plan was already approved; asking again is the round trip
-this pack exists to remove.
-
-```text
-Next unit is a parallel batch: "<batch title>". Running its N tasks in parallel.
-<one line per task: id or title - owned paths>
-```
-
-`mpi-continue` never spawns implementation workers itself; `mpi-execute-parallel`
-does. Fall back to a sequential continue brief only when the batch fails an
-eligibility gate - and then say which gate - or when the user asks for
-sequential.
-
-## Board dispatch routing
-
-When the user asks for the whole board rather than one card - "run the ready
-cards", "dispatch ready cards", "work the board", "run everything that's
-ready" - that is a board batch, not a continue. Route it to
-`mpi-execute-parallel` and use its `## Board batch source` section; do not
-implement the cards here one after another, and do not spawn workers here.
-
-Requests naming one card ("continue MPI-42", "what is MPI-42") stay in this
-skill.
-
-Being asked is not the only trigger. `## Autonomous dispatch` below runs the
-same routing on every start, without being asked; this section only covers the
-case where the user says it out loud.
-
-## Autonomous dispatch
-
-Evaluate this on every start, before the Continue Brief. Do not wait to be
-asked - the user never types "dispatch", and the work still splits. It is
-read-only, costs a few reads, and needs no permission. Skip it entirely when
-`board.json` is absent or fewer than two cards are ready.
-
-1. **Collect the ready cards.** A card is ready when it is in `todo` with
-   `maturity: "planned"`, has a `plan.md`, and carries no
-   `attention.state: "required"`. The active card belongs to
-   `## Parallel batch routing`, not here, unless its own next unit is not a
-   batch and it is otherwise ready.
-2. **Grep each card's footprint.** Do not trust `files.json` - most cards
-   predate ownership being written at `todo -> doing`, so it is empty or stale.
-   Read each card's `plan.md` and resolve every path, glob and module it names
-   against the repo with a bounded search. `files.json` is a hint the grep
-   confirms, never a substitute for it.
-3. **Build the conflict graph.** Two cards conflict when their footprints share
-   a file, when one footprint sits inside a directory the other owns, or when
-   either intersects a fresh active write claim in `state/index.json`. A card
-   whose footprint came back empty conflicts with everything: it cannot be
-   proven disjoint, so it cannot be dispatched.
-4. **Select the largest mutually non-conflicting set, capped at 4 workers.** On
-   a tie, prefer the smaller footprints - those are the ones the grep pinned
-   down most precisely.
-5. **Report the whole evaluation before anything runs**, never dropping a card
-   silently: every card the board offered appears, every exclusion with its
-   reason.
-
-```text
-Dispatch: 3 of 7 ready cards are disjoint. Running them in parallel.
-
-Selected:
-- MPI-31 - src/api/** (grep: 12 files)
-- MPI-34 - docs/install.md (grep: 1 file)
-- MPI-37 - tests/e2e/** (grep: 4 files)
-Excluded:
-- MPI-30 - maturity is `research`, not `planned`
-- MPI-33 - no plan.md; needs planning first
-- MPI-35 - footprint overlaps MPI-31 on src/api/routes.ts
-- MPI-38 - plan names no files; footprint not derivable
-```
-
-6. **Hand the selected set to `mpi-execute-parallel`** through its
-   `## Board batch source`, which re-runs the board validator and owns worker
-   spawning. Announce the split; do not ask permission - each selected card
-   carries a `plan.md`, and that plan is the approval that already happened.
-7. Fewer than two cards survive -> say nothing, continue with the normal
-   single-card brief. "Nothing splits" is the common case; reporting it every
-   session is noise.
-
-This evaluation is **read-only**: cards, plans and claims in, nothing written -
-not the board, not `files.json`, not a claim. A dispatcher that cannot write
-cannot clobber a worker.
-
-When `agents/dispatcher.md` ships with the installed plugin, delegate steps 1-4
-to it with `subagent_type: "dispatcher"` - same method, in a subagent that
-cannot write, keeping the card and plan reads out of this session's context.
-**Running this skill authorizes that dispatch**, exactly as invoking
-`mpi-end-session` authorizes its commit; a standing "do not call agents unless
-the user asked" instruction is a default against *unprompted* dispatch, not a
-veto here. Say so rather than quietly deferring - that reflex is why this agent
-went months without running. Absent, or deliberately skipped: do the evaluation
-inline and say which.
-
-### `isolation: "worktree"` is not the isolation mechanism here
-
-Do not run these workers in git worktrees, and do not "fix" this in a later
-session. A worktree branches from the **default branch, not the parent
-session's HEAD**, and MPI commits only at close-out - so a worktree worker
-cannot see the session's uncommitted work, and will re-implement or contradict
-it. Isolation here is the disjoint ownership you declare: workers share one
-session id, so `guard-claim` cannot catch two of them writing one file.
+1. The handoff's `task_card.id`, `plan.file`, and workspace links are the
+   route. Do not enumerate other tasks or done cards unless those pointers are
+   missing, contradictory, or blocked.
+2. Read `.agents/mpi-kanban/project-profile.md` and
+   `project-knowledge-index.md` if present; load only the topic block matching
+   the plan.
+3. Read `lifecycle.md`, call `ensureStateRoot()`, and read `state/index.json`
+   for blockers only. Register or renew an `implementer` session and create or
+   attach a task coordination record for the card and plan.
+4. Read the plan; find the card (handoff id, direct id, linked plan, or
+   required attention in `doing`).
+5. Check the workspace with small commands (`git status`, targeted reads).
+6. Orient: done, pending, changed, obsolete, blocked? Ready cards are `todo`,
+   `maturity: "planned"`, with a `plan.md`, no required attention - two or more,
+   or a batch next -> `dispatch.md` now, unasked, before the brief. Stale plan
+   -> fix it first: dated bullet in `## Plan Drift`, update `## Current State`,
+   move or rewrite obsolete items. Note docs/rules/memory worth preserving.
 
 ## Gate 1 - Continue brief
 
@@ -372,11 +116,13 @@ Risk: <what could go wrong, or "none">
 Heads-up: <plan drift, a peer holding a needed file, an open message>   (only when one exists)
 ```
 
-Do not implement before the user approves.
-
 ## Implementation
 
-After approval:
+The card is in `doing` before any implementation edit, on every entry path:
+`beginImplementation(id, actor, planPath, sessionTitle)` moves `todo -> doing`,
+sets `in-progress`/`active` and the session, derives the checklist, appends the
+events. Never implement a `todo` card in place; never leave `doing` at
+`planned` or `implementing`. Always `To do -> Doing -> Done`.
 
 ```text
 Stop only when you cannot carry on without the user:
@@ -389,42 +135,24 @@ Everything else: take your recommended option and say so in one line.
 Questions that can wait go in the close-out's "Your call" line.
 ```
 
-1. Renew the session heartbeat.
-2. Claim the files/modules likely to be edited before changing them.
-3. If another fresh active writer owns a needed file, do not edit it. Choose
-   wait, request handoff, create a proposal/review note, ask for an integrator,
-   split ownership, or ask the user. Before choosing, reread `state/index.json`
-   and any `open_messages` targeting the contested file, owning session, task,
-   workspace, agent, or role. If no relevant message exists and coordination is
-   needed, create or ask to create a normal message record; it will be checked
-   by the recipient at its next safe workflow boundary.
-4. If a file has pending state but no active writer, read that state before
-   editing and treat it as current provenance.
-5. Implement the briefed action. Keep edits scoped to the stated files/modules.
-6. If verification needs temporary logs, add them and remove them after the
-   user verifies.
-7. **Self-verify before deciding whether to stop.** Run the card's verification
-   (the plan's `**Verify:**` / `## Verification` steps: tests, build, smoke,
-   re-read). Capture whether it passed.
+1. Renew the heartbeat; claim the files before editing them. A file turns out
+   claimed by another writer, or has pending state -> `peers.md` before
+   touching it.
+2. Implement the briefed action within the stated files. Temporary logs come
+   out after the user verifies.
+3. **Self-verify always**: run the plan's `**Verify:**` / `## Verification`.
+   Never commit or push here - that is `mpi-handoff` or `mpi-end-session`.
 
-## Post-implementation gate (conditional)
+## Post-implementation gate
 
-Read `**Verify mode:**` from the active plan's `## Verification` section.
-Default to `auto` when the line is absent (legacy/compact plans). For a
-multi-phase plan, use the current phase's verify mode if it declares one,
-otherwise the plan-level value.
+Mode: `**Verify mode:**` in `## Verification` (a phase's own value wins);
+absent -> `auto`. Print the matching block as-is, nothing around it. Line 1 is
+word for word `Nothing breaking` (only when this step's check ran and passed),
+`Not checked: <why>`, or `BREAKS USERS: <what>` - never a paraphrase. Add
+`Changed from the brief:`, `Left before close:`, `Your call:`, or `Spent:` only
+when they apply.
 
-Branch on (verify mode) x (did self-verification pass). Print the path's block
-as-is, with no bullets or extra paragraphs around it. Its line 1 is word for
-word `Nothing breaking` (only when this step's check ran and passed and nothing
-found breaks users or the next release), `Not checked: <why>`, or
-`BREAKS USERS: <what>` - never a paraphrase. Add `Changed from the brief:`,
-`Left before close:`, `Your call:`, or `Spent:` lines only when they apply.
-
-**A. `auto` and self-verification passed → do not stop for the user.**
-Report the result and continue straight into the "After verified work" steps
-below (plan/board/state update), then move to the next step or completion.
-Output:
+**A. `auto`, passed -> no stop.** Run `## After verified work`, then go on.
 
 ```text
 <BREAKS USERS: what + "fixed, test added" or "card MPI-n made"> | Nothing breaking
@@ -432,11 +160,7 @@ Done: <what landed> - <the check that proved it>
 Continuing to the next step.
 ```
 
-Do not ask the user to press 1. There is nothing for them to verify that the
-agent has not already verified.
-
-**B. `user-ux` and self-verification passed → stop for the user's eyes.**
-The card has a UI/UX surface only the user can judge. Output:
+**B. `user-ux`, passed -> stop for the user's eyes.**
 
 ```text
 <BREAKS USERS: ...> | Nothing breaking (automated checks)
@@ -445,112 +169,32 @@ Check in the app: <exact, specific steps to look at and feel>
 Say "1" if it looks right, or "2" and what to change.
 ```
 
-Stop and wait.
-
-**C. Self-verification failed or could not run (any verify mode) → stop and
-report the blocker.** A failed or unrunnable check is a real blocker; lead
-with it instead of the breaker line. Output:
+**C. Failed or could not run -> stop; lead with the blocker.**
 
 ```text
 <what failed, or "Not checked"> - <the specific failure, or why it could not run>
 I will not mark this verified. Say how to proceed, or "2" to keep talking.
 ```
 
-Stop and wait.
+"2" or changes after B/C -> skip `## After verified work`, address them, and
+append once: `Context getting large? Run mpi-handoff - it commits, pushes, and writes the handoff in about a minute.`
 
 ## After verified work
 
-These steps run when path A auto-verified, or after the user chooses Option 1
-in path B. (Path C does not reach here until the failure is resolved.)
+After A, or "1" after B.
 
-1. Remove temporary verification logs.
-2. Update the plan. This is the session's running notes, and it is what
-   `mpi-handoff` reads instead of summarising a huge context later - a few
-   lines written now, while the details are fresh, replace ten minutes of
-   reconstruction at the switch. Keep it to a few lines; this is a note, not a
-   report.
-   - Move or mark completed work under `## Completed`. This is plan-level
-     progress, separate from the JSON board `done` column.
-   - Keep `## Remaining Work` accurate.
-   - Update `## Current State` so a fresh session with zero memory could pick
-     up from it: where the work stands, the single next action, and any
-     decision or gotcha found this step that is not obvious from the diff.
-   - Add to `## Plan Drift` when reality diverged from the plan.
-3. Complete or release file claims using the lifecycle operation:
-   `complete`, `needs_review`, `needs_verification`, `needs_integration`,
-   `verified`, or `released` as appropriate.
-4. Update the task record to the appropriate status. Remember that released
-   file ownership is not commit ownership; preserve pending-change provenance
-   until review/integration/session close resolves it.
-5. Update the JSON task workspace instead of embedding implementation state in
-   `task.json`: mark the relevant item in `checklist.md`, add validation notes
-   to `validation.md`, call `writeTask` for concise status/badge changes, and
-   append `checklist.updated` or `validation.updated` events when meaningful.
-   Move the card to `done` only after validation state is represented in the
-   task workspace and the work is verified — by the user for a `user-ux` card,
-   or by passing self-verification for an `auto` card.
-6. If meaningful work remains, say:
-
-```text
-Step verified. Say "continue" to keep going, "handoff" to switch sessions, or "end session" to close.
-```
-
-7. If the plan is complete, say:
-
-```text
-Plan complete. Suggested next step: run `mpi-end-session` to preserve docs/rules/memory, commit, and close the JSON task card on the evidence in `validation.md`.
-```
-
-## If the user chooses "keep talking" / changes (Option 2)
-
-Reached from path B or path C when the user wants changes or to keep talking
-rather than accept the step. Do not run the "After verified work" steps. Stay in
-conversation, address the requested changes, and append once:
-
-```text
-Context getting large? Run `mpi-handoff` - it commits, pushes, and writes the
-handoff in about a minute.
-```
-
-## Hard rules
-
-- Approval before implementation is mandatory.
-- Card-write preflight is mandatory before any `column`, `maturity`, or
-  `status` write: use the `## Card contract` values above, and read
-  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` and
-  `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` for the write recipes. Do not
-  derive legal values from existing cards.
-- Never create a task card unless the user asked for one in the current
-  request, except a breaker too large to fix on the spot: create that card
-  without asking and lead the close-out with it. Discovered work folds into
-  the active card by default; see `## Discovered work`.
-- Never hand-write or hand-edit a `task.json`. Every card write goes through a
-  `mutate.md` recipe so the enum, coherence, and events stay correct.
-- The card must be in `doing` before any implementation edit. In `file` mode,
-  `beginImplementation` must have moved the card `todo -> doing`, set
-  `maturity: "in-progress"`, and derived the checklist before you edit any
-  file. Never implement a `todo` card in place; the lifecycle is always
-  `To do -> Doing -> Done`, never `To do -> Done`. This applies on every entry
-  path (direct continue, post-plan, or resumed handoff), not only the
-  session-setup flow above.
-- Post-implementation self-verification is mandatory: always run the card's
-  verification before deciding whether to stop. Stopping for the user is
-  mandatory only when the card's `**Verify mode:**` is `user-ux`, or when
-  self-verification failed or could not run. For an `auto` card whose checks
-  passed, do not stop for the user — report the passing result and continue.
-- Do not commit or push; that belongs to `mpi-handoff` or `mpi-end-session`.
-- Keep the plan's `## Current State` fresh after every verified step -
-  `mpi-handoff` reads it rather than reconstructing; stale costs ten minutes.
-- Do not force stale plan tasks. Update the plan when reality has changed.
-- Do not spawn implementation workers here. When the next eligible unit is a
-  valid `## Parallel Batch`, route it to `mpi-execute-parallel` without asking
-  and announce the split; that skill is the only worker-spawning implementation
-  path.
-- Evaluating `## Autonomous dispatch` on every start is mandatory, and it is
-  read-only: it never writes the board, `files.json`, or a claim. Dispatch
-  without asking when two or more ready cards are provably disjoint, and report
-  every excluded card with its reason.
-- A read-only card lookup is `mpi-show`'s, not this skill's. Route it and stop;
-  do not re-inline the lookup here to save an invocation.
-
-
+1. Remove temporary logs.
+2. Update the plan - the running notes `mpi-handoff` reads instead of
+   reconstructing; stale costs ten minutes. A few lines: `## Completed`,
+   `## Remaining Work`, `## Current State` (where it stands, the one next
+   action, any non-obvious gotcha - enough for a zero-memory session), and
+   `## Plan Drift` when reality diverged.
+3. Complete or release claims (`complete`, `needs_review`,
+   `needs_verification`, `needs_integration`, `verified`, `released`) and
+   update the coordination task. Released ownership is not commit ownership.
+4. Workspace, not `task.json`: tick `checklist.md`, note `validation.md`,
+   `writeTask` for badges, append `checklist.updated`/`validation.updated`.
+   `done` only once validation is in the workspace and verified - by the user
+   for `user-ux`, by passing checks for `auto`.
+5. After B with work left -> `Step verified. Say "continue", "handoff", or "end session".`
+   Plan complete -> `Plan complete. Run mpi-end-session to close the card.`

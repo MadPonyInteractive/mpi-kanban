@@ -34,7 +34,7 @@ Shared coordination lifecycle references:
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/statuses.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md`
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md`
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`
+- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md`, `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/implement.md`
 
 Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
@@ -139,7 +139,7 @@ are a validator failure and an ownership conflict between selected cards.
 Each selected card becomes one worker task: its `plan.md` is the task text,
 its derived ownership is the ownership, and its plan's `**Verify:**` or
 `## Verification` content is the verify instruction. Call `beginImplementation`
-from `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` for each
+from `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/implement.md` for each
 card before its worker edits anything, so no card is implemented while still
 in `todo`. That recipe writes ownership into `files.json`; give it the
 footprint already resolved, so the next session inherits it.
@@ -244,7 +244,7 @@ finish:
 7. Once that gate passes, mark the batch tasks complete in the plan, update the
    active task workspace checklist/validation files, append
    `checklist.updated` or `validation.updated` events when meaningful, and use
-   `moveTask` / `writeTask` from `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` for
+   `moveTask` / `writeTask` from `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/implement.md` for
    any card status, maturity, or column change. Never write invented maturity
    values: `active`, `accepted`, `done`, `implementing`, `implementation`,
    `validated`, `Validated`, `validation`, and `spec` are not maturities. The

@@ -21,7 +21,8 @@ card fields, and the VS Code extension reads that fixed schema.
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`,
   `findTask`, `loadTask`
 - `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/mutate.md` -
-  `createTask`, `writeTask`, `appendEvent`
+  `createTask`; `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/implement.md` -
+  `writeTask`, `appendEvent`
 
 Missing? The install is broken - tell the user to reinstall the plugin and
 stop. Never hand-write a `task.json`.

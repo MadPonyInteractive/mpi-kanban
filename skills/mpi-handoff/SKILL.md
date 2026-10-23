@@ -5,87 +5,65 @@ description: MPI workflow pack - Hand the work to a fresh session in under two m
 
 # mpi-handoff Skill
 
-Save the thread and get out of the way. The session continues in a fresh window
-within a minute or two, so nothing here re-derives what is already written down.
+Save the thread and get out of the way. **Budget: under two minutes, under
+~20k tokens** - a commit and a file write. Taking longer means something here
+grew that should not have; that is why this skill exists apart from
+`mpi-end-session`.
 
-**Budget: under two minutes, under ~20k tokens.** If this skill is taking
-longer than a commit and a file write, something in it has grown that should
-not have. That is the whole reason it exists apart from `mpi-end-session`.
+The user said the work is finished, not paused -> stop and route to
+`mpi-end-session`; handing off finished work leaves the card open forever.
 
-## What this deliberately does NOT do
+**Never here** (close-out's job, once per finished job): rule/doc impact pass,
+project-knowledge drift check, knowledge healing, memory pass, board
+validation, consolidation sweep, `validating` sweep, any sub-agent
+(`claim-auditor` included), any edit to rules, docs, or memory - an obvious gap
+goes in `context.constraints`. Never move, close, or re-mature the card. Never
+edit files under the installed plugin root.
 
-None of these run here - they belong to `mpi-end-session`, which runs once
-when the work is finished, not once per session switch: rule/doc impact pass,
-project-knowledge drift check, knowledge-healing replay, memory pass, board
-validation, the consolidation sweep, the `validating` card sweep, or any
-sub-agent (`claim-auditor` included).
-
-A session that hands off is not done. Paying for this at every switch is what
-made handoffs cost more than the work they interrupt.
-
-## The running notes are the source
+## 1. Top up the running notes
 
 The handoff body comes from the active plan's `## Current State`,
-`## Plan Drift`, and `## Preservation Notes`, which `mpi-continue` keeps
-current as each unit of work verifies. Read them, do not reconstruct them:
-summarising a whole session from a large context is the most expensive thing
-an agent can be asked to do, and it produces a worse answer than notes written
-while the details were fresh.
+`## Plan Drift`, and `## Preservation Notes`, which `mpi-continue` keeps current.
+Read them; do not reconstruct a session from a large context. Add only the
+delta since the last note - a few lines. No plan file -> skip; the JSON carries
+the state.
 
-Notes missing, empty, or clearly older than the work on disk? Reconstruct from
-`git diff --stat HEAD` plus context, and say so in the report:
+Notes missing, empty, or older than the work on disk -> reconstruct from
+`git diff --stat HEAD` plus context, and say so; a silent fallback hides the
+skipped cheap path:
+`Note: plan running notes were stale; handoff reconstructed from context. Slower than it should be.`
 
-```text
-Note: plan running notes were stale; handoff reconstructed from context. Slower than it should be.
-```
-
-A silent fallback hides the skipped cheap path, and the habit never gets fixed.
-
-## Process
-
-### 1. Top up the running notes
-
-Read the active plan. Update `## Current State` to name where the work stands,
-and `## Plan Drift` if reality diverged. Add only the delta since the last
-note - a few lines, not a session summary. No plan file? Skip; the handoff
-JSON carries the state instead.
-
-### 2. Commit and push
+## 2. Commit and push
 
 Running this skill IS the request to commit. Do not ask again, and do not
-report "did not commit" - getting the work onto the branch is half the point
-of handing off, and an uncommitted tree is invisible to the next session.
+report "did not commit" - an uncommitted tree is invisible to the next session.
 
 - `git status --short`, `git add` new files by name - never `-A` or `.` - then
   `git commit --only <paths>`. A bare commit commits the whole INDEX, so a
   peer's staged files ride along: `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/git-ops/commit.md`.
-- Commit message follows the repo's recent conventional style
-  (`git log --oneline -5` if unsure). Subject says why.
+- Message in the repo's recent conventional style; the subject says why.
 - Push per `push_policy` in `.agents/mpi-kanban/project-profile.md`
-  frontmatter; absent means `auto`. `ask` - one line, then push on approval.
+  frontmatter; absent means `auto`. `ask` - one line, push on approval.
   `never` - say the branch is unpushed.
-- Rejected push: `git fetch`, `git merge --ff-only`, retry once. Still
-  failing - report it and stop. Never force, never auto-rebase a shared tree.
+- Rejected push: `git fetch`, `git merge --ff-only`, retry once. Still failing
+  -> report it and stop. Never force, never auto-rebase a shared tree.
 
 Worker sub-agents never commit or push, whatever the policy says.
 
-### 3. Leave the card where it is
+## 3. Find the card, leave it in `doing`
 
-The card stays in `doing`. Do not move it, do not close it, do not run a
-maturity sweep. The work is not finished - that is why this is a handoff.
-
-Look the card up with `findBoard()` then `findTask()` from
+`findBoard()` then `findTask()` from
 `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md`, by task ID,
-linked plan path, or required attention in `doing`. Needed for `task_card`
-below. No JSON board - set `task_card` to null and continue.
+linked plan, or required attention in `doing`. No JSON board -> `task_card`
+is null.
 
-### 4. Write the handoff
+## 4. Write the handoff
 
-Path: `.agents/mpi-kanban/state/handoffs/<uuid>.json`, creating the directory
-if missing. Generate `<uuid>` with
+`.agents/mpi-kanban/state/handoffs/<uuid>.json` (create the directory if
+missing; `docs/handoffs/` is legacy, never canonical). `<uuid>` from
 `python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/new_uuid.py`, or
-`python -c "import uuid; print(uuid.uuid4())"` if that script is missing. Same
-value for the filename and the `id` field.
+`python -c "import uuid; print(uuid.uuid4())"` if missing; same value in the
+filename and `id`.
 
 ```json
 {
@@ -125,39 +103,30 @@ value for the filename and the `id` field.
 }
 ```
 
-Keys earlier handoffs carried but this one omits - `to_role`, `allowed_actions`,
-`knowledge_preservation`, `project_knowledge`, `rules_active` - stay legal to
-read and are simply absent. `from_session` is NOT one of them: it is the only
-thing tying an abandoned file claim back to the session that walked away.
+`resume_prompt` must stand alone: the fresh session remembers none of this.
+Keep `context` tight - three constraints it would rediscover beat fifteen it
+knows. Older keys (`to_role`, `allowed_actions`, `knowledge_preservation`,
+`project_knowledge`, `rules_active`) stay legal to read and are simply absent.
+`from_session` is NOT optional: it is the only thing tying an abandoned file
+claim back to the session that walked away.
 
-Keep `context` tight. Three constraints the next session would waste time
-rediscovering beat fifteen it already knows.
+Card exists -> also write `.agents/mpi-kanban/tasks/<id>/handoffs/<uuid>.json`
+as `{"schema": "mpi-kanban/task-handoff-pointer/v1", "canonical_handoff":
+".agents/mpi-kanban/state/handoffs/<uuid>.json"}`; never duplicate the body
+there. Add the handoff to `active_handoffs` in
+`.agents/mpi-kanban/state/index.json` (parse as `utf-8-sig` - a BOM is common
+and plain `utf-8` `json.load` dies on it), update `index.updated_at`, and
+resolve any handoff this one supersedes.
 
-When `task_card.id` exists, also write
-`.agents/mpi-kanban/tasks/<id>/handoffs/<uuid>.json`:
+Release this session's file claims, or the next session is locked out of its
+own card: `python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py" release`.
 
-```json
-{
-  "schema": "mpi-kanban/task-handoff-pointer/v1",
-  "canonical_handoff": ".agents/mpi-kanban/state/handoffs/<uuid>.json"
-}
-```
-
-Never duplicate the handoff body into the task workspace. Add the handoff to
-`active_handoffs` in `.agents/mpi-kanban/state/index.json`, update
-`index.updated_at`, and mark any handoff this one supersedes resolved. Parse
-that file as `utf-8-sig` - a BOM is common in the wild and plain `utf-8`
-`json.load` dies on it.
-
-Then release this session's file claims, or the next session is locked out of
-its own card: `python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py" release`.
-
-### 5. Report
+## 5. Report
 
 Print these four lines as-is, then the paste block, nothing else. Line 1 is
 word for word `Nothing breaking`, `Not checked: <why>` or `BREAKS USERS: ...`,
-never a paraphrase. The paste block gets its own fence so the app shows a
-copy button; a link or a path alone is never the handoff.
+never a paraphrase. The paste block gets its own fence so the app shows a copy
+button; a link or a path alone is never the handoff.
 
 ```text
 BREAKS USERS: <what> - <fixed, or "card MPI-n made"> | Nothing breaking | Not checked: <why>
@@ -166,35 +135,13 @@ Card: <MPI-* id and title> stays in doing   (or "no board card")
 Handoff: <path> - <n> claim(s) released
 ```
 
-Tab naming: read the tab's own title when the harness gives a session tool
-for that (Claude Desktop: `get_session`, session_id `self`, a deferred tool
-loaded via ToolSearch). Title ends in a number -> paste block's first line
-names the next tab. No number, or no such tool -> skip that line.
+Tab name: when the harness can read this tab's title (Claude Desktop:
+`get_session`, session_id `self`, a deferred tool loaded via ToolSearch) and
+it ends in a number, the paste block's first line names the next tab;
+otherwise drop that line.
 
 ```text
 Name this tab "<title with the number + 1>".      (only when known)
 Read .agents/mpi-kanban/state/handoffs/<uuid>.json and use mpi-continue to continue from where we left off.
 The next action is: <next_action.description>
 ```
-
-## Hard rules
-
-- Never move, close, or re-mature the card. That is close-out.
-- Never edit rules, docs, or memory here, even when the gap is obvious. Note it
-  in `context.constraints` and let close-out handle it.
-- Never spawn a sub-agent.
-- `resume_prompt` must stand alone: the fresh session remembers none of this.
-- New handoffs go under `.agents/mpi-kanban/state/handoffs/`. `docs/handoffs/`
-  is legacy compatibility, not canonical state.
-- Never edit files under the installed plugin root.
-- The user said the work is finished, not paused -> stop and route to
-  `mpi-end-session`. Handing off finished work leaves the card open forever.
-
-## Success criteria
-
-- Files committed with `--only`, pushed per policy.
-- Handoff JSON written, indexed in `active_handoffs`, pointer written when a
-  card exists, and every claim this session held released.
-- The paste block printed, self-contained.
-- The card is still in `doing`.
-- No rule, doc, or memory file was touched.

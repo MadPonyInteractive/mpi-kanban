@@ -34,8 +34,7 @@ DESCRIPTION_MAX = 1024
 # down. Do not add a new name here; split the skill instead.
 SKILL_LINE_BUDGET = 200
 SKILL_LINE_GRANDFATHERED = {
-    "mpi-continue": 556,
-    "mpi-end-session": 394,
+    "mpi-end-session": 248,
     "mpi-project-refresh": 335,
     "mpi-init": 306,
     "mpi-execute-parallel": 277,
@@ -580,6 +579,23 @@ def validate_lib_references() -> None:
                 fail(f"{path.relative_to(ROOT)}: references missing mpi-lib/{rel}")
 
 
+def validate_skill_subfiles() -> None:
+    """A router skill keeps its rare branches in sibling files. Each must exist
+    where the router points, and each must be named by its SKILL.md - a sub-file
+    nothing names is a rule no agent will ever read."""
+    for skill_dir in skill_dirs():
+        if skill_dir.name == "mpi-lib":
+            continue
+        skill_md = skill_dir / "SKILL.md"
+        text = skill_md.read_text(encoding="utf-8") if skill_md.exists() else ""
+        for sub in skill_dir.glob("*.md"):
+            if sub.name != "SKILL.md" and sub.name not in text:
+                fail(f"{sub.relative_to(ROOT)}: not named by {skill_dir.name}/SKILL.md, so unreachable")
+        for match in re.finditer(r"<here>/([A-Za-z0-9_.-]+\.md)", text):
+            if not (skill_dir / match.group(1)).exists():
+                fail(f"{skill_dir.name}/SKILL.md: points at missing {match.group(1)}")
+
+
 def validate_plugin_manifest(skill_names: set[str]) -> None:
     """The plugin manifest and its marketplace entry are the install contract."""
     manifest = load_json(ROOT / MANIFEST, "plugin.json")
@@ -716,6 +732,7 @@ def main() -> int:
     validate_no_stale_runtime_refs()
     validate_coordination_wiring()
     validate_lib_references()
+    validate_skill_subfiles()
     validate_plugin_manifest(skill_names)
     validate_plugin_hooks()
     validate_hook_wiring()
