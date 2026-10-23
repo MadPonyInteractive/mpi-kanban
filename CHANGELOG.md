@@ -7,7 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-23
+
 ### Changed
+
+- **`mpi-continue` costs a third of what it did; `mpi-handoff` and
+  `mpi-end-session` shrank too.** A skill body
+  stays in context for the rest of the session once invoked, so every byte is
+  re-sent on every later request; measured on one heavy repo, `mpi-continue`
+  ran in 230 of 400 sessions and `mpi-handoff` in 218. Each is now a short
+  router that keeps the every-session path inline and names its rare branches
+  as sibling files with a "read only when" trigger. No rule was dropped; rules
+  moved, and restated duplicates went.
+  - `mpi-continue/SKILL.md` 28.7 KB -> 10.1 KB. Direct card moves
+    (`card-update.md`), batch and board dispatch (`dispatch.md`), and peer
+    coordination (`peers.md`) moved out. The card contract, discovered-work
+    rule, brief, stop list, and verify gate stay inline, as CLAUDE.md requires.
+  - `mpi-handoff/SKILL.md` 8.8 KB -> 6.8 KB, by removing restated rules.
+  - `mpi-end-session/SKILL.md` 20.3 KB -> 13.2 KB. The non-solo coordination
+    branch (`peers.md`), the growth loop (`growth-loop.md`), and the card
+    auto-corrects (`repairs.md`) moved out.
+  - `task-board-ops/mutate.md` 13.8 KB -> 6.8 KB. The recipes the
+    implementation path calls (`moveTask`, `writeTask`, `ensureLinkedFiles`,
+    `beginImplementation`, `appendEvent`) moved to `implement.md`, so
+    `mpi-continue` no longer loads `createTask`, `attachPlan` and the
+    preflight its inline card contract already carries.
+- **Less chatter while the skills run.** `mpi-end-session` no longer prints the
+  changed-file list or a separate line per pass; the outcomes of the knowledge,
+  memory, board, audit and coordination passes share one `Passes:` report line,
+  and each `validating` card gets one `Validating:` line. A direct card move
+  reports one line, and `beginImplementation` reports ownership as a count and
+  its source, not a file list.
+- `validate_plugin.py` fails when a skill's sibling `.md` file is not named by
+  its `SKILL.md`, or when a router points at one that does not exist: a
+  sub-file nothing names is a rule no agent reads. `mpi-continue` is now under
+  the 200-line budget and leaves the grandfathered list.
 
 - **`mpi-message` names sessions by their desktop title.** Agents reported a
   peer as "MPI-1084" or a session id, which the user cannot map to a window,
@@ -1149,7 +1183,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.2...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.2...v1.7.0
 [1.6.2]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.5.1...v1.6.0
