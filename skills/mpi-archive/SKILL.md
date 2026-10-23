@@ -5,82 +5,56 @@ description: MPI workflow pack - Archive completed JSON task-board tasks. Use wh
 
 # mpi-archive Skill
 
-Archive completed work out of the active human board: `.agents/mpi-kanban/board.json`
-plus task workspaces under `.agents/mpi-kanban/tasks/<id>/`.
-
-This skill removes work from the active board only after preserving the task
-workspace and recording what changed.
+Take completed work off the active board (`.agents/mpi-kanban/board.json`)
+while each task folder stays exactly where it is, under
+`.agents/mpi-kanban/tasks/<id>/`. Archiving in place is the default and the
+only path: docs, commits, and memory notes link into those folders, and moving
+them breaks every link.
 
 Invocation: Use the installed Agent Skills invocation for this agent, or ask naturally.
 
 ## Inputs
 
-- `completed` / `completed tasks`: archive every task ID under
-  `board.columns.done`.
-- A specific JSON task ID, such as `MPI-42`: archive that exact `done` task.
+- `completed` / `completed tasks`: every task ID under `board.columns.done`.
+- A specific JSON task ID, such as `MPI-42`: that exact `done` task.
 
-If the user asks only to "archive entries" without saying completed or
-providing a task ID, ask which tasks to archive.
+If the user asks only to "archive entries" without saying completed or giving a
+task ID, ask which tasks to archive. Never fuzzy-match the final target; ask
+for an exact ID.
 
-## Checklist
+## Steps
 
-Lib pointers:
+1. No `.agents/mpi-kanban/board.json` -> stop and report there is nothing to
+   archive. Never bootstrap a board.
+2. Read `.agents/mpi-kanban/state/index.json` when present, then the
+   `open_messages` that target the selected task IDs, related coordination
+   tasks, files, workspace, agent, role, or user
+   (`${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/messages.md`).
+   Treat `open`, `acknowledged`, and `replied` as unresolved; surface one that
+   changes the archive decision and ask before archiving. This is an async
+   boundary check only, not live interruption or daemon behavior.
+3. A selected card with a linked `validation.md` that does not exist -> surface
+   that risk in one line and ask before archiving it.
+4. Run the one command - it refuses any card not in `done`, stamps
+   `status: "archived"` on each `task.json`, removes the ids from
+   `board.columns.done` without reformatting the rest of `board.json`, and
+   appends `task.archived` to each task log and the global log:
 
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/_schema.md` - JSON board and task workspace
-  contract.
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/read.md` - `findBoard`, `loadTask`,
-  `listTasks`.
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/implement.md` - `appendEvent` and structured
-  board/task writes (preflight: `mutate.md`).
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/validate.md` - board validation checks before
-  and after archive.
-- `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/coordination-ops/messages.md` - read relevant unresolved
-  messages before removing tasks from the active board.
-Steps:
+   ```bash
+   python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py" archive MPI-42 MPI-43 --root <project-root>
+   python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py" archive --all-done --root <project-root>
+   ```
 
-1. Call `findBoard()`.
-2. If `board.json` exists, use the JSON archive path:
-   - Determine the selector from the user request: all `done` tasks or one
-     exact `MPI-*` ID.
-   - Load each selected task with `loadTask(id)`.
-   - Read `.agents/mpi-kanban/state/index.json` when present, then load
-     `open_messages` that target the selected task IDs, related coordination
-     tasks, files, workspace, agent, role, or user. Treat `open`,
-     `acknowledged`, and `replied` as unresolved. Surface relevant unresolved
-     messages and ask before archiving; do not remove a visible task while an
-     unresolved message changes the archive decision. This is an async boundary
-     check only, not live interruption or daemon behavior.
-   - Refuse to archive a task that is not in `done` unless the user explicitly
-     confirms an exceptional archive and any active coordination state is
-     closed or released.
-   - Read `validation.md` when linked. If a `done` task has no validation
-     record, surface that risk and ask before archiving.
-   - Preserve the task workspace under an archive location approved by the
-     project conventions, keeping `task.json`, checklist, validation, events,
-     handoffs, and research together.
-   - Remove the task ID from `board.columns.done` only after preservation.
-   - Append a task-scoped and global event with type `task.deleted` and a
-     summary that identifies the archive location.
-   - Do not write long archive notes into `task.json`; preserve them in the
-     workspace snapshot.
-3. If `board.json` is missing, stop and report that there is no board to
-   archive from.
-4. Final response includes:
-   - Number of tasks archived.
-   - Archive location used.
-   - Clickable links to `[board.json](.agents/mpi-kanban/board.json)` and the
-     archived task workspace.
+   Never hand-edit `board.json` or `task.json` for this; an id dropped without
+   the marker is an orphan that `validate_board.py --fix` puts straight back.
+5. Report one line: `Archived <n> card(s) in place; folders kept.`
 
 ## Hard rules
 
-- Do not bootstrap a missing board. If no board exists, report that there is
-  nothing to archive.
-- Do not use fuzzy matching for the final archive target. Ask the user to pick
-  an exact task ID if needed.
-- Do not archive `todo` or `doing` tasks without explicit user confirmation and
-  a clear coordination-state check.
-- Do not remove a task ID from `board.json` before preserving its workspace.
-- Do not edit archived task workspace contents except for the minimal metadata
-  needed to identify the archive action.
+- Only `done` cards archive. A `todo` or `doing` card needs the user's explicit
+  confirmation and a clear coordination-state check, then a move to `done`
+  through `mpi-continue` first.
+- Never move, rename, or delete a task folder, and never edit its contents
+  beyond what the command writes.
 - Do not treat `.agents/mpi-kanban/state/tasks/` as human task workspaces; that
   path is reserved for UUID coordination task records.

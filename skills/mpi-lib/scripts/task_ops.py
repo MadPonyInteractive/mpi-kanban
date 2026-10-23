@@ -26,6 +26,7 @@ Usage:
                              [--position top|bottom] [--actor claude] [--root .]
     python task_ops.py move MPI-42 --to doing [--maturity validating]
                              [--reason "..."] [--actor claude] [--root .]
+    python task_ops.py archive MPI-7 MPI-9 | --all-done [--reason "..."] [--root .]
     python task_ops.py release [--session <claude-session-id>] [--status complete]
                              [--root .]
 
@@ -39,6 +40,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import sys
 from datetime import datetime
@@ -208,6 +210,83 @@ def move(root: Path, task_id: str, to_column: str, maturity: str | None,
     return task_id
 
 
+def drop_from_column(raw: str, column: str, drop: set[str]) -> str | None:
+    """`raw` with `drop` removed from one column's array, every other byte kept.
+
+    A JSON round-trip would reflow a board some other tool formatted; this edits
+    only the inside of that one array, reusing its own separator. Returns None
+    when the array cannot be found, so the caller falls back to a round-trip.
+    """
+    match = re.search(rf'"{column}"\s*:\s*\[', raw)
+    if not match:
+        return None
+    start = match.end()
+    end = raw.find("]", start)  # task ids never contain "]"
+    inner = raw[start:end]
+    items = list(re.finditer(r'"([^"]*)"', inner))
+    if not items:
+        return raw
+    prefix, suffix = inner[:items[0].start()], inner[items[-1].end():]
+    sep = inner[items[0].end():items[1].start()] if len(items) > 1 else ", "
+    kept = [item.group(0) for item in items if item.group(1) not in drop]
+    return raw[:start] + (prefix + sep.join(kept) + suffix if kept else "") + raw[end:]
+
+
+def archive(root: Path, ids: list[str], all_done: bool, reason: str, actor: str) -> list[str]:
+    """Take done cards off the board and leave their folders where they are.
+
+    Moving `tasks/<id>/` breaks every doc, commit message and memory note that
+    links into it; dropping the id alone made `--fix` re-list it as an orphan.
+    `status: "archived"` is the marker the orphan check and repair skip. It is
+    an existing field's value, not a new field, so the board contract holds.
+    Cards first, board second: a stop in between leaves listed archived cards,
+    which the validator names and a rerun finishes.
+    """
+    board_root, board_path, tasks_root = paths(root)
+    newline, indent = style(board_path)
+    stamp = now()
+    raw_bytes = board_path.read_bytes()
+    bom = raw_bytes.startswith(b"\xef\xbb\xbf")
+    raw = raw_bytes.decode("utf-8-sig")
+    board = json.loads(raw)
+    columns = board.get("columns") or {}
+    done = list(columns.get("done") or [])
+
+    targets = done if all_done else list(dict.fromkeys(ids))
+    if not targets:
+        raise Failure("nothing to archive - name card ids or pass --all-done")
+    for task_id in targets:  # refuse before writing anything
+        held = [name for name in TASK_COLUMNS if task_id in (columns.get(name) or [])]
+        if held != ["done"]:
+            raise Failure(f"{task_id} is in {', '.join(held) or 'no column'}, not done; "
+                          "only done cards archive")
+        load(tasks_root / task_id / "task.json")
+
+    lines = []
+    for task_id in targets:
+        card_path = tasks_root / task_id / "task.json"
+        card = load(card_path)
+        card.update(status="archived", updated_at=stamp)
+        card_newline, card_indent = style(card_path)
+        write_json(card_path, card, card_newline, card_indent)
+        record = event("task.archived", task_id, stamp, actor, column="done", folder="kept")
+        if reason:
+            record["reason"] = reason
+        append_event(tasks_root / task_id / "events.jsonl", record, newline)
+        lines.append(record)
+
+    columns["done"] = [task_id for task_id in done if task_id not in set(targets)]
+    edited = drop_from_column(raw, "done", set(targets))
+    if edited is not None and json.loads(edited) == board:
+        board_path.write_bytes((b"\xef\xbb\xbf" if bom else b"") + edited.encode("utf-8"))
+    else:
+        write_json(board_path, board, newline, indent)
+    body = "".join((json.dumps(r, ensure_ascii=False) + "\n").replace("\n", newline) for r in lines)
+    with open(board_root / "events.jsonl", "ab") as handle:  # one write for the whole batch
+        handle.write(body.encode("utf-8"))
+    return targets
+
+
 def release(root: Path, session_id: str, status: str) -> list[str]:
     """Hand back every file claim `session_id` still holds. Returns the records released.
 
@@ -269,6 +348,11 @@ def main(argv: list[str] | None = None) -> int:
     shift.add_argument("--maturity", default=None, help="default: reconciled from the column")
     shift.add_argument("--reason", default="")
 
+    shelve = sub.add_parser("archive", help="take done cards off the board, folders stay")
+    shelve.add_argument("task_ids", nargs="*")
+    shelve.add_argument("--all-done", action="store_true", help="every card in done")
+    shelve.add_argument("--reason", default="")
+
     free = sub.add_parser("release", help="release every file claim a session holds")
     free.add_argument("--session", default=os.environ.get("CLAUDE_CODE_SESSION_ID"),
                       help="default: this session, from CLAUDE_CODE_SESSION_ID")
@@ -276,7 +360,7 @@ def main(argv: list[str] | None = None) -> int:
                       choices=sorted(FILE_CLAIM_STATUSES - {"claimed", "stale"}))
     # `mutate.md` put --root AFTER the subcommand and argparse exited 2 on it,
     # one wasted round trip per agent; SUPPRESS keeps the top-level value.
-    for each in (new, shift, free):
+    for each in (new, shift, shelve, free):
         each.add_argument("--root", default=argparse.SUPPRESS)
         each.add_argument("--actor", default=argparse.SUPPRESS)
 
@@ -287,6 +371,11 @@ def main(argv: list[str] | None = None) -> int:
             task_id = create(root, args.title, args.description, args.column,
                              args.maturity, args.status, args.position, args.actor)
             print(f"Created {task_id} in {args.column}")
+        elif args.command == "archive":
+            if args.task_ids and args.all_done:
+                raise Failure("name card ids or pass --all-done, not both")
+            done = archive(root, args.task_ids, args.all_done, args.reason, args.actor)
+            print(f"Archived {len(done)} card(s) in place; folders kept under .agents/mpi-kanban/tasks/")
         elif args.command == "release":
             if not args.session:
                 raise Failure("no session id - pass --session <claude-session-id>")
@@ -419,6 +508,55 @@ def _selftest() -> None:
         assert mine["status"] == "complete" and mine["recent_events"][-1]["event"] == "claim_released"
         assert load(state / "files" / "peer.json")["status"] == "claimed", "a peer's claim is not mine"
         assert release(root, "me", "complete") == [], "nothing left to release"
+
+    # Archive in place: off the board, folder kept, and NOT an orphan to --fix.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        board_root = root.joinpath(*BOARD_DIR)
+        board_root.mkdir(parents=True)
+        board_path = board_root / "board.json"
+        board_path.write_bytes(
+            ('﻿{\r\n  "schema": "mpi-kanban/board/v1",\r\n  "next_id": 1,\r\n'
+             '  "columns": {\r\n    "todo": [],\r\n    "doing": [],\r\n    "done": []\r\n  }\r\n}\r\n'
+             ).encode("utf-8"))
+        made = [create(root, f"Card {n}", "", "todo", None, "active", "top", "claude") for n in range(3)]
+        for task_id in made:
+            (board_root / "tasks" / task_id / "validation.md").write_text("ok", encoding="utf-8")
+            card = load(board_root / "tasks" / task_id / "task.json")
+            card.setdefault("links", {})["validation"] = "validation.md"
+            write_json(board_root / "tasks" / task_id / "task.json", card, "\r\n", 2)
+        move(root, made[0], "done", None, "", "claude")
+        move(root, made[1], "done", None, "", "claude")
+        try:
+            archive(root, [made[2]], False, "", "claude")
+            raise AssertionError("a todo card must not archive")
+        except Failure:
+            pass
+        board_path.write_bytes(b"\xef\xbb\xbf" + board_path.read_bytes())
+        before = board_path.read_bytes()
+        assert archive(root, [], True, "bulk", "claude") == [made[1], made[0]]
+        after = board_path.read_bytes()
+        assert after.startswith(b"\xef\xbb\xbf") and b"\r\n" in after, "BOM and CRLF kept"
+        assert after.replace(b'"done": []', b"") == before.replace(
+            f'"done": [\r\n      "{made[1]}",\r\n      "{made[0]}"\r\n    ]'.encode(), b""), \
+            "only the done array may change"
+        assert load(board_path)["columns"]["done"] == []
+        for task_id in made[:2]:
+            card = load(board_root / "tasks" / task_id / "task.json")
+            assert card["status"] == "archived" and card["column"] == "done"
+            assert "task.archived" in (board_root / "tasks" / task_id / "events.jsonl").read_text("utf-8")
+        assert (board_root / "events.jsonl").read_text("utf-8").count("task.archived") == 2
+        assert validate_board(root) == [], validate_board(root)
+        assert repair_orphans(root) == [], "--fix must leave archived cards off the board"
+
+        # The VS Code extension's Delete leaves the same shape with status "deleted".
+        board = load(board_path)
+        board["columns"]["todo"].remove(made[2])
+        write_json(board_path, board, "\r\n", 2)
+        card = load(board_root / "tasks" / made[2] / "task.json")
+        card["status"] = "deleted"
+        write_json(board_root / "tasks" / made[2] / "task.json", card, "\r\n", 2)
+        assert validate_board(root) == [] and repair_orphans(root) == []
 
     print("task_ops selftest OK")
 

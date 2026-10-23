@@ -155,6 +155,11 @@ valid task-card maturity values. Preserve that meaning in `status`,
 
 `attention.state` is `required` or `cleared` when present.
 
+`status: "archived"` (done cards, via `task_ops.py archive`) and
+`status: "deleted"` (the VS Code extension's Delete) mean the card is off the
+board on purpose: no column lists it, its folder stays, and it is not an
+orphan. A listed card must not carry either status.
+
 ---
 
 ## Events
@@ -173,6 +178,7 @@ Initial event types:
 - `task.updated`
 - `task.moved`
 - `task.deleted`
+- `task.archived`
 - `attention.required`
 - `attention.cleared`
 - `checklist.updated`

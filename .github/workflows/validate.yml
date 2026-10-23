@@ -20,5 +20,8 @@ jobs:
       - name: Run plugin validator
         run: python scripts/validate_plugin.py
 
+      - name: Card ops selftest (create, move, archive, release)
+        run: python skills/mpi-lib/scripts/task_ops.py --selftest
+
       - name: GPU lease selftest (POSIX lock path)
         run: python skills/mpi-lib/scripts/gpu_lease.py --selftest

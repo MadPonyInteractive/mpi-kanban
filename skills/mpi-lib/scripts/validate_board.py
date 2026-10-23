@@ -47,6 +47,16 @@ TASK_MATURITY_BY_COLUMN = {
     "done": {"complete", "rejected"},
 }
 TASK_REQUIRED_FIELDS = {"schema", "id", "title", "column", "created_at", "updated_at", "links"}
+# A card off the board on purpose: its folder stays so links into it keep
+# working. `archived` is written by `task_ops.py archive` (done cards only);
+# `deleted` is what the VS Code extension's Delete writes. Neither is an orphan.
+UNLISTED_STATUSES = ("archived", "deleted")
+
+
+def unlisted_on_purpose(card: object) -> bool:
+    if not isinstance(card, dict) or card.get("status") not in UNLISTED_STATUSES:
+        return False
+    return card["status"] != "archived" or card.get("column") == "done"
 FILE_CLAIM_STATUSES = {
     "claimed", "complete", "needs_review", "needs_verification",
     "needs_integration", "verified", "released", "stale", "closed",
@@ -246,6 +256,9 @@ def validate_board(root: Path) -> list[str]:
                 errors.append(f"{rel} maturity {maturity!r} is invalid for column {column}")
         if column == "done" and task.get("status") == "active":
             errors.append(f"{rel} is done but still has status active")
+        if task.get("status") in UNLISTED_STATUSES:
+            errors.append(f"{rel} has status {task['status']!r} but is still listed in {column}; "
+                          f"finish with task_ops.py archive {task_id}, or set its status back")
         links = task.get("links")
         if not isinstance(links, dict):
             errors.append(f"{rel} links must be an object")
@@ -278,6 +291,13 @@ def validate_board(root: Path) -> list[str]:
     if tasks_root.exists():
         for child in tasks_root.iterdir():
             if child.is_dir() and (child / "task.json").exists() and child.name not in listed:
+                card = load_json([], child / "task.json", child.name)
+                if unlisted_on_purpose(card):
+                    continue
+                if isinstance(card, dict) and card.get("status") == "archived":
+                    errors.append(f"{child.relative_to(root)} is archived but its column is "
+                                  f"{card.get('column')!r}; only done cards archive")
+                    continue
                 errors.append(f"orphaned task folder not listed in board.json: {child.relative_to(root)}")
 
     validate_event_log(errors, board_root / "events.jsonl", ".agents/mpi-kanban/events.jsonl")
@@ -513,8 +533,8 @@ def repair_orphans(root: Path) -> list[str]:
         if not child.is_dir() or child.name in listed or not (child / "task.json").is_file():
             continue
         card = load_json([], child / "task.json", child.name)
-        if not isinstance(card, dict):
-            continue
+        if not isinstance(card, dict) or card.get("status") in UNLISTED_STATUSES:
+            continue  # off the board on purpose, or a bad archive a human must look at
         column = card.get("column") if card.get("column") in TASK_COLUMNS else "todo"
         columns.setdefault(column, []).insert(0, child.name)
         suffix = child.name.rsplit("-", 1)[-1]

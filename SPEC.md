@@ -289,6 +289,13 @@ for UI scanning; they must not duplicate long plans, handoffs, research, or
 implementation notes. Long-form work belongs in the linked task workspace
 files.
 
+Two `status` values take a card off the board while its folder stays in
+`tasks/<id>/`, so links into it keep working: `archived` (written by
+`task_ops.py archive`, done cards only) and `deleted` (written by the VS Code
+extension's Delete). A folder with either status and no column listing it is
+not an orphan, and `validate_board.py --fix` leaves it alone; a card with
+either status that a column still lists is an error.
+
 Canonical task-card `maturity` values are:
 
 | Column  | Values |
