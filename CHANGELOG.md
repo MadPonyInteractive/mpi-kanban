@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-10-23
+
+### Added
+
+- **Archive done cards in place.** `task_ops.py archive MPI-7 MPI-9` or
+  `task_ops.py archive --all-done` takes done cards off the board and leaves
+  each `tasks/<id>/` folder where it is, so the docs, commits, and memory notes
+  that link into it keep working. Before this neither route worked on a board
+  with hundreds of done cards: dropping the ids made `validate_board.py` call
+  every folder an orphan and `--fix` put them all back, and moving the folders
+  broke every link. The command refuses any card not in `done`, stamps
+  `status: "archived"` on each card (an existing field's value, not a new
+  field), removes the ids from `done` without reformatting the rest of
+  `board.json`, and appends `task.archived` to each task log and, in one write,
+  to the global log. `mpi-archive` now uses it and never moves a folder.
+
+### Fixed
+
+- A folder whose card says `status: "deleted"` - what the VS Code extension's
+  Delete writes - is no longer an orphan, so `--fix` stops putting deleted
+  cards back on the board. A card that a column still lists while carrying
+  `archived` or `deleted` is now a validator error.
+- CI runs the `task_ops.py` selftest, which covers create, move, archive, and
+  release.
+
 ## [1.7.0] - 2026-10-23
 
 ### Changed
@@ -1183,7 +1208,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.7.1...HEAD
+[1.7.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.2...v1.7.0
 [1.6.2]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.0...v1.6.1
