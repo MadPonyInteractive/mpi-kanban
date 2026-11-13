@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-13
+
 ### Added
 
 - **A person can take the GPU over without chasing agents.** `gpu_lease.py run --front`
@@ -1224,7 +1226,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.7.1...v1.8.0
 [1.7.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.2...v1.7.0
 [1.6.2]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.6.1...v1.6.2
