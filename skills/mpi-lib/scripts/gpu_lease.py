@@ -45,7 +45,19 @@ has in VRAM counts as every slot busy -- `status` names it and `run` waits --
 and when a leased command exits, every model Ollama holds is unloaded before the
 slot is released, so nothing the command loaded outlives its lease.
 
-Exit codes: the child's, or 75 when the wait timed out and the child never ran.
+A person can take the GPU over (the Cubric-Vision GPU desk does this):
+
+    python gpu_lease.py run --front -- <hold>   wait first in line, ahead of every agent
+    python gpu_lease.py interrupt --by Fabio    stop the leased command now
+    python gpu_lease.py pause 3 / unpause 3     hold queue ticket 3 in place, or let it go
+    python gpu_lease.py status --json           all of it as data, sessions and progress included
+
+A command may write its progress (0..1) to the file named by $MPI_KANBAN_GPU_PROGRESS;
+`status --json` shows it, so whoever wants the GPU can see how far along the job is.
+
+Exit codes: the child's; 75 when the wait timed out and the child never ran; 76 when a
+person took the GPU over and stopped the child -- what it finished is kept, re-run only
+the rest (a re-run waits in the queue until they release).
 
 Run self-check:  python gpu_lease.py --selftest
 """
@@ -61,7 +73,9 @@ import urllib.parse
 import urllib.request
 
 SLOT_ENV = "MPI_KANBAN_GPU_SLOT"
+PROGRESS_ENV = "MPI_KANBAN_GPU_PROGRESS"  # a file the command may write its progress to, 0..1
 WAIT_TIMEOUT = 75  # EX_TEMPFAIL: the wait expired, the command did not run
+TAKEN_OVER = 76  # a person took the GPU over (`interrupt`): the command was stopped, re-run what is left
 TICKET_LOCK_AT = 1 << 20  # past the ticket's JSON: Windows refuses reads of a locked byte
 
 
@@ -171,9 +185,16 @@ def _owner_path(index):
     return os.path.join(root(), "%s.owner.json" % index)
 
 
-def _who(argv):
-    return {"pid": os.getpid(), "repo": os.getcwd(),
-            "since": time.strftime("%Y-%m-%dT%H:%M:%S"), "command": " ".join(argv)}
+def _who(argv, reason=None):
+    """The holder or waiter record. `session` is the agent session that ran us, so an
+    app that session launched can tell its own lease from a peer's (`status --json`)."""
+    return {"pid": os.getpid(), "repo": os.getcwd(), "session": os.environ.get("CLAUDE_CODE_SESSION_ID"),
+            "since": time.strftime("%Y-%m-%dT%H:%M:%S"), "command": " ".join(argv), "reason": reason}
+
+
+def _side(index, kind):
+    """`<index>.takeover` (who took the slot over) or `<index>.progress` (the command's own 0..1)."""
+    return os.path.join(root(), "%s.%s" % (index, kind))
 
 
 def _read(path):
@@ -185,7 +206,7 @@ def _read(path):
         return {}
 
 
-def _describe(index, argv):
+def _describe(index, record):
     """Who holds the slot, for `status` and for the guard's block message.
 
     ponytail: display only. Liveness is decided by trying the lock, never by
@@ -193,16 +214,19 @@ def _describe(index, argv):
     """
     try:
         with open(_owner_path(index), "w", encoding="utf-8") as handle:
-            json.dump(_who(argv), handle, indent=1)
+            json.dump(record, handle, indent=1)
     except OSError:
         pass  # never fail the run over a display file
 
 
 def _forget(index):
-    try:
-        os.remove(_owner_path(index))
-    except OSError:
-        pass
+    for path in (_owner_path(index), _side(index, "progress"), _side(index, "takeover")):
+        with contextlib.suppress(OSError):
+            os.remove(path)
+
+
+def _paused(ticket_path):
+    return ticket_path[:-len(".ticket")] + ".paused"
 
 
 def _queue_dir():
@@ -240,28 +264,38 @@ def _tickets():
                     continue
         except OSError:
             continue  # its owner just left
-        with contextlib.suppress(OSError):
-            os.remove(path)
+        for dead in (path, _paused(path)):
+            with contextlib.suppress(OSError):
+                os.remove(dead)
     return live
 
 
-def _enqueue(argv):
-    """Join the back of the queue: (ticket, how many are ahead). Stay in line by keeping it open."""
+def _enqueue(argv, reason=None, front=False):
+    """Join the queue: (ticket, how many are ahead). Stay in line by keeping it open.
+
+    `front` takes ticket 0, ahead of every numbered waiter: a person taking the GPU over
+    (`run --front`). There is one front place; a second front waiter is refused.
+    """
     with _queue_lock():
-        ahead = len(_tickets())
+        live = _tickets()
         numbers = [int(name.split(".")[0]) for name in os.listdir(_queue_dir())
                    if name.endswith(".ticket")]
-        ticket = open(os.path.join(_queue_dir(), "%012d.ticket" % (max(numbers, default=0) + 1)),
-                      "x+b")
-        ticket.write(json.dumps(_who(argv)).encode("utf-8"))
+        number = 0 if front else max(numbers, default=0) + 1
+        path = os.path.join(_queue_dir(), "%012d.ticket" % number)
+        with contextlib.suppress(OSError):
+            os.remove(_paused(path))  # a dead waiter's pause never passes to the next owner of the number
+        ticket = open(path, "x+b")  # raises FileExistsError for a second live front waiter
+        ticket.write(json.dumps(_who(argv, reason)).encode("utf-8"))
         ticket.flush()
         _take(ticket, TICKET_LOCK_AT)  # nobody can probe it yet: we hold the queue lock
-    return ticket, ahead
+    return ticket, 0 if front else len(live)
 
 
 def _first(ticket):
+    """True when `ticket` is the first live waiter that is not paused (`pause`)."""
     with _queue_lock():
-        return _tickets()[:1] == [ticket.name]
+        ready = [path for path in _tickets() if not os.path.exists(_paused(path))]
+        return ready[:1] == [ticket.name]
 
 
 def _leave(ticket):
@@ -275,7 +309,32 @@ def _leave(ticket):
             os.remove(ticket.name)
 
 
-def cmd_run(argv, poll, timeout):
+def _hold(index, argv, reason):
+    """Run the command on slot `index` (lease already held): its exit code, or TAKEN_OVER."""
+    record = _who(argv, reason)
+    _describe(index, record)
+    print("mpi-kanban: GPU %s leased" % index, file=sys.stderr, flush=True)
+    child = dict(os.environ, CUDA_VISIBLE_DEVICES=str(index),
+                 **{SLOT_ENV: str(index), PROGRESS_ENV: _side(index, "progress")})
+    with subprocess.Popen(argv, env=child) as proc:
+        _describe(index, dict(record, child_pid=proc.pid))  # what `interrupt` stops
+        try:
+            code = proc.wait()
+        except BaseException:  # Ctrl-C, as subprocess.call does it
+            proc.kill()
+            raise
+    taken = _read(_side(index, "takeover"))
+    if taken.get("lease_pid") == os.getpid():
+        print("mpi-kanban: GPU %s taken over by %s, your command was stopped (exit %d).\n"
+              "  Work it finished is kept: re-run only what did not finish. A re-run waits in\n"
+              "  the queue and starts when %s releases the GPU."
+              % (index, taken.get("by", "a person"), TAKEN_OVER, taken.get("by", "they")),
+              file=sys.stderr, flush=True)
+        return TAKEN_OVER
+    return code
+
+
+def cmd_run(argv, poll, timeout, reason=None, front=False):
     if os.environ.get(SLOT_ENV):
         return subprocess.call(argv)  # already inside a lease; nesting must not deadlock
     slots = devices()
@@ -285,7 +344,11 @@ def cmd_run(argv, poll, timeout):
 
     deadline = time.monotonic() + timeout
     announced = False
-    ticket, ahead = _enqueue(argv)
+    try:
+        ticket, ahead = _enqueue(argv, reason, front)
+    except FileExistsError:
+        print("mpi-kanban: someone else is already first in line (run --front).", file=sys.stderr)
+        return WAIT_TIMEOUT
     try:
         while True:
             first = _first(ticket)  # only the head of the queue may try a slot
@@ -296,12 +359,8 @@ def cmd_run(argv, poll, timeout):
                     continue
                 _leave(ticket)  # the next waiter is first in line now
                 with handle:
-                    _describe(index, argv)
-                    print("mpi-kanban: GPU %s leased" % index, file=sys.stderr, flush=True)
-                    child = dict(os.environ, CUDA_VISIBLE_DEVICES=str(index),
-                                 **{SLOT_ENV: str(index)})
                     try:
-                        return subprocess.call(argv, env=child)
+                        return _hold(index, argv, reason)
                     finally:
                         ollama_unload()
                         _forget(index)
@@ -320,7 +379,84 @@ def cmd_run(argv, poll, timeout):
         _leave(ticket)
 
 
-def cmd_status():
+def status_doc():
+    """Every slot and waiter as data: what `status --json` prints.
+
+    `holder` is the display record of a busy slot ({} when its holder never wrote one),
+    `None` on a free slot. Busy is decided by the lock, as everywhere else.
+    """
+    held = ollama_models()
+    slots = []
+    for index in devices():
+        handle = acquire(index)
+        if handle:
+            handle.close()  # a probe, as in cmd_status
+            slots.append({"index": index, "busy": bool(held), "holder": None, "ollama": held})
+        else:
+            holder = _read(_owner_path(index))
+            try:
+                with open(_side(index, "progress"), encoding="utf-8") as handle:
+                    holder["progress"] = max(0.0, min(1.0, float(handle.read().strip())))
+            except (OSError, ValueError):
+                pass  # the command reports none: most do not
+            slots.append({"index": index, "busy": True, "holder": holder, "ollama": held})
+    with _queue_lock():
+        queue = [dict(_read(path), ticket=int(os.path.basename(path).split(".")[0]),
+                      paused=os.path.exists(_paused(path))) for path in _tickets()]
+    return {"slots": slots, "queue": queue}
+
+
+def _kill_tree(pid):
+    if os.name == "nt":
+        return subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"],
+                              capture_output=True).returncode == 0
+    try:  # ponytail: the child alone; its own children are its business on POSIX
+        os.kill(pid, 15)
+        return True
+    except OSError:
+        return False
+
+
+def cmd_interrupt(by):
+    """Stop every leased command now, so the slot frees for whoever is first in line.
+
+    The holder's `run` sees the `<index>.takeover` record naming its own pid and exits
+    TAKEN_OVER instead of the command's code, so the agent reads "taken over", not a failure.
+    """
+    stopped = 0
+    for slot in status_doc()["slots"]:
+        holder = slot["holder"] or {}
+        if not holder.get("child_pid"):
+            continue
+        with open(_side(slot["index"], "takeover"), "w", encoding="utf-8") as handle:
+            json.dump({"by": by, "at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                       "lease_pid": holder.get("pid")}, handle)
+        if _kill_tree(holder["child_pid"]):
+            stopped += 1
+            print("GPU %s  stopped pid %s  %s" % (slot["index"], holder["child_pid"],
+                                                 holder.get("command", "?")))
+    return 0 if stopped else 1
+
+
+def cmd_pause(number, on):
+    """Hold queue ticket `number` in place (`on`) or let it go again. It keeps its place."""
+    path = os.path.join(_queue_dir(), "%012d.ticket" % number)
+    with _queue_lock():
+        if path not in _tickets():
+            print("no live ticket %d" % number, file=sys.stderr)
+            return 1
+        if on:
+            open(_paused(path), "w").close()
+        else:
+            with contextlib.suppress(OSError):
+                os.remove(_paused(path))
+    return 0
+
+
+def cmd_status(as_json=False):
+    if as_json:
+        print(json.dumps(status_doc()))
+        return 0
     slots = devices()
     if not slots:
         print("no NVIDIA device found")
@@ -354,17 +490,29 @@ def main():
                         help="seconds to wait for a free slot (default 1800)")
     runner.add_argument("--poll", type=float, default=15,
                         help="seconds between retries (default 15)")
+    runner.add_argument("--reason", help="what the job is, shown by status")
+    runner.add_argument("--front", action="store_true",
+                        help="go ahead of every waiter (a person taking the GPU over)")
     runner.add_argument("argv", nargs=argparse.REMAINDER)
-    sub.add_parser("status", help="which slots are free, and who holds the rest")
+    status = sub.add_parser("status", help="which slots are free, and who holds the rest")
+    status.add_argument("--json", action="store_true", help="print it as one JSON object")
+    stop = sub.add_parser("interrupt", help="stop the leased command(s); they exit %d" % TAKEN_OVER)
+    stop.add_argument("--by", default="a person", help="who took over, told to the holder")
+    for name, text in (("pause", "hold a queued waiter in place"), ("unpause", "let it go again")):
+        sub.add_parser(name, help=text).add_argument("ticket", type=int)
     args = parser.parse_args()
 
     if args.action == "status":
-        return cmd_status()
+        return cmd_status(args.json)
+    if args.action == "interrupt":
+        return cmd_interrupt(args.by)
+    if args.action in ("pause", "unpause"):
+        return cmd_pause(args.ticket, args.action == "pause")
     if args.action == "run":
         argv = args.argv[1:] if args.argv[:1] == ["--"] else args.argv
         if not argv:
             parser.error("run needs a command: gpu_lease.py run -- python train.py")
-        return cmd_run(argv, args.poll, args.timeout)
+        return cmd_run(argv, args.poll, args.timeout, args.reason, args.front)
     parser.print_help()
     return 2
 
@@ -405,7 +553,7 @@ def _selftest():
     me = os.path.abspath(__file__)
     scratch = tempfile.mkdtemp(prefix="gpu-lease-")
     base = dict(os.environ, MPI_KANBAN_GPU_ROOT=scratch, MPI_KANBAN_GPU_DEVICES="0",
-                OLLAMA_HOST=ollama_host)
+                OLLAMA_HOST=ollama_host, CLAUDE_CODE_SESSION_ID="selftest")
     base.pop(SLOT_ENV, None)
 
     def lease(env, *extra, script="import os;print(os.environ['CUDA_VISIBLE_DEVICES'])"):
@@ -471,6 +619,12 @@ def _selftest():
                             capture_output=True, text=True).stdout
     rows = [row for row in status.splitlines() if row.startswith("queue")]
     assert len(rows) == 2 and "EARLY" in rows[0] and "LATE" in rows[1], status
+    # the same, as data, naming the session that holds and waits (an agent's app reads this)
+    doc = json.loads(subprocess.run([sys.executable, me, "status", "--json"], env=base,
+                                    capture_output=True, text=True).stdout)
+    assert doc["slots"][0]["busy"] and doc["slots"][0]["holder"]["session"] == "selftest", doc
+    assert [w["session"] for w in doc["queue"]] == ["selftest", "selftest"], doc
+    assert "EARLY" in doc["queue"][0]["command"], doc
     for proc in (holder, early, late):
         proc.wait()
     assert served() == ["EARLY", "LATE"], "a later, faster-polling waiter jumped the queue"
@@ -482,6 +636,57 @@ def _selftest():
     lease(base, "--poll", "0.05", "--timeout", "30", script="open(%r, 'a').write('HOLDER ')" % log)
     waiter.wait()
     assert served() == ["WAITER", "HOLDER"], "a re-queued holder starved the waiter"
+
+    # --front goes ahead of a waiter that queued earlier
+    holder = holding(3)
+    waiter = queued("WAITER", "0.2")
+    front = subprocess.Popen([sys.executable, me, "run", "--front", "--timeout", "30", "--poll", "0.2",
+                              "--", sys.executable, "-c", "open(%r, 'a').write('FRONT ')" % log],
+                             env=base, stderr=subprocess.PIPE, text=True)
+    assert "waiting" in front.stderr.readline(), "front never queued"
+    for proc in (holder, waiter, front):
+        proc.wait()
+    assert served() == ["FRONT", "WAITER"], "--front did not jump the queue"
+
+    # a paused waiter keeps its place but is passed over until unpaused
+    holder = holding(3)
+    first, second = queued("FIRST", "0.2"), queued("SECOND", "0.2")
+    tickets = json.loads(subprocess.run([sys.executable, me, "status", "--json"], env=base,
+                                        capture_output=True, text=True).stdout)["queue"]
+    number = [w["ticket"] for w in tickets if "FIRST" in w["command"]][0]
+    subprocess.run([sys.executable, me, "pause", str(number)], env=base, check=True)
+    assert [w["paused"] for w in json.loads(subprocess.run(
+        [sys.executable, me, "status", "--json"], env=base, capture_output=True, text=True).stdout)["queue"]
+            ] == [True, False]
+    holder.wait()
+    second.wait()
+    subprocess.run([sys.executable, me, "unpause", str(number)], env=base, check=True)
+    first.wait()
+    assert served() == ["SECOND", "FIRST"], "a paused waiter was served, or never resumed"
+
+    # interrupt: the command is stopped, its run exits TAKEN_OVER naming who, the slot frees,
+    # and the progress the command wrote shows in status while it holds
+    report = ("import os,time;open(os.environ[%r],'w').write('0.2');time.sleep(60)" % PROGRESS_ENV)
+    victim = subprocess.Popen([sys.executable, me, "run", "--reason", "sweep", "--", sys.executable,
+                               "-c", report], env=base, stderr=subprocess.PIPE, text=True)
+    assert "GPU 0 leased" in victim.stderr.readline()
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        slot = json.loads(subprocess.run([sys.executable, me, "status", "--json"], env=base,
+                                         capture_output=True, text=True).stdout)["slots"][0]
+        if slot["holder"].get("progress") is not None and slot["holder"].get("child_pid"):
+            break
+        time.sleep(0.2)
+    assert slot["holder"]["progress"] == 0.2 and slot["holder"]["reason"] == "sweep", slot
+    stop = subprocess.run([sys.executable, me, "interrupt", "--by", "Fabio"], env=base,
+                          capture_output=True, text=True)
+    assert stop.returncode == 0, stop
+    assert victim.wait(timeout=20) == TAKEN_OVER, "an interrupted run did not exit TAKEN_OVER"
+    assert "taken over by Fabio" in victim.stderr.read()
+    after = lease(base, "--timeout", "5", "--poll", "0.2")
+    assert after.returncode == 0 and after.stdout.strip() == "0", "the slot stayed held"
+    assert subprocess.run([sys.executable, me, "interrupt"], env=base,
+                          capture_output=True).returncode == 1, "nothing to stop must say so"
 
     none = lease(dict(base, MPI_KANBAN_GPU_DEVICES=""), "--timeout", "1")
     assert none.stdout.strip() == "", none

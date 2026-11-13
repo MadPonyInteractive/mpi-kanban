@@ -210,6 +210,22 @@ python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/gpu_lease.py" status
    pid, and command.
 5. There is no release step and no heartbeat. The kernel drops the lock when
    the command exits, including on crash or kill.
+6. **Exit 76 means a person took the GPU over** (`gpu_lease.py interrupt`, e.g.
+   the user's GPU desk) and stopped your command. It is not a failure. Work
+   the command finished is kept: before re-running, check which outputs
+   already exist and redo only what did not finish (two of three renders done
+   = re-run the third). A re-run waits in the queue and starts when they
+   release. Only an early job is ever stopped; one past halfway is left to end.
+7. Say what the job is with `run --reason "<what>"`, and report progress if you
+   can: the command may write a number from 0 to 1 to the file named by
+   `$MPI_KANBAN_GPU_PROGRESS`. Whoever wants the GPU sees both, and a job that
+   reports it is past half is never interrupted.
+
+`status --json` prints the same as data: each slot's holder (its pid, agent
+`session`, `reason`, `progress`) and each waiter (`ticket`, `paused`). The
+person's side: `run --front` waits first in line, `interrupt --by <name>`
+stops the leased command, `pause <ticket>` / `unpause <ticket>` hold a waiter
+in place without losing its turn.
 
 Slots come from `nvidia-smi`, so an onboard Intel or AMD adapter never gets one.
 A machine with no NVIDIA device runs the command unleased rather than blocking.

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A person can take the GPU over without chasing agents.** `gpu_lease.py run --front`
+  waits first in line, ahead of every agent; `gpu_lease.py interrupt --by <name>`
+  stops the leased command, and its `run` exits **76** ("taken over") instead of the
+  command's code, printing that finished work is kept and only the rest needs a
+  re-run; `pause <ticket>` / `unpause <ticket>` hold a waiter in place without losing
+  its turn. Built for the Cubric-Vision GPU desk, which only interrupts a job that is
+  early and otherwise waits for it.
+- `gpu_lease.py status --json`: every slot and waiter as data, with the agent
+  `session` that holds or waits, a `reason` (`run --reason`), the holder's
+  `progress`, and each waiter's `ticket` and `paused`. An app an agent launched uses
+  the session to tell its own lease from a peer's.
+- A leased command may report progress (0..1) to the file named by
+  `$MPI_KANBAN_GPU_PROGRESS`; `status --json` shows it.
+
 ## [1.7.1] - 2026-10-23
 
 ### Added
