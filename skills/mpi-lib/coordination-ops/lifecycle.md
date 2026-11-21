@@ -220,6 +220,13 @@ python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/gpu_lease.py" status
    can: the command may write a number from 0 to 1 to the file named by
    `$MPI_KANBAN_GPU_PROGRESS`. Whoever wants the GPU sees both, and a job that
    reports it is past half is never interrupted.
+8. A job that needs a lot of system RAM declares it: `run --ram <GB>`. It starts
+   only when that much plus a floor (8 GB, `MPI_KANBAN_RAM_FLOOR_GB`) is
+   Available; at the front of the line it waits there, keeping its place, so
+   no later job overtakes it - a GPU lease alone let a
+   leased job drive the box down to 2.9 GB. Without `--ram` it runs as before
+   and only warns when RAM is under the floor. `status` shows free RAM and each
+   job's declared `ram`.
 
 `status --json` prints the same as data: each slot's holder (its pid, agent
 `session`, `reason`, `progress`) and each waiter (`ticket`, `paused`). The

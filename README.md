@@ -385,6 +385,14 @@ waits up to 15 s for them to go before releasing the device, so a model the
 command loaded, directly or through an app, does not outlive its lease; one that
 lingers still holds off the next waiter. Ollama is found at `OLLAMA_HOST`, default `127.0.0.1:11434`.
 
+System RAM counts when a job says what it needs. `run --ram <GB>` starts the job
+only once that much plus a floor (8 GB by default, `MPI_KANBAN_RAM_FLOOR_GB`) is
+Available - standby memory included, as Task Manager counts it. When it reaches the
+front of the line it waits there, keeping its place, so a later small job cannot
+overtake it. A job without `--ram` runs
+as before and only warns when RAM is under the floor. `status` shows free RAM, free
+commit, and each job's declared `ram`.
+
 Enforcement is opt-in per project - see `gpu_command_patterns` below. The
 exception is a direct Ollama call (`ollama run`, or an HTTP call to
 `:11434/api/generate|chat|embed`), which is blocked unleased in every project.

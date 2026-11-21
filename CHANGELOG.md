@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The GPU lease can wait for system RAM, not just a free GPU.** Pass what the job
+  will use: `gpu_lease.py run --ram 45 -- <command>`. It starts only when that much
+  plus a floor (8 GB, `MPI_KANBAN_RAM_FLOOR_GB`) is Available; at the front of the line
+  it waits there and says it is waiting for RAM. It keeps its place in line, so smaller jobs behind it
+  cannot overtake it. A job without `--ram` runs as before and warns when RAM is under
+  the floor. `status` shows free RAM and each job's declared RAM; `status --json` adds a
+  top-level `ram` object and a `ram` field on every holder and waiter. A leased video job had driven free RAM from 29 GB to 2.9 GB.
+
 ## [1.8.0] - 2026-11-13
 
 ### Added
