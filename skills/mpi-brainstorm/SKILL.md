@@ -121,10 +121,7 @@ After the todo task is captured, go straight to planning:
 1. Choose the plan skill:
    - Use `mpi-create-plan` by default for compact, normal work.
    - Use `mpi-create-large-plan` when the work is complex, uncertain,
-     multi-phase, likely to benefit from parallel investigation, or splittable
-     into independent parallel implementation tasks. Parallel implementation
-     eligibility alone is enough reason to choose the large-plan path, since
-     compact plans cannot carry `## Parallel Batch` sections.
+     multi-phase, or likely to benefit from parallel investigation.
 2. Invoke it and say in one line which one and why, e.g. "Starting
    mpi-create-plan for MPI-42 (compact, single flow)." Include in the prompt
    context: the task ID and title, e.g.

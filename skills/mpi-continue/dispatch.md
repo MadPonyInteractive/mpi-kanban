@@ -18,8 +18,9 @@ field and no umbrella flag - the plan's shape makes it one, deliberately,
 because the board contract forbids new card fields.
 
 When the active card's next eligible unit is a valid `## Parallel Batch` -
-disjoint `Ownership:`, a per-task `**Verify:**`, no intra-batch dependency, no
-fresh write claim on the owned files - route it to `mpi-execute-parallel` and
+disjoint `Ownership:`, a per-task `**Verify:**` and `Model:`, no intra-batch
+dependency, no fresh write claim on the owned files - route it to
+`mpi-execute-parallel` and
 announce the split. Do not ask first. The batch was written into the plan
 deliberately, and the plan was already approved; asking again is the round trip
 this pack exists to remove.

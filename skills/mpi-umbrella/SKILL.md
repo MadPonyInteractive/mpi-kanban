@@ -9,10 +9,11 @@ Fold scattered cards that are really one job into a single umbrella card. Two
 ways in: the user names the cards, or the user points at the board and asks
 what should be grouped.
 
-An umbrella is a large-plan card whose `plan.md` carries the phases and the
-`## Parallel Batch` sections; the clustered cards become its batch tasks. There
-is no `parent` field and none may be added - the board contract forbids new
-card fields, and the VS Code extension reads that fixed schema.
+An umbrella is a large-plan card whose `plan.md` carries one phase per
+clustered card, in order; a `## Parallel Batch` only where principle 3 of
+`mpi-create-large-plan` allows one. There is no `parent` field and none may be
+added - the board contract forbids new card fields, and the VS Code extension
+reads that fixed schema.
 
 ## Read first
 
@@ -60,10 +61,9 @@ out of the proposal reads as one that was considered and grouped.
 ### 3. Create, one at a time
 
 On approval, `createTask` per `mutate.md` for one umbrella. Its `plan.md`
-carries the phases and a `## Parallel Batch` section per phase that can run in
-parallel, with each member card's file ownership listed - that section is what
-`mpi-execute-parallel` later reads, so disjoint file ownership is the point of
-writing it, not decoration.
+carries one phase per member card, in order, each listing that card's file
+ownership. Add a `## Parallel Batch` only for members that meet principle 3 of
+`mpi-create-large-plan` (big, disjoint, `Model:` set).
 
 Link the member cards from the umbrella's `plan.md` by ID and title.
 

@@ -75,10 +75,9 @@ because several files may change.
    `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/indexing.md`: read pointer
    files first, then only the topic-matching docs/rules. Do not scan all
    rules and docs.
-3. If the goal is clearly large or uncertain, or if independent parallel
-   implementation looks likely (work splits into disjoint-ownership tasks),
-   switch to `mpi-create-large-plan` instead and say so in one line; the user
-   can redirect back to a compact plan.
+3. If the goal is clearly large or uncertain, switch to
+   `mpi-create-large-plan` instead and say so in one line; the user can
+   redirect back to a compact plan. Work that merely splits is not a reason.
 4. **Front-load decisions (scalable-foundation).** When project mode is
    `scalable-foundation`, before writing the plan, exercise the mode's
    clarification and proactive-engineering behavior from

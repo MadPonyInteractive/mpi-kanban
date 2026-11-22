@@ -64,7 +64,7 @@ If SPEC and PLAN disagree, ask the user before choosing.
   forbids new columns and new fields; it does not forbid widening an existing
   field's value set. MPI-22 widened `maturity` from 5 to 10 values that way,
   shipping both repos in lockstep. This is why an umbrella card is a large-plan
-  `plan.md` with `## Parallel Batch` sections, not a `parent` field.
+  `plan.md` with one phase per member card, not a `parent` field.
 - Skills are pure Markdown. Shared reference docs live in `skills/mpi-lib/`.
 - The plugin ships exactly one version stamp: `version` in
   `.claude-plugin/plugin.json`. It is the field Claude Code uses as the plugin
@@ -115,6 +115,12 @@ If SPEC and PLAN disagree, ask the user before choosing.
   user's words ("run the ready cards") or a `## Parallel Batch` in the named
   card's own plan. Until MPI-49 it dispatched up to four workers unasked, before
   Gate 1, treating a weeks-old plan as today's go-ahead. Do not restore it.
+- Large plans use sequential phases by default (principle 3 of
+  `mpi-create-large-plan`). A `## Parallel Batch` needs every task big (about
+  10+ files or a long run), disjoint, and carrying a `Model:`. A batch buys
+  wall-clock, not tokens, and its workers share one uncommitted tree with no
+  guard between them. Until MPI-50 a batch was the default for any splittable
+  work, stated in seven files; do not restore it.
 - `isolation: "worktree"` is not the isolation mechanism for dispatch. A
   worktree branches from the default branch, not the parent's HEAD, and MPI
   commits only at close-out, so a worktree worker cannot see the session's

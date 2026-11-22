@@ -67,10 +67,9 @@ implementation item and final verification.
 Each `## Phase N: ...` heading owns the to-dos beneath it until the next
 `## ` heading or end of file. Each `## Parallel Batch` owns the batch tasks
 beneath it and may only be run by `mpi-execute-parallel` when ownership is
-declared and disjoint. Large plans default to `## Parallel Batch` sections for
-independent, disjoint-ownership implementation work (see
-`skills/mpi-create-large-plan/SKILL.md`); sequential phases are for work that
-cannot be split safely.
+declared and disjoint. Large plans use sequential phases by default; a
+`## Parallel Batch` is the exception (principle 3 in
+`skills/mpi-create-large-plan/SKILL.md`).
 
 ---
 

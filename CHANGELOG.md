@@ -39,6 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   four workers on them unasked, before its brief. Now it lists them on one
   `Ready cards:` line; say "run the ready cards" to dispatch. A
   `## Parallel Batch` in the named card's own plan still runs without asking.
+- **Large plans use sequential phases by default.** Writing a
+  `## Parallel Batch` was the default for any splittable work, and the plan and
+  brainstorm skills switched to a large plan just because work could split. A
+  batch buys wall-clock time, not tokens, and its workers share one uncommitted
+  tree with no guard between them. Now a batch is written only when every task
+  is big (about 10+ files or a long run), has disjoint ownership, and names a
+  `Model:`; umbrellas get one phase per member card. A batch task without a
+  `Model:` falls back to a sequential brief instead of dispatching.
 
 ### Fixed
 

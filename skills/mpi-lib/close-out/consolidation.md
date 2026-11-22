@@ -25,10 +25,10 @@ Your call: 11 todo cards cluster into 3 themes - make umbrellas? My pick: yes
 - Board validator (MPI-37, MPI-38, MPI-45) - all touch scripts/validate_board.py
 ```
 
-An umbrella is a large-plan card whose `plan.md` carries the phases and the
-`## Parallel Batch` sections; the clustered cards become its batch tasks. There
-is no `parent` field and none may be added - the board contract forbids new
-card fields.
+An umbrella is a large-plan card whose `plan.md` carries one phase per
+clustered card, in order; a `## Parallel Batch` only where principle 3 of
+`mpi-create-large-plan` allows one. There is no `parent` field and none may be
+added - the board contract forbids new card fields.
 
 ## Rules
 

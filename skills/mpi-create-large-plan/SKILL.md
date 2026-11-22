@@ -25,12 +25,12 @@ revise the remaining work as implementation reveals new facts.
    Hand an area to an `investigator` only when it means reading more than
    about 10 files or long logs.
 2. Implementation is adaptive through `mpi-continue`.
-3. Default to explicit `## Parallel Batch` sections whenever implementation
-   tasks have disjoint, declarable ownership and batch-safe verification.
-   Parallel implementation runs only through these sections (executed by
-   `mpi-execute-parallel`), but writing them is the default for splittable work,
-   not an opt-in extra. When work is large but cannot be split safely, keep
-   normal phases and state in the plan why no batch was created.
+3. Plan in sequential phases by default. A worker costs a fresh context, a
+   brief, a report and a review, so a batch buys wall-clock time, not tokens,
+   and its workers share one uncommitted tree with no guard between them.
+   Write a `## Parallel Batch` (run by `mpi-execute-parallel`) only when every
+   task in it is big (about 10+ files or a long run), has disjoint declared
+   `Ownership:`, and names a `Model:`. Unbatched work needs no justification.
 4. Every executable task or batch must include a concrete `**Verify:**` line.
 5. No forward dependencies inside a task or parallel batch. If verification
    depends on later work, merge the work or move it later.
@@ -58,7 +58,7 @@ What is known now, including relevant files, constraints, and open risks.
 
 ## Parallel Batch: <name>
 
-- [ ] <task>. Ownership: <files/modules>. Briefings: <rule names or bundle>. Model: <haiku|sonnet|opus, optional>. **Verify:** <batch-safe check>
+- [ ] <task>. Ownership: <files/modules>. Briefings: <rule names or bundle>. Model: <haiku|sonnet|opus>. **Verify:** <batch-safe check>
 - [ ] <task>. Ownership: <files/modules>. Briefings: <rule names or bundle>. **Verify:** <batch-safe check>
 
 ## Plan Drift
@@ -82,10 +82,6 @@ Final end-to-end verification criteria.
 
 Docs, rules, memory, or cleanup items likely to matter before handoff/end-session.
 ```
-
-Default to `## Parallel Batch` whenever tasks are genuinely independent and have
-disjoint ownership. Use normal phases only when work cannot be split safely,
-and note why in the plan.
 
 ## Workflow
 
@@ -121,10 +117,8 @@ and note why in the plan.
    `user-ux` so `mpi-continue` stops only on those phases.
 5. Self-audit:
    - Each task has `**Verify:**`.
-   - Independent implementation work is in `## Parallel Batch` sections by
-     default; if splittable work was left as sequential phases, the plan says
-     why.
-   - Parallel batch tasks declare `Ownership:` and do not overlap.
+   - Any `## Parallel Batch` meets principle 3: big tasks, disjoint
+     `Ownership:`, a `Model:` on every task.
    - No task assumes later work has already happened.
    - The plan says when `mpi-execute-parallel` is appropriate, if at all.
 6. Resolve or create the JSON board task. See "Task-board update" below.

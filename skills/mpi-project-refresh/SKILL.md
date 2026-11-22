@@ -101,8 +101,8 @@ Report findings in these categories:
   them by shared file footprint first - `files.json` when it lists files,
   otherwise the paths the card's `plan.md` or description names - and by theme
   second. Report every cluster of three or more as a proposed umbrella: a
-  large-plan card whose `plan.md` carries the phases and `## Parallel Batch`
-  sections, with the clustered cards as its batch tasks. There is no `parent`
+  large-plan card whose `plan.md` carries one phase per clustered card (a
+  batch only where large-plan principle 3 allows). There is no `parent`
   field and none may be added. Also report `todo` cards whose `files.json` is
   empty, as unownable-and-undispatchable rather than as damage; ownership is
   written at the next `todo -> doing`, never backfilled retroactively.
