@@ -26,6 +26,24 @@ git status --short                      # AFTER, not only before
 `--only` commits exactly the listed paths and nothing else, whatever the index
 holds. That is the property staging by name does not give you.
 
+## Board files: `commit-card`, never `--only`
+
+`--only` takes a whole file from disk. `board.json` and the root
+`.agents/mpi-kanban/events.jsonl` are shared by every session on the board, so
+on disk they also hold other sessions' uncommitted moves, and `--only` would
+publish those under your message. Commit card work with:
+
+```bash
+python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py" commit-card <id> [<id> ...] -m "<subject>"
+```
+
+It commits those card folders plus only those cards' entries in the two shared
+files (each card at the top of its column), builds the commit in a private
+index, then points the shared index at it for those paths. A peer's edits stay
+in the working tree. It refuses when a peer has one of those paths staged, and
+when `board.json` is gitignored. The board's first commit takes `board.json`
+whole, peer moves included. Commit your code separately with the recipe above.
+
 ## The three ways it goes wrong
 
 **An UNTRACKED path aborts the whole commit.** `--only` resolves its pathspec

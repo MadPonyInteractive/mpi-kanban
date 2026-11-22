@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A `Model:` line for parallel workers.** A task in a large plan's `## Parallel
   Batch` may say `Model: haiku`, `sonnet` or `opus`, and `mpi-execute-parallel`
   tells the orchestrator to pass it as that worker's model. No line, or any other value, keeps the default.
+- **`task_ops.py commit-card <id>... -m "<subject>"` commits your cards without
+  a peer's board moves.** On a board other sessions share, `board.json` and the
+  root `events.jsonl` hold their uncommitted moves too, so
+  `git commit --only board.json` published them under your message. The new
+  command commits the named card folders plus only those cards' entries in the
+  two shared files: each card goes to the top of the column it holds on disk,
+  and the committed lines of both files keep their bytes and line endings. The
+  commit is built in a private index, then the shared index is pointed at it
+  for exactly those paths. It refuses if another session has one of those
+  paths staged, and leaves the peer's edits in the working tree. It never
+  pushes. The board's very first commit takes `board.json` whole.
 - **The handoff paste block suggests a model** for the next session: Opus medium
   for a mechanical step, Opus high for a tricky one, Fable only to plan or review.
 

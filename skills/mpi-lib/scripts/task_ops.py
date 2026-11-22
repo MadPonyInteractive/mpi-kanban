@@ -29,6 +29,11 @@ Usage:
     python task_ops.py archive MPI-7 MPI-9 | --all-done [--reason "..."] [--root .]
     python task_ops.py release [--session <claude-session-id>] [--status complete]
                              [--root .]
+    python task_ops.py commit-card MPI-42 [MPI-43 ...] -m "subject" [--root .]
+
+`commit-card` commits those cards' folders plus ONLY their own entries in
+`board.json` and the root `events.jsonl`, through a private index, so a peer's
+uncommitted board moves stay out of the commit. It never pushes.
 
 `release` hands back every file claim a session holds - by default this one,
 read from CLAUDE_CODE_SESSION_ID - and reconciles `state/index.json`.
@@ -42,7 +47,10 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
+import tempfile
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -322,6 +330,174 @@ def release(root: Path, session_id: str, status: str) -> list[str]:
     return released
 
 
+def git(top: Path, *args: str, data: bytes | None = None, env: dict | None = None) -> bytes:
+    done = subprocess.run(["git", *args], cwd=top, input=data, capture_output=True, env=env)
+    if done.returncode:
+        raise Failure(f"git {' '.join(args[:3])}: {done.stderr.decode('utf-8', 'replace').strip()}")
+    return done.stdout
+
+
+def put_in_column(raw: str, column: str, task_id: str) -> str | None:
+    """`raw` with `task_id` first in one column's array, every other byte kept."""
+    match = re.search(rf'"{column}"\s*:\s*\[', raw)
+    if not match:
+        return None
+    start = match.end()
+    end = raw.find("]", start)
+    inner = raw[start:end]
+    items = list(re.finditer(r'"([^"]*)"', inner))
+    quoted = f'"{task_id}"'
+    if not items:
+        return raw[:start] + quoted + raw[end:]
+    if len(items) > 1:
+        sep = inner[items[0].end():items[1].start()]
+    else:
+        lead = inner[:items[0].start()]
+        sep = "," + lead if "\n" in lead else ", "
+    at = start + items[0].start()
+    return raw[:at] + quoted + sep + raw[at:]
+
+
+def commit_card(root: Path, ids: list[str], message: str) -> str | None:
+    """Commit these cards and nothing a peer left uncommitted on the same board.
+
+    `git commit --only board.json` publishes every other session's uncommitted
+    move along with yours, and the root `events.jsonl` can carry a peer's whole
+    rewrite. So the two shared files are built as HEAD + only these cards'
+    entries, the card folders are taken whole from disk, and the commit is
+    made through a PRIVATE index so nothing a peer staged can ride along
+    (Cubric-Vision, 2026-09; the traps are each recorded where they bite).
+    Returns the new commit, or None when there was nothing to commit.
+    """
+    board_root, board_path, tasks_root = paths(root)
+    if not ids:
+        raise Failure("name at least one card id")
+    top = Path(git(root, "rev-parse", "--show-toplevel").decode("utf-8").strip())
+    rel = lambda p: p.resolve().relative_to(top.resolve()).as_posix()  # noqa: E731
+    board_rel, events_rel = rel(board_path), rel(board_root / "events.jsonl")
+    if subprocess.run(["git", "check-ignore", "-q", board_rel], cwd=top).returncode == 0:
+        raise Failure(f"{board_rel} is ignored by git here, so there is no board to commit")
+    ref = subprocess.run(["git", "symbolic-ref", "-q", "HEAD"], cwd=top, capture_output=True)
+    if ref.returncode:
+        raise Failure("HEAD is detached - check out a branch first")
+    ref_name = ref.stdout.decode("utf-8").strip()
+    head = git(top, "rev-parse", "HEAD").decode("utf-8").strip()
+
+    def at_head(path: str) -> bytes | None:
+        shown = subprocess.run(["git", "cat-file", "blob", f"{head}:{path}"], cwd=top,
+                               capture_output=True)
+        return shown.stdout if shown.returncode == 0 else None
+
+    def blob(data: bytes) -> str:  # --no-filters: autocrlf would re-EOL a peer's lines
+        sha = git(top, "hash-object", "-w", "--no-filters", "--stdin", data=data).decode().strip()
+        if git(top, "cat-file", "blob", sha) != data:
+            raise Failure("git stored different bytes than were built - nothing was committed")
+        return sha
+
+    # board.json: HEAD text, each card moved to the column it holds on disk.
+    disk = load(board_path)
+    head_board = at_head(board_rel)
+    if head_board is None:
+        new_board = board_path.read_bytes()  # the board's first commit is all of it
+    else:
+        text = head_board.decode("utf-8-sig")
+        bom = head_board[:3] if head_board.startswith(b"\xef\xbb\xbf") else b""
+        expected = json.loads(text)
+        known = {i for col in (expected.get("columns") or {}).values() for i in col}
+        for task_id in ids:
+            target = [c for c, col in (disk.get("columns") or {}).items() if task_id in col]
+            for column in list((expected.get("columns") or {})):
+                if task_id in expected["columns"][column]:
+                    text = drop_from_column(text, column, {task_id})
+                    expected["columns"][column].remove(task_id)
+            if target:
+                edited = put_in_column(text, target[0], task_id)
+                if edited is None:
+                    raise Failure(f"HEAD's {board_rel} has no {target[0]!r} column")
+                text = edited
+                expected["columns"].setdefault(target[0], []).insert(0, task_id)
+            number = re.fullmatch(r"MPI-(\d+)", task_id)
+            if task_id not in known and number and int(number[1]) >= int(expected.get("next_id") or 1):
+                expected["next_id"] = int(number[1]) + 1
+                text = re.sub(r'("next_id"\s*:\s*)\d+', rf"\g<1>{expected['next_id']}", text, count=1)
+        if json.loads(text) != expected:
+            raise Failure(f"could not edit {board_rel} cleanly - nothing was committed")
+        new_board = bom + text.encode("utf-8")
+
+    # events.jsonl: HEAD bytes, then these cards' disk lines HEAD lacks, in HEAD's EOL.
+    head_events = at_head(events_rel) or b""
+    eol = b"\r\n" if b"\r\n" in head_events else b"\n"
+    have = Counter(line.strip() for line in head_events.splitlines())
+    wanted = set(ids)
+    added = []
+    events_path = board_root / "events.jsonl"
+    for line in (events_path.read_bytes().splitlines() if events_path.is_file() else []):
+        line = line.strip()
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(record, dict) or record.get("id") not in wanted:
+            continue
+        if have[line]:
+            have[line] -= 1
+        else:
+            added.append(line)
+    new_events = head_events
+    if added:
+        if new_events and not new_events.endswith(b"\n"):
+            new_events += eol
+        new_events += eol.join(added) + eol
+
+    # The card folders are wholly this session's: every file on disk, as is.
+    modes = {}  # an executable bit at HEAD survives; everything else is 100644
+    for line in git(top, "ls-tree", "-r", head, "--", board_rel, events_rel,
+                    *(rel(tasks_root / i) for i in ids)).decode("utf-8").splitlines():
+        meta, path = line.split("\t", 1)
+        modes[path] = meta.split()[0]
+    entries: dict[str, str | None] = {board_rel: blob(new_board)}
+    if added:
+        entries[events_rel] = blob(new_events)
+    for task_id in ids:
+        folder = tasks_root / task_id
+        if not folder.is_dir():
+            raise Failure(f"no card folder {rel(folder)}")
+        for file in sorted(p for p in folder.rglob("*") if p.is_file()):
+            entries[rel(file)] = git(top, "hash-object", "-w", f"--path={rel(file)}",
+                                     str(file)).decode().strip()
+        for gone in [p for p in modes if p.startswith(rel(folder) + "/")]:
+            entries.setdefault(gone, None)  # tracked at HEAD, deleted on disk
+
+    staged = git(top, "diff", "--cached", "--name-only", "--", *entries).decode().split()
+    if staged:  # BEFORE update-ref: afterwards every path of mine reads as staged
+        raise Failure("another session has these staged in the shared index: "
+                      + ", ".join(staged) + " - nothing was committed")
+
+    with tempfile.TemporaryDirectory() as scratch:
+        env = {**os.environ, "GIT_INDEX_FILE": str(Path(scratch) / "index")}
+        git(top, "read-tree", head, env=env)
+        for path, sha in entries.items():
+            if sha is None:
+                git(top, "update-index", "--force-remove", "--", path, env=env)
+            else:
+                git(top, "update-index", "--add", "--cacheinfo", f"{modes.get(path, '100644')},{sha},{path}", env=env)
+        tree = git(top, "write-tree", env=env).decode().strip()
+    if tree == git(top, "rev-parse", f"{head}^{{tree}}").decode().strip():
+        return None
+    commit = git(top, "commit-tree", tree, "-p", head, "-F", "-",
+                 data=message.encode("utf-8")).decode().strip()
+    git(top, "update-ref", "-m", f"commit-card: {message.splitlines()[0]}", ref_name, commit, head)
+
+    # Point the SHARED index at the commit for exactly these paths, or git status
+    # shows each one as a staged revert of it. --add: new files are not in it yet.
+    for path, sha in entries.items():
+        if sha is None:
+            git(top, "update-index", "--force-remove", "--", path)
+        else:
+            git(top, "update-index", "--add", "--cacheinfo", f"{modes.get(path, '100644')},{sha},{path}")
+    return commit
+
+
 def report(root: Path) -> int:
     """The check the create path could finish without ever running.
 
@@ -373,7 +549,10 @@ def main(argv: list[str] | None = None) -> int:
                       choices=sorted(FILE_CLAIM_STATUSES - {"claimed", "stale"}))
     # `mutate.md` put --root AFTER the subcommand and argparse exited 2 on it,
     # one wasted round trip per agent; SUPPRESS keeps the top-level value.
-    for each in (new, shift, shelve, free):
+    land = sub.add_parser("commit-card", help="commit these cards and only their board entries")
+    land.add_argument("task_ids", nargs="+")
+    land.add_argument("-m", "--message", required=True)
+    for each in (new, shift, shelve, free, land):
         each.add_argument("--root", default=argparse.SUPPRESS)
         each.add_argument("--actor", default=argparse.SUPPRESS)
 
@@ -395,6 +574,10 @@ def main(argv: list[str] | None = None) -> int:
             names = release(root, args.session, args.status)
             print(f"Released {len(names)} claim(s) as {args.status}"
                   + (": " + ", ".join(names) if names else ""))
+        elif args.command == "commit-card":
+            commit = commit_card(root, args.task_ids, args.message)
+            print(f"Committed {', '.join(args.task_ids)} as {commit[:10]}" if commit
+                  else "Nothing to commit for " + ", ".join(args.task_ids))
         else:
             move(root, args.task_id, args.to, args.maturity, args.reason, args.actor)
             print(f"Moved {args.task_id} to {args.to}")
@@ -583,6 +766,79 @@ def _selftest() -> None:
         card["status"] = "deleted"
         write_json(board_root / "tasks" / made[2] / "task.json", card, "\r\n", 2)
         assert validate_board(root) == [] and repair_orphans(root) == []
+
+    # commit-card (MPI-40): my cards land, a peer's uncommitted board moves do not.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        run = lambda *a: git(root, *a)  # noqa: E731
+        run("init", "-q", "-b", "main")
+        for key, value in (("user.name", "t"), ("user.email", "t@t"), ("core.autocrlf", "false")):
+            run("config", key, value)
+        board_root = root.joinpath(*BOARD_DIR)
+        board_root.mkdir(parents=True)
+        board_path = board_root / "board.json"
+        board_path.write_bytes(
+            ('{\r\n "schema": "mpi-kanban/board/v1",\r\n "next_id": 1,\r\n'
+             ' "columns": {\r\n  "todo": [],\r\n  "doing": [],\r\n  "done": []\r\n }\r\n}\r\n'
+             ).encode("utf-8"))
+        peer = create(root, "Peer", "", "todo", None, "active", "top", "peer")
+        mine = create(root, "Mine", "", "todo", None, "active", "top", "me")
+        events_path = board_root / "events.jsonl"
+        crlf = json.dumps(event("task.updated", peer, now(), "peer")).encode() + b"\r\n"
+        events_path.write_bytes(events_path.read_bytes() + crlf)
+        run("add", "--", ".agents")
+        run("commit", "-q", "-m", "init")
+        run("config", "core.autocrlf", "true")  # the filter that re-EOLs a peer's lines
+        head_events = run("show", f"HEAD:{events_path.relative_to(root).as_posix()}")
+
+        move(root, peer, "doing", None, "", "peer")  # the peer's move, left uncommitted
+        new = create(root, "New", "", "todo", None, "active", "top", "me")
+        move(root, mine, "doing", None, "", "me")
+        commit = main(["commit-card", new, mine, "-m", "my cards", "--root", str(root)])
+        assert commit == 0
+
+        board_rel = board_path.relative_to(root).as_posix()
+        committed = run("show", f"HEAD:{board_rel}")
+        assert b"\r\n" in committed and b'\r\n "schema"' in committed, "formatting kept"
+        columns = json.loads(committed)["columns"]
+        assert columns["todo"] == [new, peer] and columns["doing"] == [mine], columns
+        assert json.loads(committed)["next_id"] == 4
+        events = run("show", f"HEAD:{events_path.relative_to(root).as_posix()}")
+        assert events.startswith(head_events), "HEAD's events bytes kept verbatim, CRLF too"
+        tail = events[len(head_events):].decode("utf-8")
+        assert f'"{new}"' in tail and f'"{mine}"' in tail and f'"{peer}"' not in tail, tail
+        tree = run("ls-tree", "-r", "--name-only", "HEAD").decode().split()
+        assert f".agents/mpi-kanban/tasks/{new}/task.json" in tree
+        assert f".agents/mpi-kanban/tasks/{mine}/checklist.md" in tree
+        peer_card = run("show", f"HEAD:.agents/mpi-kanban/tasks/{peer}/task.json")
+        assert json.loads(peer_card)["column"] == "todo", "the peer's card was not committed"
+        assert run("diff", "--cached", "--name-only") == b"", "shared index left in step"
+        leftover = run("status", "--porcelain", "--", f".agents/mpi-kanban/tasks/{new}",
+                       f".agents/mpi-kanban/tasks/{mine}")
+        assert leftover == b"", leftover
+        assert load(board_path)["columns"]["doing"] == [mine, peer], "the peer's move is on disk"
+        assert board_rel in run("diff", "--name-only").decode(), "the peer's move still pending"
+        assert commit_card(root, [new], "again") is None, "nothing new to commit"
+
+        # a peer mid-commit on a path of mine: refuse before anything moves
+        before = run("rev-parse", "HEAD")
+        (board_root / "tasks" / mine / "notes.md").write_text("x", encoding="utf-8")
+        run("add", "--", f".agents/mpi-kanban/tasks/{mine}/notes.md")
+        try:
+            commit_card(root, [mine], "clobber")
+            raise AssertionError("a path a peer has staged must be refused")
+        except Failure as exc:
+            assert "staged" in str(exc)
+        assert run("rev-parse", "HEAD") == before
+
+        (root / ".gitignore").write_text(".agents/*\n", encoding="utf-8")
+        run("rm", "-q", "-r", "--cached", "--", ".agents")
+        run("commit", "-q", "-m", "untrack")
+        try:
+            commit_card(root, [mine], "ignored")
+            raise AssertionError("an ignored board must be refused")
+        except Failure as exc:
+            assert "ignored" in str(exc)
 
     print("task_ops selftest OK")
 
