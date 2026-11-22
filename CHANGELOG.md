@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A resumed handoff is no longer picked up twice.** `mpi-continue` now marks the
+  handoff it resumes `accepted`. Before, it stayed `open`, so a second bare
+  `continue` in the same Desktop tab, with no newer handoff, resumed the old one
+  and its old next step again.
+
 ## [1.9.0] - 2026-11-22
 
 ### Added

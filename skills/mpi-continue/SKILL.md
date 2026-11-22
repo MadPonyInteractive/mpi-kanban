@@ -87,8 +87,8 @@ VALIDATING/IMPLEMENTING/PLANNING `kanban.md` entry with a `Plan file:` line.
 None -> ask `Which MPI plan or handoff should I continue from? Please paste the path.`
 
 1. The handoff's `task_card.id`, `plan.file`, and workspace links are the
-   route. Do not enumerate other tasks or done cards unless those pointers are
-   missing, contradictory, or blocked.
+   route; set its `status` to `accepted` so a later bare `continue` in this tab
+   does not resume it again. Do not enumerate other tasks or done cards unless those pointers are missing, contradictory, or blocked.
 2. Read `.agents/mpi-kanban/project-profile.md` and
    `project-knowledge-index.md` if present; load only the topic block matching
    the plan.
