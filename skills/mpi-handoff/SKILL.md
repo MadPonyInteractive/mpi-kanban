@@ -72,7 +72,7 @@ filename and `id`.
   "generated_at": "<ISO-8601>",
   "status": "open",
   "from_session": ".agents/mpi-kanban/state/sessions/<claude-session-id>.json",
-  "session": { "name": "<what this session was doing>", "branch": "<branch>" },
+  "session": { "name": "<what this session was doing>", "branch": "<branch>", "tab": "<Desktop tab id, or null>" },
   "goal": {
     "original": "<what the user set out to do>",
     "status": "in_progress | blocked",
@@ -103,6 +103,11 @@ filename and `id`.
 }
 ```
 
+`session.tab` is the `sessionId` from Claude Desktop's `get_session` `self` (a
+`local_...` id; deferred, load it via ToolSearch), else null. It survives a
+clear while the Claude session id does not, so it is how `mpi-continue` finds
+this handoff in a cleared tab.
+
 `resume_prompt` must stand alone: the fresh session remembers none of this.
 Keep `context` tight - three constraints it would rediscover beat fifteen it
 knows. Older keys (`to_role`, `allowed_actions`, `knowledge_preservation`,
@@ -123,7 +128,7 @@ own card: `python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/task_ops.py" rel
 
 ## 5. Report
 
-Print these four lines as-is, then the paste block, nothing else. Line 1 is
+Print these four lines as-is, then the paste block, then only step 6's question. Line 1 is
 word for word `Nothing breaking`, `Not checked: <why>` or `BREAKS USERS: ...`,
 never a paraphrase. The paste block gets its own fence so the app shows a copy
 button; a link or a path alone is never the handoff.
@@ -145,3 +150,16 @@ Name this tab "<title with the number + 1>".      (only when known)
 Read .agents/mpi-kanban/state/handoffs/<uuid>.json and use mpi-continue to continue from where we left off.
 The next action is: <next_action.description>
 ```
+
+## 6. Offer to clear this tab (Claude Desktop only)
+
+`session.tab` is set -> end the report by asking, in the next-step box when
+there is one: `Clear this tab and continue here?` (buttons `Yes, clear` /
+`Keep`). That replaces opening a new tab, pasting, and archiving this one.
+No tab id -> skip; the paste block is the route.
+
+On yes: `clear_session` with `session_id: "self"` (deferred; ToolSearch). In
+auto mode the first call can come back bounced, asking for a `session` label;
+repeat it once with that label. Then say only:
+`Cleared when this reply ends. Type "continue" and I pick up this handoff.`
+The clear drops anything queued after it, so do nothing else in that turn.

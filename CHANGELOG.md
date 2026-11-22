@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cannot overtake it. A job without `--ram` runs as before and warns when RAM is under
   the floor. `status` shows free RAM and each job's declared RAM; `status --json` adds a
   top-level `ram` object and a `ram` field on every holder and waiter. A leased video job had driven free RAM from 29 GB to 2.9 GB.
+- **A handoff can clear its own tab in Claude Desktop.** After writing the handoff,
+  `mpi-handoff` asks "Clear this tab and continue here?"; on yes it clears the tab,
+  and typing `continue` there picks the handoff up. That replaces opening a new tab,
+  pasting the resume block, and going back to archive the old one. The handoff now
+  records the Desktop tab id (`session.tab`), which survives a clear while the Claude
+  session id does not, so `mpi-continue` finds that tab's newest open handoff even with
+  other tabs handing off too. Outside Desktop the paste block works as before.
 
 ## [1.8.0] - 2026-11-13
 

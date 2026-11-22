@@ -81,8 +81,8 @@ afterwards is a repair, not the goal.
 
 Source, first match wins: a handoff path (`.agents/mpi-kanban/state/handoffs/<uuid>.json`;
 a legacy `docs/handoffs/` pointer -> load the canonical one it names); a card
-id; a plan path; a `doing` card with `attention.state === "required"`; a
-`doing` card linked to the active plan; without `board.json` only, a legacy
+id; a plan path; in Claude Desktop, the newest `open` handoff whose `session.tab` equals `get_session` `self`'s `sessionId` (deferred tool; how a cleared tab resumes);
+a `doing` card with `attention.state === "required"`; a `doing` card linked to the active plan; without `board.json` only, a legacy
 VALIDATING/IMPLEMENTING/PLANNING `kanban.md` entry with a `Plan file:` line.
 None -> ask `Which MPI plan or handoff should I continue from? Please paste the path.`
 
