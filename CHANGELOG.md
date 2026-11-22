@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A cheap `investigator` agent for large-plan research.** It runs on Haiku, is
+  told never to edit (it keeps read-only shell, not a hard block), and returns a findings report capped at about 60 lines instead of writing to
+  `/tmp/investigation/`. `mpi-create-large-plan` asks for Sonnet when an area asks
+  "why does this happen" rather than "where is X".
+- **A `Model:` line for parallel workers.** A task in a large plan's `## Parallel
+  Batch` may say `Model: haiku`, `sonnet` or `opus`, and `mpi-execute-parallel`
+  tells the orchestrator to pass it as that worker's model. No line, or any other value, keeps the default.
+- **The handoff paste block suggests a model** for the next session: Opus medium
+  for a mechanical step, Opus high for a tricky one, Fable only to plan or review.
+
+### Changed
+
+- **`dispatcher` and `claim-auditor` are pinned to Sonnet at medium effort.** Before,
+  they ran on whatever model and effort the calling session used.
+- **`mpi-create-large-plan` investigates inline by default.** It used to start a
+  sub-agent for every investigation area. Now an area goes to an `investigator`
+  only when it means reading more than about 10 files or long logs, because on a
+  small area the brief and the report cost more than the cheap model saves.
+- **Parallel workers get a done-state and an "if stuck" rule.** The brief now says
+  the verify instruction must pass before a worker reports done, and that after two
+  failed attempts it stops and reports instead of widening its ownership or
+  weakening the check.
+- `validate_plugin.py` now rejects an unknown `model` or `effort` in an agent's
+  frontmatter and keeps the worker `Model:` values the same in both skills.
+
 ## [1.9.1] - 2026-11-22
 
 ### Fixed

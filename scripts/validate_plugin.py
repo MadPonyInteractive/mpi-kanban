@@ -39,6 +39,13 @@ SKILL_LINE_GRANDFATHERED = {
     "mpi-init": 306,
     "mpi-execute-parallel": 277,
 }
+# What an agent's `model` / `effort` frontmatter may say (sub-agents docs). A
+# typo there does not fail at load; the agent quietly runs on the default.
+AGENT_MODELS = {"sonnet", "opus", "haiku", "fable", "inherit"}
+AGENT_EFFORTS = {"low", "medium", "high", "xhigh", "max"}
+# The values a large plan's `Model:` line may carry for a parallel worker. Both
+# skills list them inline; this keeps the two lists and the agent aliases in step.
+WORKER_MODELS = ("haiku", "sonnet", "opus")
 INVALID_MATURITY_EXAMPLES = {
     "active",
     "accepted",
@@ -397,7 +404,8 @@ REPORT_BRIEF_LABELS = (["Next", "How", "Risk"], ["Next", "How", "Risk", "Heads-u
 REPORT_PASTE_BLOCK = re.compile(
     r"```text\n(?:Name this tab[^\n]*\n)?"
     r"Read \.agents/mpi-kanban/state/handoffs/<uuid>\.json[^\n]*\n"
-    r"The next action is:[^\n]*\n```"
+    r"The next action is:[^\n]*\n"
+    r"(?:Suggested model:[^\n]*\n)?```"
 )
 REPORT_MONEY_RULE = (
     "anything that costs money: state the price and the number of runs first; "
@@ -670,6 +678,26 @@ def validate_plugin_hooks() -> None:
                     )
             if frontmatter.get("isolation") not in (None, "worktree"):
                 fail(f"agents/{agent.name}: the only valid isolation is worktree")
+            model = frontmatter.get("model")
+            if model is not None and model not in AGENT_MODELS and not str(model).startswith("claude-"):
+                fail(f"agents/{agent.name}: unknown model {model!r}")
+            effort = frontmatter.get("effort")
+            if effort is not None and effort not in AGENT_EFFORTS:
+                fail(f"agents/{agent.name}: unknown effort {effort!r}")
+
+    # The worker `Model:` values must be listed the same in the plan template and
+    # in the dispatch step that reads them, and each must be a real alias.
+    worker_lists = {
+        "mpi-create-large-plan": "Model: <" + "|".join(WORKER_MODELS),
+        "mpi-execute-parallel": "`haiku` mechanical, `sonnet` default, `opus` judgment",
+    }
+    for name, needle in worker_lists.items():
+        path = ROOT / "skills" / name / "SKILL.md"
+        if path.exists() and needle not in " ".join(path.read_text(encoding="utf-8").split()):
+            fail(f"skills/{name}/SKILL.md: the worker Model: values are not {WORKER_MODELS}")
+    for value in WORKER_MODELS:
+        if value not in AGENT_MODELS:
+            fail(f"WORKER_MODELS: {value!r} is not an agent model alias")
 
     # A skill naming an agent that does not ship is a dead reference; the skill
     # silently skips that step instead of failing.

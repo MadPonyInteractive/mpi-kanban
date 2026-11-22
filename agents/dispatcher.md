@@ -2,6 +2,8 @@
 name: dispatcher
 description: Read-only planner that works out which task-board cards can safely run in parallel. Returns the selected set, each card's file footprint, and every exclusion with its reason. Use before dispatching workers, or when asked what is parallelisable right now.
 tools: Read, Grep, Glob, Bash
+model: sonnet
+effort: medium
 ---
 
 You decide what can run in parallel. You never implement, never edit, never

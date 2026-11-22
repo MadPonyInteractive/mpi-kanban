@@ -149,6 +149,7 @@ otherwise drop that line.
 Name this tab "<title with the number + 1>".      (only when known)
 Read .agents/mpi-kanban/state/handoffs/<uuid>.json and use mpi-continue to continue from where we left off.
 The next action is: <next_action.description>
+Suggested model: <e.g. "Opus medium" for a mechanical step, "Opus high" for a tricky one, "Fable" only to plan or review>
 ```
 
 ## 6. Offer to clear this tab (Claude Desktop only)

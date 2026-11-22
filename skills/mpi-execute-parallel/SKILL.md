@@ -150,29 +150,29 @@ For each task:
 
 1. Resolve its `Briefings:` list or bundle through `mpi-brief-rule` when
    configured.
-1b. Pick the worker type. When `.claude/agents/<name>.md` exists for the task's
-   bundle or archetype name, spawn with `subagent_type: "<name>"` and skip the
-   briefing text that definition already carries. Otherwise spawn a general
-   worker and pass the resolved briefing text inline. Never spawn a worker with
-   `isolation: "worktree"`: a worktree branches from the default branch, not
-   this session's HEAD, and MPI commits only at close-out, so the worker would
-   not see it. Workers share one session id, so `guard-claim` cannot help.
+1b. Pick the worker type and model. When `.claude/agents/<name>.md` exists for
+   the task's bundle or archetype name, spawn with `subagent_type: "<name>"` and
+   skip the briefing text it carries; otherwise spawn a general worker with the
+   briefing inline. Pass a task's `Model:` (`haiku` mechanical, `sonnet`
+   default, `opus` judgment) as the Agent `model`; none or another value passes
+   none. Never use `isolation: "worktree"`: it branches from the default branch,
+   not this session's HEAD, and MPI commits only at close-out, so the worker
+   would not see it. Workers share one session id; `guard-claim` cannot help.
 2. Spawn one worker with:
    - task text,
    - ownership,
-   - verify instruction,
+   - done-state: the verify instruction, which must pass before it reports done,
+   - if stuck: after two failed attempts, stop and report what it tried; never
+     widen its ownership or weaken the verify instruction,
    - relevant rule briefing text,
    - active plan path,
    - active JSON task ID and task workspace path when available,
-   - instruction to register/renew its own `implementer` session and claim only
-     its owned files before editing,
-   - instruction to read relevant `open_messages` at worker startup and before
-     contested file claims, treating messages as async boundary records only,
+   - instruction to register/renew its own `implementer` session, claim only its
+     owned files before editing, and read relevant `open_messages` at startup
+     and before a contested claim (async boundary records only),
    - instruction not to edit `board.json`, `tasks/<id>/task.json`, task
-     workspace files, plan, handoff, rules, or memory unless those paths are
-     explicitly in its ownership,
-   - warning that other workers may edit the repo and unrelated edits must
-     not be reverted,
+     workspace files, plan, handoff, rules, or memory unless they are in its
+     ownership, and not to revert other workers' unrelated edits,
    - the **Mid-work stops** and **Found work** blocks below, verbatim,
    - a budget only when the orchestrator set one in this briefing: state the
      amount; the worker never spends money without it and never goes past it,

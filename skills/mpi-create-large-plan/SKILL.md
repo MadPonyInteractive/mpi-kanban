@@ -20,9 +20,10 @@ revise the remaining work as implementation reveals new facts.
 
 ## Core principles
 
-1. Default to parallel read-only sub-agents for independent investigation
-   areas, not just "where useful." Use a single agent only when investigation
-   areas are not independent or the work is trivial.
+1. Investigate inline by default. A sub-agent costs a brief, a report, and
+   re-reading what it found, so on a small area it costs more than it saves.
+   Hand an area to an `investigator` only when it means reading more than
+   about 10 files or long logs.
 2. Implementation is adaptive through `mpi-continue`.
 3. Default to explicit `## Parallel Batch` sections whenever implementation
    tasks have disjoint, declarable ownership and batch-safe verification.
@@ -57,7 +58,7 @@ What is known now, including relevant files, constraints, and open risks.
 
 ## Parallel Batch: <name>
 
-- [ ] <task>. Ownership: <files/modules>. Briefings: <rule names or bundle>. **Verify:** <batch-safe check>
+- [ ] <task>. Ownership: <files/modules>. Briefings: <rule names or bundle>. Model: <haiku|sonnet|opus, optional>. **Verify:** <batch-safe check>
 - [ ] <task>. Ownership: <files/modules>. Briefings: <rule names or bundle>. **Verify:** <batch-safe check>
 
 ## Plan Drift
@@ -96,10 +97,12 @@ and note why in the plan.
    `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/project-knowledge/indexing.md`. Brief each
    investigation sub-agent with the profile mode and the relevant topic
    block(s), not the whole project.
-3. Identify 2-4 investigation areas. Default to spawning one read-only sub-agent
-   per independent area, in parallel. Sub-agents write findings to
-   `/tmp/investigation/<area>.md` and never edit project files. Use a single
-   agent only when the areas are not independent or the work is trivial.
+3. Identify 2-4 investigation areas and investigate each inline. Only an area
+   that means reading more than about 10 files or long logs goes to an
+   `investigator` agent (Haiku); pass `model: "sonnet"` when the area asks
+   "why does this happen" rather than "where is X". Brief it with the
+   question, where to start, and the facts the plan needs. It returns its
+   report; it never edits. Independent big areas run in parallel.
 4. Synthesize findings into an adaptive plan with `Current State`,
    `Remaining Work`, `Plan Drift`, `Verification`, and `Preservation Notes`.
    Include project mode in `## Current State` when the profile exists.
