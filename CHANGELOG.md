@@ -34,6 +34,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `validate_plugin.py` now rejects an unknown `model` or `effort` in an agent's
   frontmatter and keeps the worker `Model:` values the same in both skills.
 
+- **`continue` no longer starts workers on cards you did not name.** With two or
+  more other ready cards on the board, `continue MPI-x` used to dispatch up to
+  four workers on them unasked, before its brief. Now it lists them on one
+  `Ready cards:` line; say "run the ready cards" to dispatch. A
+  `## Parallel Batch` in the named card's own plan still runs without asking.
+
+### Fixed
+
+- **Creating or moving a card no longer reports failure in a new session.** The
+  session hook writes a session's record but not its `state/index.json` line, so
+  `task_ops.py create|move` did the work, then printed `Board validation FAILED`
+  and exited 1 - and a model that trusted the exit code made the card again.
+  `task_ops.py` now repairs the derived index before it validates, and
+  `mpi-end-session`'s board check runs with `--fix`, which was red at every
+  close-out for the same reason.
+- **The claim and card guards now see PowerShell writes.** They were registered
+  on the PowerShell tool but only knew POSIX writers, so `Set-Content`,
+  `Add-Content`, `Out-File`, `New-Item`, `Copy-Item` and `Move-Item` (and their
+  aliases) walked past them. PowerShell commands are also no longer split with
+  POSIX rules, which ate the backslashes of `src\a.py` and could block a write
+  on a path no claim covers. A target starting with `$`, `~` or `%` is read as
+  unknown rather than as a repo path.
+- **Starting work on a card succeeds first time.** `task_ops.py move --to doing`
+  refused a card with no `checklist.md`, while `beginImplementation` writes the
+  checklist after the move and the card guard blocks that write while no card is
+  in doing - two stops on every start. The move now writes a header-only
+  checklist, as `create` already did. A move to `done` still refuses without
+  `validation.md`.
+
 ## [1.9.1] - 2026-11-22
 
 ### Fixed

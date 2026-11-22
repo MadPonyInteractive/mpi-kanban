@@ -110,6 +110,11 @@ If SPEC and PLAN disagree, ask the user before choosing.
   nothing. Shipped that way from 1.0.0 and fixed in 1.5.0.
 - A skill that dispatches `agents/<name>.md` must ship it;
   `validate_plugin.py` checks this.
+- `mpi-continue` never spawns workers on cards the user did not name. Other
+  ready cards get one `Ready cards:` line on the brief; spawning needs the
+  user's words ("run the ready cards") or a `## Parallel Batch` in the named
+  card's own plan. Until MPI-49 it dispatched up to four workers unasked, before
+  Gate 1, treating a weeks-old plan as today's go-ahead. Do not restore it.
 - `isolation: "worktree"` is not the isolation mechanism for dispatch. A
   worktree branches from the default branch, not the parent's HEAD, and MPI
   commits only at close-out, so a worktree worker cannot see the session's

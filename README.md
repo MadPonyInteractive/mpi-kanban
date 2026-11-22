@@ -277,12 +277,13 @@ inside `python -c` or an interpreted script is still invisible to them.
 
 ## Dispatch
 
-`mpi-continue` evaluates dispatch on every start. When the ready work splits
-into two or more disjoint file sets that are each independently verifiable, it
-dispatches workers and announces the split rather than asking first. It greps
-the real file footprint instead of trusting `files.json`, builds a conflict
-graph, dispatches at most four workers, and reports every card it excluded with
-the reason. Ownership is written at `todo -> doing`, where it is knowable.
+`mpi-continue` works on the card you named and never starts workers on others:
+ready cards you did not name get one `Ready cards:` line in its brief. Say "run
+the ready cards" and `mpi-execute-parallel` greps the real file footprint
+instead of trusting `files.json`, builds a conflict graph, dispatches at most
+four workers, and reports every card it excluded with the reason. A
+`## Parallel Batch` in the named card's own plan still runs without asking.
+Ownership is written at `todo -> doing`, where it is knowable.
 
 Two read-only agents ship with the plugin:
 

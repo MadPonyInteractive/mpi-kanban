@@ -27,9 +27,10 @@ else becomes that column's default (`todo` -> `planned`, `doing` ->
 closed without being built, and `--maturity validating` once validation state
 exists.
 
-The move is refused before anything is written when the destination's linked
-file is missing - `checklist.md` for `doing`, `validation.md` for `done`. Write
-the file, then repeat the command. A card in `done` is never silently reopened
+A move to `doing` writes a header-only `checklist.md` when the card has none;
+`beginImplementation` fills in the items afterwards. A move to `done` is refused
+before anything is written when `validation.md` is missing - write the
+evidence, then repeat the command. A card in `done` is never silently reopened
 by this: moving it back is a deliberate `--to doing` with a reason.
 
 If the move implies agent reconciliation, follow it with `writeTask` to set:

@@ -107,9 +107,9 @@ the agent's pick; nothing edited before a yes.
 
 ## 5. Board check
 
-`python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/validate_board.py <project-root>`
+`python ${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/validate_board.py <project-root> --fix`
 
-- Exit 0: continue.
+- Exit 0: continue. `--fix` makes only the safe repairs (a new session's index line).
 - Non-zero: report every violation line verbatim and fix the board through the
   task-board recipes before committing (inconsistent board state:
   `${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/task-board-ops/validate.md`). Never commit a board the validator

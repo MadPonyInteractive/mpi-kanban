@@ -15,8 +15,7 @@ sub-file only when its line applies:
 - Read-only lookup ("what is MPI-5?", "show MPI-5") -> invoke `mpi-show` and
   stop; never re-inline the lookup here. "Continue it" afterwards comes back.
 - Move or set one card without implementing -> read `<here>/card-update.md`.
-- Whole board ("run the ready cards", "work the board"), a `## Parallel Batch`
-  as the next unit, or two or more ready cards -> read `<here>/dispatch.md`.
+- Whole board ("run the ready cards") or a `## Parallel Batch` next -> read `<here>/dispatch.md`.
 - `state/index.json` shows an open message, stale coordination records, or
   another writer's claim or pending state on a file you need -> read
   `<here>/peers.md`.
@@ -98,11 +97,12 @@ None -> ask `Which MPI plan or handoff should I continue from? Please paste the 
 4. Read the plan; find the card (handoff id, direct id, linked plan, or
    required attention in `doing`).
 5. Check the workspace with small commands (`git status`, targeted reads).
-6. Orient: done, pending, changed, obsolete, blocked? Ready cards are `todo`,
-   `maturity: "planned"`, with a `plan.md`, no required attention - two or more,
-   or a batch next -> `dispatch.md` now, unasked, before the brief. Stale plan
-   -> fix it first: dated bullet in `## Plan Drift`, update `## Current State`,
-   move or rewrite obsolete items. Note docs/rules/memory worth preserving.
+6. Orient: done, pending, changed, obsolete, blocked? Other ready cards (`todo`,
+   `planned`, a `plan.md`, no required attention) are never spawned unasked; Heads-up:
+   `Ready cards: <ids> (<n>). Say "run the ready cards" to check which can run in parallel.`
+   A batch next in this card -> `dispatch.md`. Stale plan -> fix it first: dated
+   bullet in `## Plan Drift`, update `## Current State`, move or rewrite obsolete
+   items. Note docs/rules/memory worth preserving.
 
 ## Gate 1 - Continue brief
 
@@ -113,7 +113,7 @@ implementing.
 Next: <one plain sentence: what I will do>
 How: <one or two plain sentences: the approach>
 Risk: <what could go wrong, or "none">
-Heads-up: <plan drift, a peer holding a needed file, an open message>   (only when one exists)
+Heads-up: <plan drift, a peer holding a needed file, an open message, other ready cards>   (only when one exists)
 ```
 
 ## Implementation

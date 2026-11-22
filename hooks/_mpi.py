@@ -58,11 +58,34 @@ def is_shell(data):
 SEPARATORS = {"&&", "||", ";", "|", "&", "\n"}
 # Commands whose file operands are written, not read.
 WRITERS = {"sed", "tee", "cp", "mv", "truncate", "install"}
+# PowerShell cmdlets that write, lower-cased, aliases included. Value: which
+# named parameter carries the written path, and which positional slot does.
+PS_WRITERS = {
+    "set-content": ("path", 0), "sc": ("path", 0),
+    "add-content": ("path", 0), "ac": ("path", 0),
+    "out-file": ("path", 0),
+    "new-item": ("path", 0), "ni": ("path", 0),
+    "copy-item": ("destination", 1), "cpi": ("destination", 1), "copy": ("destination", 1),
+    "move-item": ("destination", 1), "mi": ("destination", 1), "move": ("destination", 1),
+}
+PS_PATH_PARAMS = {"path": {"-path", "-literalpath", "-filepath", "-lp", "-pspath"},
+                  "destination": {"-destination"}}
+# Named parameters that take a value, so the token after them is not positional.
+# Anything else is read as a switch: a wrong guess there lets a write through,
+# the safe direction, rather than blocking one on a bogus path.
+PS_VALUE_PARAMS = {"-value", "-encoding", "-itemtype", "-type", "-name", "-width",
+                   "-inputobject", "-filter", "-include", "-exclude", "-stream",
+                   "-credential", "-delimiter", "-target"}
 
 
 def _relative(target, root):
-    """`target` as a workspace-relative POSIX path, or None if it escapes root."""
-    if not target or target.startswith("/dev/"):
+    """`target` as a workspace-relative POSIX path, or None if it escapes root.
+
+    A target that starts with `$`, `~` or `%` is a variable or a home path the
+    hook cannot expand; read literally it becomes a bogus repo path that no
+    claim covers, so it is unknown, not guarded.
+    """
+    if not target or target.startswith("/dev/") or target[0] in "$~%":
         return None
     if not os.path.isabs(target):
         target = os.path.join(root, target)
@@ -87,11 +110,36 @@ def outside_workspace(candidate):
             or candidate.startswith("/") or candidate[1:2] == ":")
 
 
-def bash_targets(command):
+def _ps_target(tokens):
+    """The path a PowerShell writer cmdlet writes, or None."""
+    param, slot = PS_WRITERS[tokens[0].lower()]
+    positional, i = [], 1
+    while i < len(tokens):
+        token = tokens[i]
+        if token in (">", ">>"):
+            i += 2
+            continue
+        if token.startswith("-") and len(token) > 1:
+            name, colon, value = token.partition(":")
+            name = name.lower()
+            if name in PS_PATH_PARAMS[param]:
+                if colon:
+                    return value or None
+                return tokens[i + 1] if i + 1 < len(tokens) else None
+            i += 1 if colon or name not in PS_VALUE_PARAMS else 2
+            continue
+        positional.append(token)
+        i += 1
+    return positional[slot] if len(positional) > slot else None
+
+
+def bash_targets(command, powershell=False):
     """Raw paths a shell command writes to.
 
     ponytail: pattern-matched, not parsed. It sees `>`/`>>` redirects, `sed -i`,
-    `tee`, `cp`, `mv`, `truncate` and `install`. It does NOT see a write hidden
+    `tee`, `cp`, `mv`, `truncate` and `install`, and the PowerShell cmdlets in
+    `PS_WRITERS` (MPI-47: registered on PowerShell since 1.5.0, they saw none
+    of its own writers before that). It does NOT see a write hidden
     inside `python -c`, an interpreter script, a Makefile or a `$(...)`
     substitution -- those stay unguarded, and the answer there is to widen this
     list, not to parse the shell. False negatives are the safe direction: a
@@ -99,7 +147,7 @@ def bash_targets(command):
     way to stop the agent working.
     """
     found = []
-    for tokens in _segments(command):
+    for tokens in _segments(command, powershell):
         i = 0
         redirected = set()
         while i < len(tokens):
@@ -109,6 +157,11 @@ def bash_targets(command):
                 i += 2
                 continue
             i += 1
+        if tokens[0].lower() in PS_WRITERS:
+            target = _ps_target(tokens)
+            if target:
+                found.append(target)
+            continue
         verb = os.path.basename(tokens[0])
         if verb not in WRITERS:
             continue
@@ -125,19 +178,26 @@ def bash_targets(command):
     return found
 
 
-def _segments(command):
+def _segments(command, powershell=False):
     """The command's tokens, split at `&&`, `||`, `;` and `|`.
 
     `shlex` with `punctuation_chars` is what makes this safe: it keeps a quoted
     `'s|a|b|'` or a `grep 'x >> y'` intact, which a regex split over the raw
     string cannot, and it hands back `>` and `>>` as their own tokens.
+
+    PowerShell is lexed non-POSIX: its escape is the backtick, and POSIX mode
+    eats the backslashes of `skills\\mpi-lib\\x.py`, turning a real path into a
+    bogus one that no claim covers. Non-POSIX keeps the quotes, so strip them.
     """
-    lexer = shlex.shlex(command or "", posix=True, punctuation_chars=True)
+    lexer = shlex.shlex(command or "", posix=not powershell, punctuation_chars=True)
     lexer.whitespace_split = True
     try:
         tokens = list(lexer)
     except ValueError:  # an unbalanced quote: read nothing rather than guess
         return []
+    if powershell:
+        tokens = [t[1:-1] if len(t) > 1 and t[0] == t[-1] and t[0] in "'\"" else t
+                  for t in tokens]
     segments, current = [], []
     for token in tokens:
         if token in SEPARATORS:
@@ -168,7 +228,8 @@ def written_paths(data):
         return [rel or target.replace(os.sep, "/")]
     if data.get("tool_name") == "Bash" or "command" in tool_input:
         seen = []
-        for raw in bash_targets(tool_input.get("command")):
+        for raw in bash_targets(tool_input.get("command"),
+                                data.get("tool_name") == "PowerShell"):
             rel = _relative(raw, root)
             if rel and rel not in seen:
                 seen.append(rel)
@@ -337,6 +398,28 @@ def _selftest():
     assert bash("python scripts/x.py 2>&1 | head") == []
     assert bash("sed -i 's/a/b/' /elsewhere/app.py") == [], "outside the project"
     assert bash("") == []
+    assert bash("echo x > $TEMP/a.txt") == [], "a variable is unknown, not a repo path"
+    assert bash("cp a.py ~/b.py") == [] and bash("echo x > %TEMP%\\a.txt") == []
+
+    def ps(command):
+        return written_paths({"cwd": root, "tool_name": "PowerShell",
+                              "tool_input": {"command": command}})
+
+    # PowerShell's own writers (MPI-47)
+    assert ps("Set-Content -Path src\\a.py -Value 'x'") == ["src/a.py"], "backslashes survive"
+    assert ps("Set-Content src/a.py 'x'") == ["src/a.py"], "positional path"
+    assert ps("set-content -Value x -Encoding utf8 'a b.py'") == ["a b.py"], "case, quotes"
+    assert ps("Add-Content -LiteralPath:notes.md -Value x") == ["notes.md"], "colon form"
+    assert ps("'x' | Out-File -FilePath out.txt -Encoding utf8") == ["out.txt"]
+    assert ps("Get-Content a | Out-File out.txt") == ["out.txt"]
+    assert ps("New-Item -ItemType File -Path src/new.py -Force") == ["src/new.py"]
+    assert ps("Copy-Item src/a.py src/b.py") == ["src/b.py"], "only the destination"
+    assert ps("Copy-Item -Path src/a.py -Destination src/b.py") == ["src/b.py"]
+    assert ps("Move-Item -Destination dst.py -Path src.py") == ["dst.py"]
+    assert ps("cpi a.py b.py; mi c.py d.py") == ["b.py", "d.py"], "aliases"
+    assert ps("Set-Content -Path $env:TEMP\\x.txt -Value 1") == []
+    assert ps("Get-Content src/a.py") == [] and ps("Copy-Item a.py") == []
+    assert ps("echo x > notes.md") == ["notes.md"], "redirects still count"
 
     # Edit/Write keep naming their own target
     assert written_paths({"cwd": root,

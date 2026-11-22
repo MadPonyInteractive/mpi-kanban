@@ -84,12 +84,12 @@ according to the lifecycle rules.
 
 ## Board batch source
 
-Use this when the user asks to run the ready cards, dispatch ready cards, or
-work the board, instead of naming a plan batch, and when `mpi-continue` hands
-over a set from its `## Autonomous dispatch` evaluation unasked. A handed-over
-set is already conflict-checked; re-run the validator and selection anyway,
-since that evaluation is read-only and the board may have moved. Requires
-`.agents/mpi-kanban/board.json`; no legacy Markdown equivalent.
+Use this only when the user asks to run the ready cards, dispatch ready cards,
+or work the board - never on a set `mpi-continue` found unasked (MPI-49).
+Requires `.agents/mpi-kanban/board.json`; no legacy Markdown equivalent. When
+`agents/dispatcher.md` ships, delegate the selection below to it
+(`subagent_type: "dispatcher"`, read-only, keeps the card and plan reads out
+of this context); otherwise select inline and say which.
 
 First, run the board validator with the safe auto-repair:
 

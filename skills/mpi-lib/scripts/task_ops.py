@@ -185,11 +185,16 @@ def move(root: Path, task_id: str, to_column: str, maturity: str | None,
         maturity = card["maturity"]  # a legal value survives the move
     maturity = coherent(to_column, maturity)
 
-    # Refuse BEFORE writing anything. `doing` needs a checklist and `done` needs
-    # validation evidence, so making the move first and reporting after would be
-    # this script producing the very half-state it exists to prevent.
+    # `doing` needs a checklist: seed a header-only one, as `create` does, and
+    # let beginImplementation derive the items once the card is in `doing`.
+    # Refusing here deadlocked that recipe (MPI-48): it writes the checklist
+    # AFTER the move, and guard-card blocks that write while nothing is in doing.
+    # `done` needs validation EVIDENCE, which a stub would fake - so refuse
+    # BEFORE writing anything rather than produce the half-state this prevents.
     key = REQUIRED_LINK.get(to_column)
     rel = (card.get("links") or {}).get(key) if key else None
+    if isinstance(rel, str) and to_column == "doing" and not (tasks_root / task_id / rel).exists():
+        (tasks_root / task_id / rel).write_text(f"# {task_id} Checklist\n", encoding="utf-8")
     if isinstance(rel, str) and not (tasks_root / task_id / rel).exists():
         raise Failure(f"{task_id} cannot move to {to_column} until {rel} exists - "
                       f"write it, then repeat this command")
@@ -318,7 +323,15 @@ def release(root: Path, session_id: str, status: str) -> list[str]:
 
 
 def report(root: Path) -> int:
-    """The check the create path could finish without ever running."""
+    """The check the create path could finish without ever running.
+
+    The derived index is repaired first: session-start writes a session record
+    but never its `state/index.json` line (an index write would race other
+    windows), so without this every new session's create or move did its work
+    and then exited 1 - and a model that trusts the exit code creates the card
+    again. The repair only restates statuses already on disk.
+    """
+    repair_state_index(root)
     errors = validate_board(root)
     for err in errors:
         print(f"  - {err}", file=sys.stderr)
@@ -431,24 +444,27 @@ def _selftest() -> None:
         assert (board_root / "tasks" / third / "checklist.md").is_file()
         assert validate_board(root) == []
 
-        # a column whose linked file is missing is refused before anything is written
-        try:
-            move(root, task_id, "doing", None, "", "claude")
-        except Failure as exc:
-            assert "checklist.md" in str(exc)
-            assert task_id not in load(board_root / "board.json")["columns"]["doing"]
-        else:
-            raise AssertionError("moving to doing without a checklist must be refused")
-
-        # move reconciles maturity, status, and both logs
+        # done without validation evidence is refused before anything is written
         folder = board_root / "tasks" / task_id
-        (folder / "checklist.md").write_text(f"# {task_id} Checklist\n", encoding="utf-8")
-        (folder / "validation.md").write_text(f"# {task_id} Validation\n", encoding="utf-8")
+        try:
+            move(root, task_id, "done", None, "", "claude")
+        except Failure as exc:
+            assert "validation.md" in str(exc)
+            assert task_id not in load(board_root / "board.json")["columns"]["done"]
+        else:
+            raise AssertionError("moving to done without validation.md must be refused")
+
+        # a todo card with no checklist reaches doing in ONE command (MPI-48),
+        # and the move reconciles maturity, status, and both logs
+        assert not (folder / "checklist.md").exists()
         move(root, task_id, "doing", None, "picked up", "claude")
+        assert (folder / "checklist.md").read_text(encoding="utf-8") == f"# {task_id} Checklist\n"
         board = load(board_root / "board.json")
         assert board["columns"]["doing"] == ["MPI-7", third]
         assert board["columns"]["todo"] == ["MPI-8"]
         assert load(board_root / "tasks" / task_id / "task.json")["maturity"] == "in-progress"
+        assert validate_board(root) == []
+        (folder / "validation.md").write_text(f"# {task_id} Validation\n", encoding="utf-8")
         move(root, task_id, "done", None, "", "claude")
         card = load(board_root / "tasks" / task_id / "task.json")
         assert card["maturity"] == "complete" and card["status"] == "done"
@@ -508,6 +524,16 @@ def _selftest() -> None:
         assert mine["status"] == "complete" and mine["recent_events"][-1]["event"] == "claim_released"
         assert load(state / "files" / "peer.json")["status"] == "claimed", "a peer's claim is not mine"
         assert release(root, "me", "complete") == [], "nothing left to release"
+
+        # A new session: session-start writes the record but never the index
+        # line, so a create that worked must still exit 0 (MPI-46).
+        write_json(state / "sessions" / "s3.json", {
+            "schema": "mpi-kanban/session/v1", "status": "active",
+            "claude_session_id": "fresh"}, "\n", 2)
+        assert validate_board(root), "the unlisted session must be seen first"
+        assert main(["create", "--root", str(root), "--title", "Fresh"]) == 0, \
+            "a create in a new session must not report failure"
+        assert f"{rel}sessions/s3.json" in load(state / "index.json")["active_sessions"]
 
     # Archive in place: off the board, folder kept, and NOT an orphan to --fix.
     with tempfile.TemporaryDirectory() as tmp:

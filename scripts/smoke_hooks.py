@@ -150,6 +150,25 @@ def main():
                       bash_payload(root, "grep -n 'x > y' src/api/routes.py"))
         checks.append(("guard-claim allows a read of a claimed file", code == 0))
 
+        # PowerShell's own writers. Registered on PowerShell since 1.5.0, the
+        # guards still only knew POSIX writers, so Set-Content walked past (MPI-47).
+        code, err = run("guard-claim.py", powershell_payload(
+            root, "Set-Content -Path src\\api\\routes.py -Value x"))
+        checks.append(("guard-claim blocks a PowerShell Set-Content of a claimed file",
+                       code == 2 and "BLOCKED" in err))
+
+        code, err = run("guard-claim.py", powershell_payload(
+            root, "Copy-Item src/a.py src/ui/main.py"))
+        checks.append(("guard-claim blocks an unclaimed PowerShell Copy-Item while a peer is live",
+                       code == 2 and "not claimed" in err))
+
+        code, _ = run("guard-claim.py", powershell_payload(root, "Get-Content src/api/routes.py"))
+        checks.append(("guard-claim allows a PowerShell read of a claimed file", code == 0))
+
+        code, err = run("_mpi.py", {})
+        checks.append(("_mpi selftest (shell write parsing) passes",
+                       code == 0 and not err))
+
         # Rule 2 has to leave the coordination records themselves writable, or
         # claiming -- itself a write -- could never happen.
         code, _ = run("guard-claim.py",
