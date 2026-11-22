@@ -311,6 +311,12 @@ def main():
         checks.append(("session-start registers the session it was handed",
                        (sessions_dir(root) / "me.json").exists()))
 
+        index = json.loads(pathlib.Path(root, ".agents", "mpi-kanban", "state",
+                                        "index.json").read_text(encoding="utf-8-sig"))
+        checks.append(("session-start lists its session in the index (MPI-39)",
+                       ".agents/mpi-kanban/state/sessions/me.json"
+                       in (index.get("active_sessions") or [])))
+
         # The repo has to reach the browser board's tab list without anyone
         # remembering to run a command inside it.
         registered = json.loads(REGISTRY.read_text(encoding="utf-8")) if REGISTRY.exists() else {}
@@ -352,6 +358,11 @@ def main():
         record = json.loads((sessions_dir(root) / "me.json").read_text(encoding="utf-8-sig"))
         checks.append(("session-end closes the record it was handed",
                        code == 0 and not out and record["status"] == "closed"))
+        index = json.loads(pathlib.Path(root, ".agents", "mpi-kanban", "state",
+                                        "index.json").read_text(encoding="utf-8-sig"))
+        checks.append(("session-end drops its session from the index (MPI-39)",
+                       ".agents/mpi-kanban/state/sessions/me.json"
+                       not in (index.get("active_sessions") or [])))
 
         code, out = run_out("precompact-handoff.py", {"session_id": "me", "cwd": root,
                                                       "hook_event_name": "PreCompact",

@@ -279,11 +279,48 @@ def ensure_session(root, session_id, now, renew_after_minutes=15):
                   "started_at": _stamp(now),
                   "allowed_actions": ["read", "edit", "verify", "implement"]}
     elif live_session(record, renew_after_minutes, now):
+        index_session(root, rel)  # a read; writes only if a race lost the line
         return rel  # ponytail: a beat this fresh does not need rewriting
     record["status"] = "active"
     record["heartbeat_at"] = _stamp(now)
     write_json(path, record)
+    index_session(root, rel)
     return rel
+
+
+def index_session(root, rel, listed_now=True):
+    """Add (or, with `listed_now=False`, remove) a session's `active_sessions` line.
+
+    Without it every new session started with a red board: `validate_board.py`
+    fails on an active record the index does not list, and on a closed record it
+    still lists - session-end closes the record (MPI-39). Read-modify-write,
+    so two sessions starting in the same instant can lose one line; that leaves
+    the old red state for one session until the next `task_ops.py` call or
+    `--fix` re-derives the array, which is why there is no lock. Never a reason to
+    block: the record on disk is the authority, the index is derived from it.
+    """
+    path = os.path.join(root, STATE, "index.json")
+    try:
+        with open(path, "rb") as handle:
+            raw = handle.read()
+        index = json.loads(raw.decode("utf-8-sig"))
+        if not isinstance(index, dict):
+            return
+        listed = index.get("active_sessions")
+        if not isinstance(listed, list):
+            listed = []
+        if (rel in listed) == listed_now:
+            return
+        index["active_sessions"] = (listed + [rel] if listed_now
+                                    else [entry for entry in listed if entry != rel])
+        newline = "\r\n" if b"\r\n" in raw else "\n"
+        body = json.dumps(index, indent=2, ensure_ascii=False) + "\n"
+        tmp = path + ".tmp"
+        with open(tmp, "wb") as handle:
+            handle.write(body.replace("\n", newline).encode("utf-8"))
+        os.replace(tmp, path)
+    except Exception:
+        return
 
 
 def live_peers(root, session_id, timeout_minutes, now):
@@ -434,6 +471,30 @@ def _selftest():
     assert parse_stamp("2026-08-19T11:30:00Z") == parse_stamp("2026-08-19T11:30:00+00:00")
     assert parse_stamp("not a date") is None
     assert ensure_session(root, None, now) is None, "no session id, no record"
+
+    # MPI-39: a new session lists itself in the index, once, keeping CRLF
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        os.makedirs(os.path.join(tmp, STATE))
+        index_path = os.path.join(tmp, STATE, "index.json")
+        with open(index_path, "wb") as handle:
+            handle.write(b'{\r\n  "active_sessions": [],\r\n  "keep": 1\r\n}\r\n')
+        rel = ensure_session(tmp, "s1", now)
+        ensure_session(tmp, "s1", now + datetime.timedelta(minutes=30))  # renew
+        index_session(tmp, rel, listed_now=False)  # a lost line...
+        ensure_session(tmp, "s1", now + datetime.timedelta(minutes=31))  # ...fresh beat
+        with open(index_path, "rb") as handle:
+            assert json.loads(handle.read())["active_sessions"] == [rel], "re-listed"
+        with open(index_path, "rb") as handle:
+            raw = handle.read()
+        index = json.loads(raw)
+        assert index["active_sessions"] == [rel], index
+        assert index["keep"] == 1 and b"\r\n" in raw and b"\n" not in raw.replace(b"\r\n", b"")
+        index_session(tmp, rel, listed_now=False)  # what session-end does
+        with open(index_path, "rb") as handle:
+            assert json.loads(handle.read())["active_sessions"] == []
+        os.remove(index_path)
+        assert ensure_session(tmp, "s2", now), "no index is not a reason to fail"
     print("_mpi selftest OK")
 
 

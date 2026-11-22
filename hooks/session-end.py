@@ -51,10 +51,12 @@ def main():
     session_id = data.get("session_id")
     if not session_id:
         sys.exit(0)
-    path = os.path.join(root, _mpi.SESSIONS, "%s.json" % session_id)
+    rel = "%s/%s.json" % (_mpi.SESSIONS, session_id)
+    path = os.path.join(root, rel)
     closed = close_record(_mpi.read_json(path), datetime.datetime.now(datetime.timezone.utc))
     if closed:
         _mpi.write_json(path, closed)
+        _mpi.index_session(root, rel, listed_now=False)  # MPI-39: or the board goes red
     sys.exit(0)
 
 

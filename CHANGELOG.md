@@ -57,6 +57,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `task_ops.py` now repairs the derived index before it validates, and
   `mpi-end-session`'s board check runs with `--fix`, which was red at every
   close-out for the same reason.
+- **A new session no longer starts with a red board.** The session hooks now keep
+  `state/index.json` `active_sessions` in step with the record they write: the
+  start hook adds the session's line, and the end hook removes it when it closes
+  the record. Before, every session start warned `active_sessions is missing 1
+  record(s)`, every ended session left a `lists 1 record(s) whose status no longer
+  qualifies` line, and `validate_board.py` stayed red until someone ran `--fix`.
+  The index write has no lock, so two sessions starting in the same instant can
+  still lose a line; the next guarded write by that session puts it back.
 - **The claim and card guards now see PowerShell writes.** They were registered
   on the PowerShell tool but only knew POSIX writers, so `Set-Content`,
   `Add-Content`, `Out-File`, `New-Item`, `Copy-Item` and `Move-Item` (and their
