@@ -205,9 +205,10 @@ python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/gpu_lease.py" status
    the line; `--poll` only sets how fast you notice your turn.
 3. `run` sets `CUDA_VISIBLE_DEVICES` for the child, which sees its device as
    `0` whichever slot it got. Do not set that variable yourself.
-4. Exit 75 means the wait expired and the command never ran. Re-run with a
-   longer `--timeout`, or ask the holder to finish - `status` names the repo,
-   pid, and command.
+4. Exit 75 means the command never ran. Read its last message: when the wait
+   expired with the GPU busy, re-run with a longer `--timeout`, or ask the
+   holder to finish (`status` names the repo, pid, and command); when it says
+   RAM, follow step 9 and do not just re-run.
 5. There is no release step and no heartbeat. The kernel drops the lock when
    the command exits, including on crash or kill.
 6. **Exit 76 means a person took the GPU over** (`gpu_lease.py interrupt`, e.g.
@@ -222,11 +223,20 @@ python "${CLAUDE_PLUGIN_ROOT}/skills/mpi-lib/scripts/gpu_lease.py" status
    reports it is past half is never interrupted.
 8. A job that needs a lot of system RAM declares it: `run --ram <GB>`. It starts
    only when that much plus a floor (8 GB, `MPI_KANBAN_RAM_FLOOR_GB`) is
-   Available; at the front of the line it waits there, keeping its place, so
-   no later job overtakes it - a GPU lease alone let a
-   leased job drive the box down to 2.9 GB. Without `--ram` it runs as before
-   and only warns when RAM is under the floor. `status` shows free RAM and each
-   job's declared `ram`.
+   Available - a GPU lease alone let a leased job drive the box down to 2.9 GB.
+   Without `--ram` it runs as before and only warns when RAM is under the floor.
+   **Declare a measured figure, never a guess:** every leased run prints the RAM
+   it really took when it ends. A guess of 30 GB once froze six sessions for
+   2.5 hours.
+9. A job short of RAM does not hold the line: it keeps its place and the jobs
+   behind it that fit go ahead. At its turn with the GPU free it takes idle RAM
+   back first (Windows trims what other programs are not using; an idle ComfyUI
+   engine named in `~/.mpi-kanban/gpu/config.json` unloads its cached models).
+   If it is still short after `--ram-wait` seconds (300), or if it asks for more
+   RAM than the machine has, it **exits 75 with a sentence saying how much is
+   missing and who holds the RAM. Do not re-run it as it is:** lower `--ram` to
+   the measured figure if it was a guess, otherwise tell the user that sentence
+   and wait for them. `status` prints the same sentence for any waiting job.
 
 `status --json` prints the same as data: each slot's holder (its pid, agent
 `session`, `reason`, `progress`) and each waiter (`ticket`, `paused`). The

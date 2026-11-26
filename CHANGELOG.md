@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A GPU job waiting for RAM no longer freezes everyone behind it.** A job
+  that declared `--ram 30` on a guess sat first in line for 2.5 hours with the
+  GPU free, because 38 GB was never Available, and five other sessions waited
+  behind it. Now a job short of RAM keeps its place while the jobs behind it
+  that fit go ahead, and it is first again the moment its RAM is there. It still
+  never starts short of what it declared plus the floor.
+
+### Added
+
+- **The lease takes idle RAM back before it calls RAM short.** At its turn with
+  the GPU free, a job short of RAM has Windows trim the memory other programs
+  are not using (nothing is closed), and asks an idle ComfyUI engine to unload
+  its cached models when one is named in `MPI_KANBAN_COMFYUI` or
+  `~/.mpi-kanban/gpu/config.json` (`{"comfyui": [url]}`).
+- **A job that cannot get its RAM says so and stops.** Still short after
+  `--ram-wait` seconds with the GPU free (300 by default), it exits 75 with one
+  sentence: how much RAM is missing and which apps hold the most. An ask bigger
+  than the machine's RAM is refused at once.
+- **Every leased run prints the RAM it really took**, so the next `--ram` is a
+  measurement.
+- **`gpu_lease.py status` says why a job waits and who holds the RAM**: a plain
+  sentence per job that waits for RAM, and the biggest RAM holders by app.
+  `status --json` carries `ram_short` per waiter and `ram.holders`.
+
 ## [1.10.0] - 2026-11-22
 
 ### Added

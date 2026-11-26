@@ -388,11 +388,25 @@ lingers still holds off the next waiter. Ollama is found at `OLLAMA_HOST`, defau
 
 System RAM counts when a job says what it needs. `run --ram <GB>` starts the job
 only once that much plus a floor (8 GB by default, `MPI_KANBAN_RAM_FLOOR_GB`) is
-Available - standby memory included, as Task Manager counts it. When it reaches the
-front of the line it waits there, keeping its place, so a later small job cannot
-overtake it. A job without `--ram` runs
-as before and only warns when RAM is under the floor. `status` shows free RAM, free
-commit, and each job's declared `ram`.
+Available - standby memory included, as Task Manager counts it. A job without
+`--ram` runs as before and only warns when RAM is under the floor.
+
+A job short of RAM never holds the line. It keeps its place, and the jobs behind
+it that fit go ahead, so a free GPU is never left idle; the moment its RAM is
+there it is ahead of them again. At its turn with the GPU free it first takes
+idle RAM back: Windows trims the memory other programs are not using (the "free
+memory" button of a system dashboard - nothing is closed), and an idle ComfyUI
+engine unloads its cached models if you name it in `MPI_KANBAN_COMFYUI` or in
+`~/.mpi-kanban/gpu/config.json` as `{"comfyui": ["http://127.0.0.1:8188"]}` (an
+engine with a job in its queue is never touched). Still short after `--ram-wait`
+seconds of that (300 by default), it exits 75 with one sentence: how much RAM is
+missing and which apps hold the most. An ask bigger than the machine's RAM is
+refused at once instead of queueing.
+
+Every leased run prints the RAM it really took when it ends, so `--ram` should be
+that measured figure, never a guess. `status` shows free RAM, free commit, each
+job's declared `ram`, a plain sentence for each job that waits for RAM rather
+than the GPU, and the apps holding the most RAM.
 
 Enforcement is opt-in per project - see `gpu_command_patterns` below. The
 exception is a direct Ollama call (`ollama run`, or an HTTP call to

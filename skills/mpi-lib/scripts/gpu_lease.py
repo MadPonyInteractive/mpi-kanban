@@ -46,9 +46,18 @@ and when a leased command exits, every model Ollama holds is unloaded before the
 slot is released, so nothing the command loaded outlives its lease.
 
 System RAM gates a job that declares it (MPI-43): `run --ram 45 -- <cmd>` starts only
-when 45 GB plus a floor (8 GB, `MPI_KANBAN_RAM_FLOOR_GB`) is Available: at the front of
-the line it waits there, keeping its place, so no later job overtakes it. A leased job alone once drove free RAM
-from 29 GB to 2.9 GB. Without `--ram` nothing waits; a warning prints under the floor.
+when 45 GB plus a floor (8 GB, `MPI_KANBAN_RAM_FLOOR_GB`) is Available. A leased job alone
+once drove free RAM from 29 GB to 2.9 GB. Without `--ram` nothing waits; a warning prints
+under the floor.
+
+A job short of RAM never holds the line (MPI-52: one did, for 2.5 h, with the GPU free and
+five sessions behind it). It keeps its place and the waiters behind it that fit go ahead.
+At its turn with the GPU free it first takes idle RAM back -- Windows trims the memory other
+programs are not using (nothing is closed), and an idle ComfyUI engine named in
+`MPI_KANBAN_COMFYUI` or `<root>/config.json` {"comfyui": [url]} unloads its cached models --
+and if it is still short after `--ram-wait` seconds (300) of that, it exits 75 saying how
+much is missing and who holds the RAM. An ask bigger than the machine is refused at once.
+Every leased run prints the RAM it really took, so `--ram` is a measurement, not a guess.
 
 A person can take the GPU over (the Cubric-Vision GPU desk does this):
 
@@ -60,7 +69,8 @@ A person can take the GPU over (the Cubric-Vision GPU desk does this):
 A command may write its progress (0..1) to the file named by $MPI_KANBAN_GPU_PROGRESS;
 `status --json` shows it, so whoever wants the GPU can see how far along the job is.
 
-Exit codes: the child's; 75 when the wait timed out and the child never ran; 76 when a
+Exit codes: the child's; 75 when the child never ran (the wait timed out, or RAM stayed
+short with the GPU free -- the message says which); 76 when a
 person took the GPU over and stopped the child -- what it finished is kept, re-run only
 the rest (a re-run waits in the queue until they release).
 
@@ -83,6 +93,8 @@ WAIT_TIMEOUT = 75  # EX_TEMPFAIL: the wait expired, the command did not run
 TAKEN_OVER = 76  # a person took the GPU over (`interrupt`): the command was stopped, re-run what is left
 TICKET_LOCK_AT = 1 << 20  # past the ticket's JSON: Windows refuses reads of a locked byte
 RAM_FLOOR_GB = 8.0  # kept free on top of a job's --ram (MPI-43: a leased job ran the box to 2.9 GB)
+RAM_WAIT = 300.0  # seconds a job stands at its turn, GPU free, short of RAM, before it gives up (MPI-52)
+RAM_RECLAIM_EVERY = 120.0  # seconds between two tries at taking idle RAM back
 
 
 def root():
@@ -214,8 +226,143 @@ def _ram_short(need):
     free, floor = ram(), ram_floor()
     available = free.get("available_gb", float("inf"))
     if available < need + floor:
-        return "%.1f GB RAM available, the job declares %g GB + %g GB floor" % (available, need, floor)
+        return ("it needs %g GB of RAM free (%g GB declared + %g GB kept spare), %.1f GB is free: "
+                "%.3g GB short" % (need + floor, need, floor, available, need + floor - available))
     return None
+
+
+def _ram_never(need):
+    """Why a job declaring `need` GB can never start on this machine, or None."""
+    total = ram().get("total_gb") if need else None
+    if total and need + ram_floor() > total:
+        return ("it declares %g GB of RAM + %g GB kept spare, and this machine has %g GB in all"
+                % (need, ram_floor(), total))
+    return None
+
+
+def ram_holders(top=6):
+    """The apps holding the most RAM, biggest first: [{name, gb, count}], [] when unreadable.
+
+    Processes are summed by name, so 40 small windows of one app show as the one big holder
+    they are. `MPI_KANBAN_PROCS_FILE` names a JSON list of [name, GB] read instead (self-check).
+    """
+    rows = []
+    try:
+        fake = os.environ.get("MPI_KANBAN_PROCS_FILE")
+        if fake:
+            rows = [(name, float(size)) for name, size in _read(fake) or []]
+        elif os.name == "nt":
+            out = subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 "Get-Process | ForEach-Object { $_.ProcessName + '|' + $_.WorkingSet64 }"],
+                capture_output=True, text=True, timeout=30, creationflags=0x08000000).stdout  # no window
+            rows = [(line.rsplit("|", 1)[0], int(line.rsplit("|", 1)[1]) / 1024.0 ** 3)
+                    for line in out.splitlines() if "|" in line]
+        else:
+            out = subprocess.run(["ps", "-eo", "rss=,comm="], capture_output=True, text=True,
+                                 timeout=30).stdout
+            rows = [(os.path.basename(line.split(None, 1)[1]), int(line.split(None, 1)[0]) / 1024.0 ** 2)
+                    for line in out.splitlines() if len(line.split(None, 1)) == 2]
+    except (OSError, ValueError, TypeError, subprocess.SubprocessError):
+        return []
+    apps = {}
+    for name, size in rows:
+        app = apps.setdefault(name, {"name": name, "gb": 0.0, "count": 0})
+        app["gb"] += size
+        app["count"] += 1
+    biggest = sorted(apps.values(), key=lambda app: -app["gb"])[:top]
+    return [dict(app, gb=round(app["gb"], 1)) for app in biggest]
+
+
+def _holders_text(holders):
+    return ", ".join("%s %g GB (%d)" % (app["name"], app["gb"], app["count"]) for app in holders)
+
+
+def ram_trim():
+    """Ask Windows to take idle memory back from every other program; how many it trimmed.
+
+    What a "free memory" button does (`EmptyWorkingSet`): pages a program is not touching
+    leave its working set and become Available. Nothing is closed and nothing is lost -- a
+    program that wants a page back gets it back, a little slower the first time. Only
+    programs this user may adjust are reached. Windows only; never run on a fake RAM
+    reader, so the self-check does not trim the real machine.
+    """
+    if os.name != "nt" or os.environ.get("MPI_KANBAN_RAM_FILE"):
+        return 0
+    import ctypes
+    from ctypes import wintypes
+    kernel, psapi = ctypes.windll.kernel32, ctypes.windll.psapi
+    kernel.OpenProcess.restype = wintypes.HANDLE
+    kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    psapi.EmptyWorkingSet.argtypes = [wintypes.HANDLE]
+    pids = (wintypes.DWORD * 8192)()
+    used = wintypes.DWORD()
+    if not psapi.EnumProcesses(pids, ctypes.sizeof(pids), ctypes.byref(used)):
+        return 0
+    trimmed = 0
+    for pid in pids[:used.value // ctypes.sizeof(wintypes.DWORD)]:
+        if pid in (0, os.getpid()):
+            continue
+        handle = kernel.OpenProcess(0x0100 | 0x1000, False, pid)  # SET_QUOTA | QUERY_LIMITED_INFORMATION
+        if not handle:
+            continue  # not ours to adjust (system, another user)
+        trimmed += bool(psapi.EmptyWorkingSet(handle))
+        kernel.CloseHandle(handle)
+    return trimmed
+
+
+def _engines():
+    """ComfyUI engines whose cached models the lease may unload: `MPI_KANBAN_COMFYUI`
+    (comma-separated URLs), else `comfyui` in `<root>/config.json`. None by default."""
+    override = os.environ.get("MPI_KANBAN_COMFYUI")
+    if override is not None:
+        return [url.strip().rstrip("/") for url in override.split(",") if url.strip()]
+    return [url.rstrip("/") for url in _read(os.path.join(root(), "config.json")).get("comfyui") or []]
+
+
+def comfy_free():
+    """Ask every IDLE ComfyUI engine to unload its cached models; the URLs asked.
+
+    An engine keeps the last job's models in RAM for the next one, which then unloads them
+    itself -- so they are not RAM the next job lacks. Idle means nothing running or pending
+    in its queue; an engine with a job is never touched. Call it holding the slot, so no
+    leased job is mid-run.
+    """
+    asked = []
+    for url in _engines():
+        try:
+            with urllib.request.urlopen(url + "/queue", timeout=3) as reply:
+                queue = json.load(reply)
+            if queue.get("queue_running") or queue.get("queue_pending"):
+                continue
+            request = urllib.request.Request(
+                url + "/free", json.dumps({"unload_models": True, "free_memory": True}).encode(),
+                {"Content-Type": "application/json"})
+            urllib.request.urlopen(request, timeout=10).close()
+            asked.append(url)
+        except Exception:  # not running, not ComfyUI: nothing to free there
+            continue
+    return asked
+
+
+def _ram_reclaim(need, short):
+    """Take back RAM nobody is using, then say again why the job may not start (or None).
+
+    Run by a job at its turn, holding the free slot, before RAM is called short.
+    """
+    trimmed, asked = ram_trim(), comfy_free()
+    if trimmed:
+        print("mpi-kanban: short of RAM, so asked Windows to take idle memory back from %d programs"
+              % trimmed, file=sys.stderr, flush=True)
+    if asked:
+        print("mpi-kanban: short of RAM, so asked the idle engine at %s to unload its cached models"
+              % ", ".join(asked), file=sys.stderr, flush=True)
+    deadline = time.monotonic() + (20 if trimmed or asked else 0)
+    while short and time.monotonic() < deadline:
+        time.sleep(1)
+        short = _ram_short(need)
+    return short
 
 
 def _take(handle, at=0):
@@ -356,10 +503,24 @@ def _enqueue(argv, reason=None, front=False, ram_gb=None):
 
 
 def _first(ticket):
-    """True when `ticket` is the first live waiter that is not paused (`pause`)."""
+    """True when it is `ticket`'s turn: no live waiter ahead of it could start now.
+
+    A waiter ahead is passed while it is paused (`pause`) or short of the RAM it declared
+    (MPI-52). Each keeps its place: the moment it could start, it is ahead again. Any waiter
+    can tell, because a ticket records its `ram` and free RAM is one reading for the machine.
+    Whether `ticket` itself has the RAM is its owner's check, not this one.
+    """
     with _queue_lock():
-        ready = [path for path in _tickets() if not os.path.exists(_paused(path))]
-        return ready[:1] == [ticket.name]
+        for path in _tickets():
+            if os.path.exists(_paused(path)):
+                if path == ticket.name:
+                    return False
+                continue
+            if path == ticket.name:
+                return True
+            if not _ram_short(_read(path).get("ram")):
+                return False
+    return False
 
 
 def _leave(ticket):
@@ -380,13 +541,24 @@ def _hold(index, argv, reason, ram_gb=None):
     print("mpi-kanban: GPU %s leased" % index, file=sys.stderr, flush=True)
     child = dict(os.environ, CUDA_VISIBLE_DEVICES=str(index),
                  **{SLOT_ENV: str(index), PROGRESS_ENV: _side(index, "progress")})
+    start = low = ram().get("available_gb")
     with subprocess.Popen(argv, env=child) as proc:
         _describe(index, dict(record, child_pid=proc.pid))  # what `interrupt` stops
         try:
-            code = proc.wait()
+            while True:
+                try:
+                    code = proc.wait(timeout=5)
+                    break
+                except subprocess.TimeoutExpired:  # sample free RAM: what did the job really take?
+                    low = min(low, ram().get("available_gb", low)) if low is not None else None
         except BaseException:  # Ctrl-C, as subprocess.call does it
             proc.kill()
             raise
+    if start is not None and (ram_gb or start - low >= 2):
+        print("mpi-kanban: RAM free went from %.1f GB to %.1f GB at the lowest: the job took about "
+              "%.0f GB%s. Declare a measured figure with `run --ram <GB>`, never a guess."
+              % (start, low, start - low, " (it declared %g GB)" % ram_gb if ram_gb else ""),
+              file=sys.stderr, flush=True)
     taken = _read(_side(index, "takeover"))
     if taken.get("lease_pid") == os.getpid():
         print("mpi-kanban: GPU %s taken over by %s, your command was stopped (exit %d).\n"
@@ -398,16 +570,25 @@ def _hold(index, argv, reason, ram_gb=None):
     return code
 
 
-def cmd_run(argv, poll, timeout, reason=None, front=False, ram_gb=None):
+def cmd_run(argv, poll, timeout, reason=None, front=False, ram_gb=None, ram_wait=RAM_WAIT):
     if os.environ.get(SLOT_ENV):
         return subprocess.call(argv)  # already inside a lease; nesting must not deadlock
     slots = devices()
     if not slots:
         print("mpi-kanban: no NVIDIA device found, running unleased", file=sys.stderr)
         return subprocess.call(argv)
+    never = _ram_never(ram_gb)
+    if never:  # queueing it would only make it wait for RAM that cannot come
+        print("mpi-kanban: command not run (exit %d): it can never start here, %s.\n"
+              "  Do not re-run it as it is. Measure what the job takes (a leased run prints it) and\n"
+              "  declare that, or run it on a bigger machine." % (WAIT_TIMEOUT, never),
+              file=sys.stderr, flush=True)
+        return WAIT_TIMEOUT
 
     deadline = time.monotonic() + timeout
     said = None  # what the wait was last announced as: "gpu" or "ram"
+    stuck = 0.0  # seconds spent at our turn with a free GPU and too little RAM
+    reclaimed = None  # when idle RAM was last taken back
     try:
         ticket, ahead = _enqueue(argv, reason, front, ram_gb)
     except FileExistsError:
@@ -415,14 +596,24 @@ def cmd_run(argv, poll, timeout, reason=None, front=False, ram_gb=None):
         return WAIT_TIMEOUT
     try:
         while True:
-            first = _first(ticket)  # only the head of the queue may try a slot
+            first = _first(ticket)  # only the waiter whose turn it is may try a slot
             held = ollama_models() if first else []  # ...and not while Ollama sits in VRAM
-            # ...nor while RAM is short: the head keeps its place, so no later job overtakes it
-            short = _ram_short(ram_gb) if first and not held else None
-            for index in (slots if first and not held and not short else []):
+            # ...nor does it start short of RAM (MPI-43). It keeps its place and the waiters
+            # behind it that fit go ahead (`_first`), so a free GPU is never left idle (MPI-52).
+            short = _ram_short(ram_gb)
+            for index in (slots if first and not held else []):
                 handle = acquire(index)
                 if not handle:
                     continue
+                if short and (reclaimed is None or time.monotonic() - reclaimed >= RAM_RECLAIM_EVERY):
+                    # RAM alone holds us, and we hold the slot, so no leased job is mid-run:
+                    # take back what nobody is using before calling RAM short
+                    short = _ram_reclaim(ram_gb, short)
+                    reclaimed = time.monotonic()
+                if short:
+                    handle.close()  # a free GPU we cannot use: leave it to a job that fits
+                    stuck += poll
+                    break
                 _leave(ticket)  # the next waiter is first in line now
                 free = ram()
                 if not ram_gb and free.get("available_gb", float("inf")) < ram_floor():
@@ -435,6 +626,17 @@ def cmd_run(argv, poll, timeout, reason=None, front=False, ram_gb=None):
                     finally:
                         ollama_unload()
                         _forget(index)
+            if short and stuck >= ram_wait:
+                holders = _holders_text(ram_holders())
+                print("mpi-kanban: command not run (exit %d): the GPU was free for %d s but RAM was not, "
+                      "%s.\n"
+                      "  Idle memory was already taken back. It starts when that much more RAM is freed%s,\n"
+                      "  or when it is re-run declaring less: if `--ram %g` was a guess, measure it (a leased\n"
+                      "  run prints the RAM it took). Tell the user this in these words; do not just re-run."
+                      % (WAIT_TIMEOUT, stuck, short,
+                         " (holding the most now: %s)" % holders if holders else "", ram_gb),
+                      file=sys.stderr, flush=True)
+                return WAIT_TIMEOUT
             if time.monotonic() >= deadline:
                 print("mpi-kanban: still short of RAM after %gs, command not run: %s" % (timeout, short)
                       if short else
@@ -443,7 +645,8 @@ def cmd_run(argv, poll, timeout, reason=None, front=False, ram_gb=None):
                       file=sys.stderr, flush=True)
                 return WAIT_TIMEOUT
             if said != ("ram" if short else "gpu"):
-                print("mpi-kanban: waiting for RAM, not a GPU: %s" % short if short else
+                print("mpi-kanban: waiting for RAM, not a GPU: %s. It keeps its place; jobs that fit go "
+                      "ahead of it meanwhile." % short if short else
                       "mpi-kanban: all %d GPU slots busy, waiting... (%d ahead in the queue)%s"
                       % (len(slots), ahead, "; Ollama holds " + ", ".join(held) if held else ""),
                       file=sys.stderr, flush=True)
@@ -477,7 +680,12 @@ def status_doc():
     with _queue_lock():
         queue = [dict(_read(path), ticket=int(os.path.basename(path).split(".")[0]),
                       paused=os.path.exists(_paused(path))) for path in _tickets()]
-    return {"slots": slots, "queue": queue, "ram": dict(ram(), floor_gb=ram_floor())}
+    for waiter in queue:  # why it waits when it is not the GPU: a plain sentence, or None
+        waiter["ram_short"] = _ram_short(waiter.get("ram"))
+    memory = dict(ram(), floor_gb=ram_floor())
+    if any(waiter["ram_short"] for waiter in queue):
+        memory["holders"] = ram_holders()  # who has the RAM, only when someone lacks it
+    return {"slots": slots, "queue": queue, "ram": memory}
 
 
 def _kill_tree(pid):
@@ -553,10 +761,21 @@ def cmd_status(as_json=False):
             "  ram %g GB" % owner["ram"] if owner.get("ram") else "", owner.get("command", "?")))
     with _queue_lock():
         waiters = [_read(path) for path in _tickets()]
+    blocked = []
     for place, waiter in enumerate(waiters, 1):
         print("queue %d  %s  pid %s  since %s%s  %s" % (
             place, waiter.get("repo", "?"), waiter.get("pid", "?"), waiter.get("since", "?"),
             "  ram %g GB" % waiter["ram"] if waiter.get("ram") else "", waiter.get("command", "?")))
+        short = _ram_short(waiter.get("ram"))
+        if short:
+            blocked.append("Queue %d waits for RAM, not the GPU: %s. Jobs behind it that fit go ahead; "
+                           "it starts when that much RAM is freed, or is re-run declaring less."
+                           % (place, short))
+    for line in blocked:
+        print(line)
+    holders = _holders_text(ram_holders())
+    if holders:
+        print("RAM is held mostly by: %s  (app, GB in RAM, how many processes)" % holders)
     return 0
 
 
@@ -574,6 +793,9 @@ def main():
     runner.add_argument("--ram", type=float, metavar="GB",
                         help="system RAM the job will use; it starts only when that much plus the "
                              "floor (MPI_KANBAN_RAM_FLOOR_GB, default 8) is available")
+    runner.add_argument("--ram-wait", type=float, default=RAM_WAIT, metavar="S",
+                        help="seconds to stand at its turn with a free GPU and too little RAM before "
+                             "giving up with exit 75 (default %g)" % RAM_WAIT)
     runner.add_argument("argv", nargs=argparse.REMAINDER)
     status = sub.add_parser("status", help="which slots are free, and who holds the rest")
     status.add_argument("--json", action="store_true", help="print it as one JSON object")
@@ -593,7 +815,7 @@ def main():
         argv = args.argv[1:] if args.argv[:1] == ["--"] else args.argv
         if not argv:
             parser.error("run needs a command: gpu_lease.py run -- python train.py")
-        return cmd_run(argv, args.poll, args.timeout, args.reason, args.front, args.ram)
+        return cmd_run(argv, args.poll, args.timeout, args.reason, args.front, args.ram, args.ram_wait)
     parser.print_help()
     return 2
 
@@ -603,13 +825,20 @@ def _selftest():
     import threading
 
     loaded = []  # the fake Ollama's VRAM: what /api/ps answers
+    comfy = {"running": [], "freed": 0, "frees_to": None}  # the fake ComfyUI engine, same server
 
     class FakeOllama(http.server.BaseHTTPRequestHandler):
-        def do_GET(self):  # /api/ps
+        def do_GET(self):  # /api/ps, or ComfyUI's /queue
+            if self.path == "/queue":
+                return self._reply({"queue_running": comfy["running"], "queue_pending": []})
             self._reply({"models": loaded})
 
         def do_POST(self):  # /api/generate: keep_alive 0 unloads, anything else loads
             body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            if self.path == "/free":  # ComfyUI drops its cached models: RAM comes back
+                comfy["freed"] += 1
+                set_ram(comfy["frees_to"])
+                return self._reply({})
             if body.get("keep_alive") == 0:
                 loaded[:] = [m for m in loaded if m["model"] != body["model"]]
             else:
@@ -640,9 +869,13 @@ def _selftest():
             json.dump({"available_gb": available, "total_gb": 64, "commit_available_gb": commit}, handle)
 
     set_ram(100)
+    procs_file = os.path.join(scratch, "procs.json")  # the fake process list: [name, GB in RAM]
+    with open(procs_file, "w") as handle:
+        json.dump([["python", 17.0], ["electron", 9.0], ["python", 0.5]], handle)
     base = dict(os.environ, MPI_KANBAN_GPU_ROOT=scratch, MPI_KANBAN_GPU_DEVICES="0",
-                OLLAMA_HOST=ollama_host, CLAUDE_CODE_SESSION_ID="selftest", MPI_KANBAN_RAM_FILE=ram_file)
-    for name in (SLOT_ENV, "MPI_KANBAN_RAM_FLOOR_GB"):
+                OLLAMA_HOST=ollama_host, CLAUDE_CODE_SESSION_ID="selftest", MPI_KANBAN_RAM_FILE=ram_file,
+                MPI_KANBAN_PROCS_FILE=procs_file)
+    for name in (SLOT_ENV, "MPI_KANBAN_RAM_FLOOR_GB", "MPI_KANBAN_COMFYUI"):
         base.pop(name, None)
 
     def lease(env, *extra, script="import os;print(os.environ['CUDA_VISIBLE_DEVICES'])"):
@@ -781,27 +1014,64 @@ def _selftest():
     assert none.stdout.strip() == "", none
     assert none.returncode == 1, "no CUDA_VISIBLE_DEVICES is set when unleased"
 
-    # MPI-43: a job that declares --ram waits, first in line, until that much plus the floor
-    # is free -- with the GPU itself free -- and a later job that declares none never overtakes it
+    # MPI-43 still holds: a job that declares --ram never starts short of that much plus the floor.
+    # MPI-52: but it no longer holds the line. The 2026-11-26 stall: GPU free, the head short of
+    # RAM, five sessions frozen behind it for 2.5 h. A job behind it that fits goes ahead.
     set_ram(20)
     big = subprocess.Popen([sys.executable, me, "run", "--ram", "40", "--timeout", "30", "--poll", "0.2",
                             "--", sys.executable, "-c", "open(%r, 'a').write('BIG ')" % log],
                            env=base, stderr=subprocess.PIPE, text=True)
     said = big.stderr.readline()
-    assert "waiting for RAM" in said and "20.0 GB RAM available" in said and "8 GB floor" in said, said
-    small = queued("SMALL", "0.05")
+    assert "waiting for RAM" in said and "20.0 GB is free" in said and "8 GB kept spare" in said, said
+    small = lease(base, "--timeout", "10", "--poll", "0.05", script="open(%r, 'a').write('SMALL ')" % log)
+    assert small.returncode == 0, "a job that fits stayed frozen behind one waiting for RAM: %s" % small.stderr
+    fits = lease(base, "--ram", "5", "--timeout", "10", "--poll", "0.05")
+    assert fits.returncode == 0 and "took about" in fits.stderr, fits  # ...and reports what it used
+    assert big.poll() is None, "a job started while RAM was short"
+    assert served() == ["SMALL"], "the job short of RAM ran, or the one that fits did not"
     doc = json.loads(subprocess.run([sys.executable, me, "status", "--json"], env=base,
                                     capture_output=True, text=True).stdout)
     assert doc["ram"]["available_gb"] == 20 and doc["ram"]["floor_gb"] == 8, doc
-    assert [w["ram"] for w in doc["queue"]] == [40, None], doc
+    assert [w["ram"] for w in doc["queue"]] == [40], doc
+    assert "28 GB short" in doc["queue"][0]["ram_short"], doc
+    assert doc["ram"]["holders"][0] == {"name": "python", "gb": 17.5, "count": 2}, doc
     status = subprocess.run([sys.executable, me, "status"], env=base, capture_output=True, text=True).stdout
     assert "RAM   20 GB available of 64 GB" in status and "ram 40 GB" in status, status
-    time.sleep(1)
-    assert big.poll() is None and small.poll() is None, "a job started while RAM was short"
+    assert "waits for RAM, not the GPU" in status and "python 17.5 GB (2)" in status, status
+
+    # it kept its place: once RAM is back it goes before a job that queued after it
+    holder = holding(4)
+    later = queued("LATER", "0.2")
     set_ram(50)  # 50 >= 40 + 8
-    for proc in (big, small):
+    for proc in (holder, big, later):
         assert proc.wait(timeout=20) == 0
-    assert served() == ["BIG", "SMALL"], "a job overtook the one waiting for RAM"
+    assert served() == ["BIG", "LATER"], "the job that waited for RAM lost its place"
+
+    # an ask the machine can never meet (60 + 8 > 64) is refused at once instead of queueing
+    began = time.monotonic()
+    never = lease(base, "--ram", "60", "--timeout", "30")
+    assert never.returncode == WAIT_TIMEOUT and not never.stdout.strip(), never
+    assert "can never start" in never.stderr and time.monotonic() - began < 10, never.stderr
+
+    # GPU free, RAM short: it gives up after --ram-wait with one plain sentence and the holders,
+    # so its session is woken instead of dying silently at a two-hour timeout
+    set_ram(30)
+    gave_up = lease(base, "--ram", "40", "--ram-wait", "1", "--timeout", "30", "--poll", "0.2")
+    assert gave_up.returncode == WAIT_TIMEOUT and not gave_up.stdout.strip(), gave_up
+    assert "the GPU was free" in gave_up.stderr and "18 GB short" in gave_up.stderr, gave_up.stderr
+    assert "python 17.5 GB (2)" in gave_up.stderr, gave_up.stderr
+
+    # before RAM is called short, an idle ComfyUI engine is asked to unload its cached models
+    # (the next job would unload them itself); one with a job in its queue is left alone
+    engine = dict(base, MPI_KANBAN_COMFYUI="http://" + ollama_host)
+    comfy["running"] = ["a peer's job"]
+    busy_engine = lease(engine, "--ram", "40", "--ram-wait", "1", "--timeout", "30", "--poll", "0.2")
+    assert busy_engine.returncode == WAIT_TIMEOUT and comfy["freed"] == 0, busy_engine
+    comfy["running"] = []
+    comfy["frees_to"] = 100
+    unloaded = lease(engine, "--ram", "40", "--timeout", "30", "--poll", "0.2")
+    assert unloaded.returncode == 0 and unloaded.stdout.strip() == "0", unloaded
+    assert comfy["freed"] == 1 and "unload its cached models" in unloaded.stderr, unloaded.stderr
 
     # a timeout says it was RAM, not the GPU; low commit headroom alone never blocks
     set_ram(30)
