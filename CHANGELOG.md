@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-11-26
+
 ### Fixed
 
 - **A GPU job waiting for RAM no longer freezes everyone behind it.** A job
@@ -1365,7 +1367,8 @@ workers over several windows on one repo.
   and `mpi-continue`. New skill `mpi-cleanup` added for workflow artifact
   garbage collection.
 
-[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.10.1...HEAD
+[1.10.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.9.1...v1.10.0
 [1.9.1]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.9.0...v1.9.1
 [1.9.0]: https://github.com/MadPonyInteractive/mpi-kanban/compare/v1.8.0...v1.9.0
